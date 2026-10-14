@@ -31,6 +31,7 @@ export async function deleteUserData(
     await c.mediaAssets.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.brands.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.posts.deleteMany({ workspaceId: { $in: ownedIds } });
+    await c.campaigns.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.generationJobs.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.socialAccounts.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.workspaceMembers.deleteMany({ workspaceId: { $in: ownedIds } });
@@ -58,6 +59,7 @@ export async function exportUserData(user: { id: string; name: string; email: st
     workspaces: ownedWorkspaces,
     brands: await c.brands.find({ workspaceId: { $in: ownedIds } }).toArray(),
     posts: await c.posts.find({ workspaceId: { $in: ownedIds } }).toArray(),
+    campaigns: await c.campaigns.find({ workspaceId: { $in: ownedIds } }).toArray(),
     media: await c.mediaAssets
       .find({ workspaceId: { $in: ownedIds } }, { projection: { name: 1, mimeType: 1, width: 1, height: 1, createdAt: 1 } })
       .toArray(),

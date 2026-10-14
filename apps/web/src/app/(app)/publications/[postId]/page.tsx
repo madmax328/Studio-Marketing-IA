@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EDITABLE_POST_STATUSES, POST_STATUS_LABELS, roleHasPermission, SOCIAL_NETWORKS } from "@smia/shared";
+import { EDITABLE_POST_STATUSES, POST_STATUS_LABELS, roleHasPermission, SOCIAL_NETWORKS, toZoned } from "@smia/shared";
+import { getTextProvider } from "@/server/ai";
+import { hasAiConsent } from "@/server/services/generation";
 import { PostEditor } from "@/components/posts/post-editor";
 import { PostMediaPicker } from "@/components/posts/post-media-picker";
+import { PostScheduler } from "@/components/posts/post-scheduler";
 import { Alert, Card } from "@/components/ui/card";
 import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
 import { listMedia } from "@/server/services/media";
-import { getPost, MAX_MEDIA_PER_POST } from "@/server/services/posts";
+import { getPost, MAX_MEDIA_PER_POST, schedulingProblems } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Publication" };
@@ -22,6 +25,8 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
   });
   const network = SOCIAL_NETWORKS[post.network];
   const images = await listMedia(getDb(), access, 1);
+  const local = post.scheduledAt ? toZoned(post.scheduledAt, post.timeZone) : null;
+  const provider = getTextProvider();
   const attached = (post.mediaIds ?? []).map((id) => id.toHexString());
   // Les images jointes restent proposées même si elles ne sont plus dans la première page de la médiathèque.
   const choices = [
@@ -61,9 +66,33 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
           />
         </Card>
       ) : null}
-      <p className="text-xs text-muted">
-        La programmation et la publication automatique arrivent avec le calendrier et la connexion des réseaux.
-      </p>
+      <Card className="space-y-3">
+        <h2 className="font-semibold">Date de publication</h2>
+        {local ? (
+          <p className="text-sm text-muted">
+            Prévue le {new Date(`${local.date}T12:00:00Z`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })} à {local.time}
+          </p>
+        ) : (
+          <p className="text-sm text-muted">Aucune date pour le moment.</p>
+        )}
+        <PostScheduler
+          postId={postId}
+          status={post.status}
+          localDate={local?.date ?? ""}
+          localTime={local?.time ?? ""}
+          timeZone={post.timeZone}
+          problems={schedulingProblems(post)}
+          canWrite={roleHasPermission(access.role, "content:write")}
+          canPublish={roleHasPermission(access.role, "content:publish")}
+          canRegenerate={
+            Boolean(post.campaignId && post.slotId) &&
+            ["draft", "failed"].includes(post.status) &&
+            roleHasPermission(access.role, "content:write") &&
+            provider.isConfigured() &&
+            hasAiConsent(access, provider)
+          }
+        />
+      </Card>
     </div>
   );
 }

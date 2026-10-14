@@ -23,12 +23,12 @@ export default async function DashboardPage() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Tableau de bord</h1>
         <div className="flex flex-wrap gap-2">
-          <Link href="/studio" className={buttonStyles("primary")}>
+          <Link href="/studio" className={buttonStyles("secondary")}>
             Générer une publication
           </Link>
-          <button type="button" disabled className={buttonStyles("secondary")} title="Disponible avec le module Campagnes">
-            Créer une campagne · bientôt
-          </button>
+          <Link href="/campagnes/nouvelle" className={buttonStyles("primary")}>
+            Créer une campagne
+          </Link>
         </div>
       </header>
 
@@ -68,7 +68,12 @@ export default async function DashboardPage() {
               ))}
             </ul>
           )}
-          <p className="text-xs text-muted">Statut : {POST_STATUS_LABELS.scheduled.toLowerCase()} uniquement.</p>
+          <p className="text-xs text-muted">
+            Statut : {POST_STATUS_LABELS.scheduled.toLowerCase()} uniquement.{" "}
+            <Link href="/calendrier" className="text-primary hover:underline">
+              Ouvrir le calendrier
+            </Link>
+          </p>
         </Card>
 
         <Card className="space-y-3">

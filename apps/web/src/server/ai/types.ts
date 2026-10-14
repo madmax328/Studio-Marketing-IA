@@ -1,4 +1,12 @@
-import type { BrandInput, GenerationOutput, PostKind, SocialNetworkId } from "@smia/shared";
+import type {
+  BrandInput,
+  CampaignObjective,
+  CampaignPostsOutput,
+  GenerationOutput,
+  PostKind,
+  SocialNetworkId,
+  StrategyOutput,
+} from "@smia/shared";
 
 export interface TextGenerationInput {
   brand: BrandInput;
@@ -9,10 +17,33 @@ export interface TextGenerationInput {
   variantsPerNetwork: number;
 }
 
-export interface TextGenerationResult {
-  output: GenerationOutput;
+export interface ProviderResult<T> {
+  output: T;
   model: string;
   usage: { inputTokens: number; outputTokens: number };
+}
+
+export type TextGenerationResult = ProviderResult<GenerationOutput>;
+
+export interface CampaignContext {
+  brand: BrandInput;
+  name: string;
+  objective: CampaignObjective;
+  networks: SocialNetworkId[];
+  highlights: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface StrategyInput extends CampaignContext {
+  /** Créneaux déjà datés par l'application ; l'IA choisit le sujet de chacun. */
+  slots: { index: number; date: string; weekday: string }[];
+}
+
+export interface CampaignPostsInput extends CampaignContext {
+  summary: string;
+  keyMessages: string[];
+  slots: { index: number; date: string; theme: string; kind: PostKind; role: string }[];
 }
 
 /**
@@ -28,6 +59,8 @@ export interface TextGenerationProvider {
   /** Le fournisseur est-il configuré (clé, service local joignable…) ? */
   isConfigured(): boolean;
   generatePosts(input: TextGenerationInput): Promise<TextGenerationResult>;
+  generateCampaignStrategy(input: StrategyInput): Promise<ProviderResult<StrategyOutput>>;
+  generateCampaignPosts(input: CampaignPostsInput): Promise<ProviderResult<CampaignPostsOutput>>;
 }
 
 /** Erreur du fournisseur, avec un message compréhensible par l'utilisateur. */

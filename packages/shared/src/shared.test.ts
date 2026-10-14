@@ -116,3 +116,13 @@ describe("médias", () => {
     expect(templateRenderSchema.safeParse({ brandId: "a", templateId: "promo", format: "tiny", title: "Soldes" }).success).toBe(false);
   });
 });
+
+describe("campagnes", () => {
+  it("valide l'assistant de campagne", async () => {
+    const { campaignInputSchema } = await import("./index");
+    const base = { brandId: "b", name: "Automne", objective: "evenement", networks: ["instagram"], startDate: "2026-11-01", endDate: "2026-11-30", postsPerWeek: 3 };
+    expect(campaignInputSchema.safeParse(base).success).toBe(true);
+    expect(campaignInputSchema.safeParse({ ...base, endDate: "2026-10-01" }).success).toBe(false);
+    expect(campaignInputSchema.safeParse({ ...base, endDate: "2027-03-01" }).success).toBe(false);
+  });
+});

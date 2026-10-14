@@ -29,8 +29,11 @@ export function canTransitionPost(from: PostStatus, to: PostStatus): boolean {
   return ALLOWED_TRANSITIONS[from].includes(to);
 }
 
-/** Statuts dans lesquels le contenu d'une publication peut encore être modifié ou supprimé. */
-export const EDITABLE_POST_STATUSES: readonly PostStatus[] = ["draft", "failed", "cancelled"];
+/**
+ * Statuts dans lesquels le contenu d'une publication peut encore être modifié ou supprimé.
+ * Une publication programmée reste modifiable tant que l'envoi n'a pas commencé (statut processing).
+ */
+export const EDITABLE_POST_STATUSES: readonly PostStatus[] = ["draft", "scheduled", "failed", "cancelled"];
 
 /** Enregistrement d'une publication en brouillon (validé côté serveur). */
 export const postDraftSchema = z.object({
@@ -42,3 +45,9 @@ export const postDraftSchema = z.object({
 });
 
 export type PostDraftInput = z.infer<typeof postDraftSchema>;
+
+/** Programmation d'une publication : date et heure locales dans le fuseau de la marque. */
+export const postScheduleSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide"),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Heure invalide (HH:MM)"),
+});

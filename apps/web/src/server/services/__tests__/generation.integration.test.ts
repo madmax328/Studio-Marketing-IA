@@ -4,40 +4,19 @@
  */
 import { randomUUID } from "node:crypto";
 import { MongoClient, type Db } from "mongodb";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { TextGenerationError, type TextGenerationProvider } from "@/server/ai/types";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { TextGenerationError } from "@/server/ai/types";
 import { collections } from "@/server/db/collections";
 import { runMigrations } from "@/server/db/migrations";
 import { createBrand } from "@/server/services/brands";
 import { acceptAiConsent, generateTextPosts } from "@/server/services/generation";
 import { createDraft, deletePost, getPost, listPosts, updatePostText } from "@/server/services/posts";
 import { ensurePersonalWorkspace, getWorkspaceAccess, type WorkspaceAccess } from "@/server/services/workspaces";
+import { fakeTextProvider } from "@/test/fake-text-provider";
 
 const uri = process.env.TEST_MONGODB_URI;
 
-function fakeProvider(overrides: Partial<TextGenerationProvider> = {}) {
-  const generatePosts = vi.fn<TextGenerationProvider["generatePosts"]>(async (input) => ({
-    model: "fake-model",
-    usage: { inputTokens: 10, outputTokens: 10 },
-    output: {
-      posts: [
-        ...input.networks.map((network) => ({ network, text: `Texte ${network}`, hashtags: ["test"], rationale: "Rôle." })),
-        // Réseau non demandé : doit être ignoré.
-        { network: "pinterest" as const, text: "Hors sujet", hashtags: [], rationale: "" },
-      ],
-      missingInformation: ["Prix"],
-    },
-  }));
-  const provider: TextGenerationProvider = {
-    id: "fake",
-    label: "Fake",
-    dataProcessor: "Test",
-    isConfigured: () => true,
-    generatePosts,
-    ...overrides,
-  };
-  return { provider, generatePosts };
-}
+const fakeProvider = fakeTextProvider;
 
 describe.skipIf(!uri)("studio de contenu (MongoDB réel)", () => {
   let client: MongoClient;

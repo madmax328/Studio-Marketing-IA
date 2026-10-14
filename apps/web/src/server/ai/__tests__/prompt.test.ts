@@ -37,3 +37,22 @@ describe("prompt de génération", () => {
     expect(prompt).not.toContain("instagram");
   });
 });
+
+describe("prompts de campagne", () => {
+  it("impose les dates et interdit l'invention", async () => {
+    const { buildStrategyPrompt, STRATEGY_SYSTEM_PROMPT } = await import("@/server/ai/prompt");
+    expect(STRATEGY_SYSTEM_PROMPT).toContain("Les dates des publications sont imposées");
+    const prompt = buildStrategyPrompt({
+      brand,
+      name: "Automne",
+      objective: "evenement",
+      networks: ["instagram"],
+      highlights: "Soirée le 31",
+      startDate: "2026-11-01",
+      endDate: "2026-11-30",
+      slots: [{ index: 0, date: "2026-11-02", weekday: "lundi" }],
+    });
+    expect(prompt).toContain("index 0 : lundi 2026-11-02");
+    expect(prompt).toContain("Communiquer sur un événement");
+  });
+});

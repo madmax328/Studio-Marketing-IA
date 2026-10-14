@@ -31,10 +31,16 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
 | 1. Fondations | Monorepo, MongoDB, authentification, espaces de travail, « Ma marque », tableau de bord, paramètres (export, suppression) | **Fait** |
 | 2. Création de contenu | Fournisseur IA texte (interface indépendante du modèle), génération de publications adaptées à chaque réseau, éditeur, variantes, brouillons | **Fait** |
 | 3. Visuels | Stockage objet, médiathèque, logo, gabarits avec incrustation du logo et des couleurs, images jointes aux publications | **Fait** (génération d'images par IA : fournisseur à choisir) |
-| 4. Campagnes et calendrier | Assistant de campagne, calendrier (mois, semaine, liste), fuseaux horaires | À faire |
+| 4. Campagnes et calendrier | Assistant de campagne en 9 étapes, stratégie proposée par l'IA et modifiable, rédaction par lots, calendrier (mois, semaine, liste) avec filtres, programmation, fuseaux horaires et changements d'heure | **Fait** |
 | 5. Publication automatique | File de tâches, OAuth et jetons chiffrés, publication programmée, reprises, idempotence, notifications d'échec | À faire |
 | 6. Analyse | Récupération des statistiques disponibles via les API, page de statistiques, premières recommandations | À faire |
 | 7. Abonnements | Stripe, offres configurables, crédits avec journal immuable | À faire |
+
+### À ne pas oublier
+
+- **Brancher un fournisseur d'images IA** (OpenAI gpt-image recommandé ; Google ou fal.ai possibles) derrière une
+  interface `ImageGenerationProvider`. L'IA produit uniquement l'image de fond ; texte, logo et couleurs restent
+  incrustés par les gabarits. Décision reportée par le porteur du projet le 14/10/2026.
 
 **Réseaux visés en V1** : Facebook, Instagram, LinkedIn, TikTok, YouTube, X, Pinterest, Threads.
 Chaque réseau est branché dès que sa validation officielle est obtenue (voir `docs/SOCIAL_NETWORKS.md`).

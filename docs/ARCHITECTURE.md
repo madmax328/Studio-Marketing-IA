@@ -31,6 +31,8 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Médias | Vercel Blob en mode privé derrière l'interface `MediaStorage` (`src/server/media/storage.ts`), fichiers sous `ws/<workspaceId>/`, servis par `/api/medias/<id>/fichier` après contrôle d'accès | Simple à brancher sur Vercel ; passage à un stockage S3/R2 possible sans toucher au reste |
 | Envoi de fichiers | Envoi direct du navigateur vers le stockage (jeton limité : emplacement, type, 15 Mo), puis vérification du contenu réel par sharp avant inscription en base | Pas de limite de taille des fonctions Vercel ; pas de faux fichiers |
 | Visuels | Gabarits rendus par `next/og` (Satori), convertis en JPEG par sharp ; police Montserrat (licence OFL, `apps/web/assets/fonts`) | Texte, logo et couleurs exacts ; JPEG accepté par toutes les API sociales |
+| Dates | UTC en base, fuseau IANA de la marque stocké sur chaque publication ; conversions par `@smia/shared/time` (Intl, sans dépendance) ; heure inexistante refusée, heure ambiguë = première occurrence | Changements d'heure gérés et testés |
+| Campagnes | Dates des créneaux calculées par l'application, sujets proposés par l'IA ; rédaction par lots de 4 créneaux (un appel IA court par lot, relançable sans doublon) | Respecte les limites de durée de Vercel ; aucun doublon en cas de nouvelle tentative |
 | Tests | Vitest ; tests d'intégration sur MongoDB réel en CI (`TEST_MONGODB_URI`) | Vérifie l'isolation des données sur une vraie base |
 
 ## Décisions à prendre aux étapes suivantes
@@ -73,7 +75,9 @@ leur étape commencera, pour ne pas maintenir de code vide.
 
 | `mediaAssets` | Médiathèque : type réel, dimensions, emplacement de stockage |
 
-Collections prévues : `campaigns`, `creditAccounts`, `creditTransactions`,
+| `campaigns` | Campagnes : paramètres de l'assistant, stratégie et plan |
+
+Collections prévues : `creditAccounts`, `creditTransactions`,
 `subscriptions`, `analyticsSnapshots`, `notifications`.
 
 ## Particularités de Next.js 16

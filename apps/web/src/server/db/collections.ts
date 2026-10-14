@@ -1,8 +1,9 @@
 import type { Db, ObjectId } from "mongodb";
 import type {
   BrandInput,
-  GenerationOutput,
-  GenerationRequest,
+  CampaignObjective,
+  CampaignStatus,
+  CampaignStrategy,
   PostStatus,
   SocialNetworkId,
   WorkspaceRole,
@@ -63,6 +64,9 @@ export interface PostDoc {
   rationale: string;
   /** Génération d'origine, si la publication a été créée par l'IA. */
   generationJobId: ObjectId | null;
+  /** Campagne d'origine et créneau du plan, si la publication vient d'une campagne. */
+  campaignId?: ObjectId | null;
+  slotId?: string | null;
   /** Médias joints (images), dans l'ordre d'affichage. Absent sur les anciennes publications. */
   mediaIds?: ObjectId[];
   /** Date prévue en UTC. */
@@ -82,6 +86,29 @@ export interface SocialAccountDoc {
   network: SocialNetworkId;
   status: "connected" | "expired" | "revoked" | "error";
   displayName: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CampaignDoc {
+  _id: ObjectId;
+  workspaceId: ObjectId;
+  brandId: ObjectId;
+  createdByUserId: string;
+  name: string;
+  objective: CampaignObjective;
+  networks: SocialNetworkId[];
+  highlights: string;
+  /** Dates locales (YYYY-MM-DD) dans le fuseau de la campagne. */
+  startDate: string;
+  endDate: string;
+  postsPerWeek: number;
+  defaultTime: string;
+  timeZone: string;
+  status: CampaignStatus;
+  strategy: CampaignStrategy | null;
+  missingInformation: string[];
+  schemaVersion: 1;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -114,12 +141,15 @@ export interface GenerationJobDoc {
   userId: string;
   /** Identifiant fourni par le navigateur : une même demande n'est générée (et comptée) qu'une fois. */
   requestId: string;
-  kind: "text";
+  kind: "text" | "campaign_strategy" | "campaign_posts";
+  campaignId?: ObjectId;
   provider: string;
   model: string | null;
   status: "processing" | "succeeded" | "failed";
-  request: Omit<GenerationRequest, "requestId" | "brandId">;
-  result: GenerationOutput | null;
+  /** Paramètres de la demande (sans données personnelles supplémentaires). */
+  request: Record<string, unknown>;
+  /** Sortie validée du fournisseur ; sa forme dépend de `kind`. */
+  result: unknown;
   error: string | null;
   usage: { inputTokens: number; outputTokens: number } | null;
   createdAt: Date;
@@ -151,6 +181,7 @@ export const COLLECTIONS = {
   auditLogs: "auditLogs",
   generationJobs: "generationJobs",
   mediaAssets: "mediaAssets",
+  campaigns: "campaigns",
   migrations: "migrations",
 } as const;
 
@@ -164,6 +195,7 @@ export function collections(db: Db) {
     auditLogs: db.collection<AuditLogDoc>(COLLECTIONS.auditLogs),
     generationJobs: db.collection<GenerationJobDoc>(COLLECTIONS.generationJobs),
     mediaAssets: db.collection<MediaAssetDoc>(COLLECTIONS.mediaAssets),
+    campaigns: db.collection<CampaignDoc>(COLLECTIONS.campaigns),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }

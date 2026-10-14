@@ -3,8 +3,12 @@ import {
   checkTextLength,
   EDITABLE_POST_STATUSES,
   postDraftSchema,
+  postScheduleSchema,
+  SOCIAL_NETWORK_IDS,
   SOCIAL_NETWORKS,
+  zonedToUtc,
   type PostStatus,
+  type SocialNetworkId,
 } from "@smia/shared";
 import { collections, type PostDoc } from "@/server/db/collections";
 import { recordAudit } from "@/server/services/audit";
@@ -186,4 +190,146 @@ export async function setPostMedia(db: Db, access: WorkspaceAccess, postId: stri
   );
   if (!updated) throw new UserFacingError("Cette publication ne peut plus être modifiée.", "conflict");
   return updated;
+}
+
+/** Délai minimal entre maintenant et l'heure programmée. */
+export const MIN_SCHEDULE_DELAY_MS = 5 * 60_000;
+
+/**
+ * Problèmes qui empêchent de programmer une publication (liste vide = programmable).
+ * Les connexions aux réseaux sont vérifiées au moment de l'envoi, pas ici.
+ */
+export function schedulingProblems(post: Pick<PostDoc, "network" | "text" | "mediaIds">): string[] {
+  const network = SOCIAL_NETWORKS[post.network];
+  const problems: string[] = [];
+  const length = checkTextLength(post.network, post.text);
+  if (length) problems.push(length);
+  const media = post.mediaIds ?? [];
+  if (media.length === 0 && !network.allowsTextOnly) {
+    problems.push(
+      network.publishableMedia.includes("image")
+        ? `${network.label} exige une image : ajoutez-en une à la publication.`
+        : `${network.label} exige une vidéo : la création de vidéos arrive dans une prochaine étape.`,
+    );
+  }
+  return problems;
+}
+
+function parseLocalDateTime(input: unknown, timeZone: string, now = new Date()): Date {
+  const parsed = postScheduleSchema.safeParse(input);
+  if (!parsed.success) throw new UserFacingError(parsed.error.issues[0]?.message ?? "Date invalide.", "invalid_input");
+  const result = zonedToUtc(parsed.data.date, parsed.data.time, timeZone);
+  if (!result.ok) {
+    throw new UserFacingError(
+      result.reason === "nonexistent"
+        ? "Cette heure n'existe pas ce jour-là (changement d'heure). Choisissez une autre heure."
+        : "Date ou heure invalide.",
+      "invalid_input",
+    );
+  }
+  if (result.instant.getTime() < now.getTime() + MIN_SCHEDULE_DELAY_MS) {
+    throw new UserFacingError("Choisissez une date et une heure dans le futur (au moins 5 minutes).", "invalid_input");
+  }
+  return result.instant;
+}
+
+/**
+ * Fixe la date d'une publication.
+ * - mode "plan" : la date est notée mais la publication reste un brouillon ;
+ * - mode "schedule" : la publication est programmée (contenu vérifié).
+ */
+export async function setPostSchedule(
+  db: Db,
+  access: WorkspaceAccess,
+  userId: string,
+  postId: string,
+  input: unknown,
+  mode: "plan" | "schedule",
+): Promise<PostDoc> {
+  assertPermission(access, mode === "schedule" ? "content:publish" : "content:write");
+  const post = await getPost(db, access, postId);
+  if (!["draft", "scheduled", "failed"].includes(post.status)) {
+    throw new UserFacingError("Cette publication ne peut plus être déplacée.", "conflict");
+  }
+  const scheduledAt = parseLocalDateTime(input, post.timeZone);
+
+  let status: PostStatus = post.status === "failed" ? "draft" : post.status;
+  if (mode === "schedule") {
+    const problems = schedulingProblems(post);
+    if (problems.length > 0) throw new UserFacingError(problems.join(" "), "invalid_input");
+    status = "scheduled";
+  }
+
+  const updated = await collections(db).posts.findOneAndUpdate(
+    { _id: post._id, workspaceId: access.workspace._id, status: post.status },
+    { $set: { scheduledAt, status, updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+  if (!updated) throw new UserFacingError("La publication a changé entre-temps. Rechargez la page.", "conflict");
+  if (mode === "schedule") {
+    await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "post.scheduled", targetId: postId });
+  }
+  return updated;
+}
+
+/** Annule la programmation : la publication redevient un brouillon (sa date est conservée). */
+export async function unschedulePost(db: Db, access: WorkspaceAccess, userId: string, postId: string): Promise<PostDoc> {
+  assertPermission(access, "content:publish");
+  const post = await getPost(db, access, postId);
+  const updated = await collections(db).posts.findOneAndUpdate(
+    { _id: post._id, workspaceId: access.workspace._id, status: "scheduled" },
+    { $set: { status: "draft", updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+  if (!updated) throw new UserFacingError("Cette publication n'est pas (ou plus) programmée.", "conflict");
+  await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "post.unscheduled", targetId: postId });
+  return updated;
+}
+
+/** Duplique une publication en brouillon sans date. */
+export async function duplicatePost(db: Db, access: WorkspaceAccess, userId: string, postId: string): Promise<PostDoc> {
+  assertPermission(access, "content:write");
+  const post = await getPost(db, access, postId);
+  const now = new Date();
+  const copy: PostDoc = {
+    ...post,
+    _id: new ObjectId(),
+    status: "draft",
+    scheduledAt: null,
+    publishedAt: null,
+    slotId: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await collections(db).posts.insertOne(copy);
+  await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "post.duplicated", targetId: postId });
+  return copy;
+}
+
+export interface CalendarFilters {
+  brandId?: string | undefined;
+  network?: string | undefined;
+  campaignId?: string | undefined;
+  status?: string | undefined;
+}
+
+/** Publications datées sur une période [from, to[ (instants UTC), avec filtres vérifiés. */
+export async function listCalendarPosts(
+  db: Db,
+  access: WorkspaceAccess,
+  from: Date,
+  to: Date,
+  filters: CalendarFilters = {},
+): Promise<PostDoc[]> {
+  assertPermission(access, "content:read");
+  const filter: Filter<PostDoc> = { workspaceId: access.workspace._id, scheduledAt: { $gte: from, $lt: to } };
+  if (filters.brandId && ObjectId.isValid(filters.brandId)) filter.brandId = new ObjectId(filters.brandId);
+  if (filters.campaignId && ObjectId.isValid(filters.campaignId)) filter.campaignId = new ObjectId(filters.campaignId);
+  if (filters.network && (SOCIAL_NETWORK_IDS as readonly string[]).includes(filters.network)) {
+    filter.network = filters.network as SocialNetworkId;
+  }
+  if (filters.status && ["draft", "scheduled", "processing", "published", "failed", "cancelled"].includes(filters.status)) {
+    filter.status = filters.status as PostStatus;
+  }
+  return collections(db).posts.find(filter).sort({ scheduledAt: 1 }).limit(1000).toArray();
 }
