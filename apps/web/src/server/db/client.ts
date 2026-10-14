@@ -1,5 +1,6 @@
 import "server-only";
 import { MongoClient, type Db } from "mongodb";
+import { runMigrations } from "@/server/db/migrations";
 import { getServerEnv } from "@/server/env";
 
 /**
@@ -9,6 +10,7 @@ import { getServerEnv } from "@/server/env";
  */
 const globalForMongo = globalThis as typeof globalThis & {
   __smiaMongoClient?: MongoClient;
+  __smiaDbReady?: Promise<void>;
 };
 
 export function getMongoClient(): MongoClient {
@@ -24,4 +26,19 @@ export function getMongoClient(): MongoClient {
 
 export function getDb(): Db {
   return getMongoClient().db(getServerEnv().MONGODB_DB_NAME);
+}
+
+/**
+ * Applique les migrations en attente une fois par instance, au premier accès.
+ * Permet de déployer sur Vercel sans lancer `pnpm db:migrate` à la main.
+ * En cas d'échec, la tentative sera refaite à la requête suivante.
+ */
+export function ensureDatabaseReady(): Promise<void> {
+  globalForMongo.__smiaDbReady ??= runMigrations(getDb(), () => {})
+    .then(() => undefined)
+    .catch((error: unknown) => {
+      globalForMongo.__smiaDbReady = undefined;
+      throw error;
+    });
+  return globalForMongo.__smiaDbReady;
 }

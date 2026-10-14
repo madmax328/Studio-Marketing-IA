@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/server/auth";
-import { getDb } from "@/server/db/client";
+import { ensureDatabaseReady, getDb } from "@/server/db/client";
 import { ensurePersonalWorkspace, getWorkspaceAccess, type WorkspaceAccess } from "@/server/services/workspaces";
 
 export const ACTIVE_WORKSPACE_COOKIE = "smia_workspace";
@@ -12,6 +12,7 @@ export const ACTIVE_WORKSPACE_COOKIE = "smia_workspace";
 export const getSession = cache(async () => {
   // headers() en premier : rend la page dynamique avant toute lecture de configuration.
   const requestHeaders = await headers();
+  await ensureDatabaseReady();
   return getAuth().api.getSession({ headers: requestHeaders });
 });
 

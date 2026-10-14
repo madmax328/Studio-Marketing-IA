@@ -22,7 +22,8 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Styles | Tailwind CSS 4, composants maison accessibles | Peu de dépendances ; shadcn/ui pourra être ajouté si besoin |
 | Base de données | MongoDB Atlas, pilote officiel | Imposé ; client réutilisé entre invocations serverless |
 | Authentification | Better Auth + adaptateur MongoDB | E-mail/mot de passe, vérification, réinitialisation, sessions, suppression de compte, limitation de débit en base |
-| E-mails | Resend (API HTTP, sans SDK) | Simple ; en développement sans clé, les e-mails s'affichent dans la console |
+| E-mails | SMTP (boîte Hostinger pendant les tests) ou Resend | Le premier configuré est utilisé ; en développement sans configuration, les e-mails s'affichent dans la console |
+| Migrations | Appliquées automatiquement au premier accès de chaque instance | Aucune commande à lancer après un déploiement Vercel |
 | Validation | Zod 4, schémas partagés dans `@smia/shared` | Même règles côté formulaire et côté serveur |
 | Migrations | Scripts versionnés (`apps/web/src/server/db/migrations`), table `migrations` | Index et changements de structure traçables |
 | Tests | Vitest ; tests d'intégration sur MongoDB réel en CI (`TEST_MONGODB_URI`) | Vérifie l'isolation des données sur une vraie base |

@@ -34,7 +34,7 @@ pnpm dev
 
 Sous macOS ou Linux, remplacer `Copy-Item` par `cp` et générer le secret avec `openssl rand -base64 32`.
 
-Sans `RESEND_API_KEY`, les e-mails (confirmation, mot de passe oublié) s'affichent dans le terminal de `pnpm dev` :
+Sans configuration SMTP ni Resend, les e-mails (confirmation, mot de passe oublié) s'affichent dans le terminal de `pnpm dev` :
 copiez le lien affiché pour confirmer votre compte.
 
 ## Commandes
@@ -52,5 +52,7 @@ copiez le lien affiché pour confirmer votre compte.
 1. Importer le dépôt dans Vercel.
 2. **Root Directory** : `apps/web` (Vercel détecte pnpm et le monorepo).
 3. Renseigner les variables d'environnement de `.env.example` (Production et Preview).
-4. Dans MongoDB Atlas, autoriser l'accès réseau depuis Vercel.
-5. Exécuter `pnpm db:migrate` avec l'URI de production avant le premier déploiement.
+   Pour les e-mails, la boîte Hostinger suffit : `SMTP_HOST=smtp.hostinger.com`, `SMTP_PORT=465`,
+   `SMTP_USER` et `SMTP_PASSWORD` = adresse et mot de passe de la boîte, `EMAIL_FROM` avec la même adresse.
+4. Dans MongoDB Atlas, autoriser l'accès réseau depuis Vercel (`0.0.0.0/0`).
+5. Les index MongoDB sont créés automatiquement au premier accès (`pnpm db:migrate` reste disponible).

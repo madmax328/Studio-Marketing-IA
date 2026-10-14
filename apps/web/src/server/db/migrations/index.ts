@@ -8,7 +8,10 @@ export interface Migration {
   up(db: Db): Promise<void>;
 }
 
-/** Liste ordonnée des migrations. Ajouter les nouvelles à la fin, ne jamais modifier une migration appliquée. */
+/**
+ * Liste ordonnée des migrations. Ajouter les nouvelles à la fin, ne jamais modifier une migration appliquée.
+ * Chaque migration doit être idempotente : elle peut être lancée par plusieurs instances en même temps.
+ */
 export const MIGRATIONS: readonly Migration[] = [migration001];
 
 export async function runMigrations(db: Db, log: (message: string) => void = console.log): Promise<string[]> {
@@ -20,7 +23,13 @@ export async function runMigrations(db: Db, log: (message: string) => void = con
     if (applied.has(migration.id)) continue;
     log(`→ Migration ${migration.id}…`);
     await migration.up(db);
-    await migrations.insertOne({ _id: migration.id, appliedAt: new Date() });
+    try {
+      await migrations.insertOne({ _id: migration.id, appliedAt: new Date() });
+    } catch (error) {
+      // Une autre instance a appliqué la même migration en parallèle : les migrations sont idempotentes.
+      if (!(typeof error === "object" && error !== null && "code" in error && error.code === 11000)) throw error;
+      continue;
+    }
     newlyApplied.push(migration.id);
   }
 
