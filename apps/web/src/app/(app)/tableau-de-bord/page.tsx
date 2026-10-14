@@ -22,9 +22,14 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Tableau de bord</h1>
-        <button type="button" disabled className={buttonStyles("primary")} title="Disponible avec le module Campagnes">
-          Créer une campagne · bientôt
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/studio" className={buttonStyles("primary")}>
+            Générer une publication
+          </Link>
+          <button type="button" disabled className={buttonStyles("secondary")} title="Disponible avec le module Campagnes">
+            Créer une campagne · bientôt
+          </button>
+        </div>
       </header>
 
       {isEmpty ? (

@@ -7,11 +7,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/migrate.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.133.0",
     "@smia/shared": "workspace:*",
     "better-auth": "1.7.7",
     "mongodb": "7.7.0",

@@ -1,8 +1,9 @@
 import { ObjectId, type Db } from "mongodb";
-import { brandInputSchema, roleHasPermission, type BrandInput } from "@smia/shared";
+import { brandInputSchema, type BrandInput } from "@smia/shared";
 import { collections, type BrandDoc } from "@/server/db/collections";
 import { recordAudit } from "@/server/services/audit";
 import { UserFacingError } from "@/server/services/errors";
+import { assertPermission } from "@/server/services/permissions";
 import type { WorkspaceAccess } from "@/server/services/workspaces";
 
 /**
@@ -94,10 +95,4 @@ function parseBrand(input: unknown): BrandInput {
     throw new UserFacingError(parsed.error.issues[0]?.message ?? "Données invalides.", "invalid_input");
   }
   return parsed.data;
-}
-
-function assertPermission(access: WorkspaceAccess, permission: Parameters<typeof roleHasPermission>[1]) {
-  if (!roleHasPermission(access.role, permission)) {
-    throw new UserFacingError("Vous n'avez pas les droits nécessaires pour cette action.", "forbidden");
-  }
 }

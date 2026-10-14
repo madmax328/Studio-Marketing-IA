@@ -29,7 +29,7 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
 | Étape | Contenu | État |
 |---|---|---|
 | 1. Fondations | Monorepo, MongoDB, authentification, espaces de travail, « Ma marque », tableau de bord, paramètres (export, suppression) | **Fait** |
-| 2. Création de contenu | Fournisseur IA texte (interface indépendante du modèle), génération de publications adaptées à chaque réseau, éditeur, variantes | À faire |
+| 2. Création de contenu | Fournisseur IA texte (interface indépendante du modèle), génération de publications adaptées à chaque réseau, éditeur, variantes, brouillons | **Fait** |
 | 3. Visuels | Stockage objet (S3/R2), médiathèque, logo, génération d'images cloud + gabarits avec incrustation du logo et des couleurs | À faire |
 | 4. Campagnes et calendrier | Assistant de campagne, calendrier (mois, semaine, liste), fuseaux horaires | À faire |
 | 5. Publication automatique | File de tâches, OAuth et jetons chiffrés, publication programmée, reprises, idempotence, notifications d'échec | À faire |

@@ -24,7 +24,11 @@
         "SMTP_HOST",
         "SMTP_PORT",
         "SMTP_USER",
-        "SMTP_PASSWORD"
+        "SMTP_PASSWORD",
+        "ANTHROPIC_API_KEY",
+        "AI_TEXT_PROVIDER",
+        "AI_TEXT_MODEL",
+        "AI_TEXT_EFFORT"
       ]
     },
     "dev": {

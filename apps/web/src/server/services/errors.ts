@@ -2,7 +2,7 @@
 export class UserFacingError extends Error {
   constructor(
     message: string,
-    readonly code: "not_found" | "forbidden" | "limit_reached" | "invalid_input",
+    readonly code: "not_found" | "forbidden" | "limit_reached" | "invalid_input" | "consent_required" | "unavailable" | "conflict",
   ) {
     super(message);
     this.name = "UserFacingError";

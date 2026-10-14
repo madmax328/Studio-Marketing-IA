@@ -1,5 +1,12 @@
 import type { Db, ObjectId } from "mongodb";
-import type { BrandInput, PostStatus, SocialNetworkId, WorkspaceRole } from "@smia/shared";
+import type {
+  BrandInput,
+  GenerationOutput,
+  GenerationRequest,
+  PostStatus,
+  SocialNetworkId,
+  WorkspaceRole,
+} from "@smia/shared";
 
 /**
  * Types des documents MongoDB de l'application.
@@ -16,7 +23,9 @@ export interface WorkspaceDoc {
   /** Espace personnel créé automatiquement pour chaque utilisateur. */
   personal: boolean;
   /** Limites de l'offre. Configurables en base, jamais codées en dur dans l'interface. */
-  limits: { maxBrands: number };
+  limits: { maxBrands: number; monthlyTextGenerations?: number };
+  /** Accord donné pour envoyer les données de la marque à un fournisseur d'IA externe (RGPD). */
+  aiConsent?: { provider: string; acceptedAt: Date; acceptedByUserId: string };
   schemaVersion: 1;
   createdAt: Date;
   updatedAt: Date;
@@ -48,6 +57,10 @@ export interface PostDoc {
   network: SocialNetworkId;
   status: PostStatus;
   text: string;
+  /** Rôle de la publication expliqué par l'IA. */
+  rationale: string;
+  /** Génération d'origine, si la publication a été créée par l'IA. */
+  generationJobId: ObjectId | null;
   /** Date prévue en UTC. */
   scheduledAt: Date | null;
   /** Fuseau de l'utilisateur au moment de la programmation, pour l'affichage et les changements d'heure. */
@@ -65,6 +78,25 @@ export interface SocialAccountDoc {
   network: SocialNetworkId;
   status: "connected" | "expired" | "revoked" | "error";
   displayName: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GenerationJobDoc {
+  _id: ObjectId;
+  workspaceId: ObjectId;
+  brandId: ObjectId;
+  userId: string;
+  /** Identifiant fourni par le navigateur : une même demande n'est générée (et comptée) qu'une fois. */
+  requestId: string;
+  kind: "text";
+  provider: string;
+  model: string | null;
+  status: "processing" | "succeeded" | "failed";
+  request: Omit<GenerationRequest, "requestId" | "brandId">;
+  result: GenerationOutput | null;
+  error: string | null;
+  usage: { inputTokens: number; outputTokens: number } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -92,6 +124,7 @@ export const COLLECTIONS = {
   posts: "posts",
   socialAccounts: "socialAccounts",
   auditLogs: "auditLogs",
+  generationJobs: "generationJobs",
   migrations: "migrations",
 } as const;
 
@@ -103,6 +136,7 @@ export function collections(db: Db) {
     posts: db.collection<PostDoc>(COLLECTIONS.posts),
     socialAccounts: db.collection<SocialAccountDoc>(COLLECTIONS.socialAccounts),
     auditLogs: db.collection<AuditLogDoc>(COLLECTIONS.auditLogs),
+    generationJobs: db.collection<GenerationJobDoc>(COLLECTIONS.generationJobs),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }

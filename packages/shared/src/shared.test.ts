@@ -80,3 +80,24 @@ describe("statuts de publication", () => {
     expect(canTransitionPost("failed", "scheduled")).toBe(true);
   });
 });
+
+describe("génération", () => {
+  it("compose le texte avec des hashtags propres et uniques", async () => {
+    const { composePostText } = await import("./index");
+    expect(composePostText({ text: " Bonjour ", hashtags: ["#pain", "pain", "fait maison", ""] })).toBe(
+      "Bonjour\n\n#pain #faitmaison",
+    );
+  });
+
+  it("valide une demande de génération", async () => {
+    const { generationRequestSchema } = await import("./index");
+    const ok = generationRequestSchema.safeParse({
+      brandId: "abc",
+      networks: ["instagram", "linkedin"],
+      brief: "Nouveau menu d'automne",
+      requestId: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+    });
+    expect(ok.success).toBe(true);
+    expect(generationRequestSchema.safeParse({ brandId: "abc", networks: [], brief: "x", requestId: "1" }).success).toBe(false);
+  });
+});

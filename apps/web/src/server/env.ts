@@ -21,6 +21,11 @@ const serverEnvSchema = z.object({
   SMTP_PORT: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().default(465)),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
+  // Génération de texte par IA
+  AI_TEXT_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["anthropic"]).default("anthropic")),
+  ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  AI_TEXT_MODEL: z.preprocess(emptyToUndefined, z.string().default("claude-opus-5-5")),
+  AI_TEXT_EFFORT: z.preprocess(emptyToUndefined, z.enum(["low", "medium", "high"]).default("medium")),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

@@ -4,7 +4,9 @@ import { collections, type WorkspaceDoc } from "@/server/db/collections";
 import { recordAudit } from "@/server/services/audit";
 
 /** Limites appliquées à un nouvel espace tant que la facturation n'est pas en place. */
-export const DEFAULT_WORKSPACE_LIMITS: WorkspaceDoc["limits"] = { maxBrands: 1 };
+export const DEFAULT_WORKSPACE_LIMITS = { maxBrands: 1, monthlyTextGenerations: 50 } satisfies Required<
+  WorkspaceDoc["limits"]
+>;
 
 export interface WorkspaceAccess {
   workspace: WorkspaceDoc;

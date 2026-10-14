@@ -1,0 +1,63 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { roleHasPermission } from "@smia/shared";
+import { AiConsent } from "@/components/studio/ai-consent";
+import { StudioClient } from "@/components/studio/studio-client";
+import { buttonStyles } from "@/components/ui/button";
+import { Alert, Card } from "@/components/ui/card";
+import { getTextProvider } from "@/server/ai";
+import { getDb } from "@/server/db/client";
+import { listBrands } from "@/server/services/brands";
+import {
+  countMonthlyTextGenerations,
+  hasAiConsent,
+  monthlyTextGenerationLimit,
+} from "@/server/services/generation";
+import { requireWorkspace } from "@/server/session";
+
+export const metadata: Metadata = { title: "Studio de contenu" };
+
+/** La génération peut prendre jusqu'à une minute. */
+export const maxDuration = 120;
+
+export default async function StudioPage() {
+  const access = await requireWorkspace();
+  const db = getDb();
+  const provider = getTextProvider();
+  const brands = await listBrands(db, access);
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold">Studio de contenu</h1>
+        <p className="text-sm text-muted">
+          Décrivez ce que vous voulez dire : l&apos;IA rédige une publication adaptée à chaque réseau.
+        </p>
+      </header>
+
+      {!roleHasPermission(access.role, "content:write") ? (
+        <Alert>Votre rôle permet de consulter les publications, pas d&apos;en créer.</Alert>
+      ) : !provider.isConfigured() ? (
+        <Alert>La génération de texte n&apos;est pas encore activée sur cette installation.</Alert>
+      ) : brands.length === 0 ? (
+        <Card className="space-y-3">
+          <p className="text-sm">Décrivez d&apos;abord votre marque : l&apos;IA en a besoin pour écrire à votre place.</p>
+          <Link href="/ma-marque/nouvelle" className={buttonStyles("primary")}>
+            Créer ma marque
+          </Link>
+        </Card>
+      ) : !hasAiConsent(access, provider) ? (
+        <AiConsent
+          providerLabel={provider.label}
+          dataProcessor={provider.dataProcessor}
+          canAccept={roleHasPermission(access.role, "workspace:manage")}
+        />
+      ) : (
+        <StudioClient
+          brands={brands.map((brand) => ({ id: brand._id.toHexString(), name: brand.name, tone: brand.tone }))}
+          remaining={Math.max(0, monthlyTextGenerationLimit(access) - (await countMonthlyTextGenerations(db, access)))}
+        />
+      )}
+    </div>
+  );
+}

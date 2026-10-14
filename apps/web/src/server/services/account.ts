@@ -18,6 +18,7 @@ export async function deleteUserData(userId: string, db: Db = getDb()): Promise<
   if (ownedIds.length > 0) {
     await c.brands.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.posts.deleteMany({ workspaceId: { $in: ownedIds } });
+    await c.generationJobs.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.socialAccounts.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.workspaceMembers.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.auditLogs.deleteMany({ workspaceId: { $in: ownedIds } });
@@ -44,6 +45,9 @@ export async function exportUserData(user: { id: string; name: string; email: st
     workspaces: ownedWorkspaces,
     brands: await c.brands.find({ workspaceId: { $in: ownedIds } }).toArray(),
     posts: await c.posts.find({ workspaceId: { $in: ownedIds } }).toArray(),
+    generations: await c.generationJobs
+      .find({ workspaceId: { $in: ownedIds } }, { projection: { request: 1, result: 1, status: 1, createdAt: 1 } })
+      .toArray(),
     socialAccounts: await c.socialAccounts
       .find({ workspaceId: { $in: ownedIds } }, { projection: { network: 1, displayName: 1, status: 1, createdAt: 1 } })
       .toArray(),

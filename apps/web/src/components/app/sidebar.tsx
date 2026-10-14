@@ -3,13 +3,15 @@ import { SignOutButton } from "@/components/app/sign-out-button";
 
 const NAVIGATION = [
   { href: "/tableau-de-bord", label: "Tableau de bord" },
+  { href: "/studio", label: "Studio de contenu" },
+  { href: "/publications", label: "Publications" },
   { href: "/ma-marque", label: "Ma marque" },
   { href: "/reseaux", label: "Réseaux sociaux" },
   { href: "/parametres", label: "Paramètres" },
 ];
 
 /** Modules de la V1 pas encore livrés : affichés comme tels, sans lien factice. */
-const UPCOMING = ["Campagnes", "Studio de contenu", "Calendrier", "Statistiques"];
+const UPCOMING = ["Campagnes", "Images", "Calendrier", "Statistiques"];
 
 export function Sidebar({ userName, workspaceName }: { userName: string; workspaceName: string }) {
   return (

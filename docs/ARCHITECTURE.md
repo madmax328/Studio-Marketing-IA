@@ -26,6 +26,8 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Migrations | Appliquées automatiquement au premier accès de chaque instance | Aucune commande à lancer après un déploiement Vercel |
 | Validation | Zod 4, schémas partagés dans `@smia/shared` | Même règles côté formulaire et côté serveur |
 | Migrations | Scripts versionnés (`apps/web/src/server/db/migrations`), table `migrations` | Index et changements de structure traçables |
+| IA texte | Interface `TextGenerationProvider` (`src/server/ai`), premier fournisseur : Claude (SDK officiel Anthropic, sortie structurée validée par Zod, repli automatique en cas de refus) | Interface prête pour d'autres fournisseurs et le mode local |
+| Garde-fous IA | Accord RGPD par espace avant tout envoi, quota mensuel configurable (`limits.monthlyTextGenerations`), une génération par `requestId` | Coûts maîtrisés, pas de double facturation |
 | Tests | Vitest ; tests d'intégration sur MongoDB réel en CI (`TEST_MONGODB_URI`) | Vérifie l'isolation des données sur une vraie base |
 
 ## Décisions à prendre aux étapes suivantes
@@ -34,7 +36,6 @@ leur étape commencera, pour ne pas maintenir de code vide.
 |---|---|---|
 | File de tâches et programmation | **Inngest** (fonctionne sur Vercel, `sleepUntil`, reprises, idempotence) ; alternative : Upstash QStash | 5 |
 | Stockage des médias | **Cloudflare R2** (compatible S3, pas de frais de sortie) | 3 |
-| Fournisseur IA texte | Interface `TextGenerationProvider`, premier fournisseur à choisir selon coût/qualité en français | 2 |
 | Fournisseur IA image | Interface `ImageGenerationProvider` ; logo et texte incrustés par gabarit, jamais générés par le modèle | 3 |
 | Workers vidéo (V2) | Service hors Vercel (Railway, Fly.io…) ou service de rendu externe | V2 |
 
@@ -65,7 +66,9 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | `auditLogs` | Événements sensibles |
 | `migrations` | Migrations appliquées |
 
-Collections prévues : `campaigns`, `mediaAssets`, `generationJobs`, `creditAccounts`, `creditTransactions`,
+| `generationJobs` | Générations IA : demande, résultat, statut, consommation |
+
+Collections prévues : `campaigns`, `mediaAssets`, `creditAccounts`, `creditTransactions`,
 `subscriptions`, `analyticsSnapshots`, `notifications`.
 
 ## Particularités de Next.js 16

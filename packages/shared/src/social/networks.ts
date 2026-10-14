@@ -147,6 +147,14 @@ export function isSocialNetworkId(value: string): value is SocialNetworkId {
   return (SOCIAL_NETWORK_IDS as readonly string[]).includes(value);
 }
 
+/** Vérifie uniquement la longueur du texte. Retourne le problème en français, ou null. */
+export function checkTextLength(networkId: SocialNetworkId, text: string): string | null {
+  const network = SOCIAL_NETWORKS[networkId];
+  return text.length > network.maxTextLength
+    ? `Le texte dépasse la limite de ${network.label} (${text.length} / ${network.maxTextLength} caractères).`
+    : null;
+}
+
 /**
  * Vérifie qu'un contenu respecte les contraintes connues d'un réseau.
  * Retourne la liste des problèmes en français (vide si tout est conforme).
@@ -158,11 +166,8 @@ export function checkContentCompatibility(
   const network = SOCIAL_NETWORKS[networkId];
   const problems: string[] = [];
 
-  if (content.text.length > network.maxTextLength) {
-    problems.push(
-      `Le texte dépasse la limite de ${network.label} (${content.text.length} / ${network.maxTextLength} caractères).`,
-    );
-  }
+  const lengthProblem = checkTextLength(networkId, content.text);
+  if (lengthProblem) problems.push(lengthProblem);
 
   if (content.media.length === 0 && !network.allowsTextOnly) {
     problems.push(`${network.label} exige une image ou une vidéo.`);
