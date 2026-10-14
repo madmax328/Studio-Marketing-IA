@@ -1,0 +1,16 @@
+node_modules/
+.next/
+dist/
+out/
+.turbo/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets : ne jamais committer de fichier .env réel
+.env
+.env.*
+!.env.example
+
+.DS_Store
+.vercel

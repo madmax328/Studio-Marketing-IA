@@ -1,0 +1,44 @@
+import Link from "next/link";
+import { SignOutButton } from "@/components/app/sign-out-button";
+
+const NAVIGATION = [
+  { href: "/tableau-de-bord", label: "Tableau de bord" },
+  { href: "/ma-marque", label: "Ma marque" },
+  { href: "/reseaux", label: "Réseaux sociaux" },
+  { href: "/parametres", label: "Paramètres" },
+];
+
+/** Modules de la V1 pas encore livrés : affichés comme tels, sans lien factice. */
+const UPCOMING = ["Campagnes", "Studio de contenu", "Calendrier", "Statistiques"];
+
+export function Sidebar({ userName, workspaceName }: { userName: string; workspaceName: string }) {
+  return (
+    <aside className="flex w-full flex-col gap-6 border-b border-border bg-surface p-4 md:min-h-screen md:w-64 md:border-r md:border-b-0">
+      <div>
+        <p className="font-semibold">Studio Marketing IA</p>
+        <p className="truncate text-xs text-muted">{workspaceName}</p>
+      </div>
+      <nav aria-label="Navigation principale" className="flex flex-wrap gap-1 md:flex-col">
+        {NAVIGATION.map((item) => (
+          <Link key={item.href} href={item.href} className="rounded-lg px-3 py-2 text-sm hover:bg-background">
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+      <div className="hidden md:block">
+        <p className="px-3 text-xs font-medium tracking-wide text-muted uppercase">Bientôt</p>
+        <ul className="mt-1">
+          {UPCOMING.map((label) => (
+            <li key={label} className="px-3 py-1.5 text-sm text-muted">
+              {label}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="mt-auto space-y-1 border-t border-border pt-4">
+        <p className="truncate px-3 text-sm">{userName}</p>
+        <SignOutButton />
+      </div>
+    </aside>
+  );
+}
