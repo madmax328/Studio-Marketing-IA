@@ -42,6 +42,8 @@ export interface WorkspaceMemberDoc {
 
 export interface BrandDoc extends BrandInput {
   _id: ObjectId;
+  /** Logo choisi dans la médiathèque. */
+  logoMediaId?: ObjectId | null;
   workspaceId: ObjectId;
   createdByUserId: string;
   schemaVersion: 1;
@@ -61,6 +63,8 @@ export interface PostDoc {
   rationale: string;
   /** Génération d'origine, si la publication a été créée par l'IA. */
   generationJobId: ObjectId | null;
+  /** Médias joints (images), dans l'ordre d'affichage. Absent sur les anciennes publications. */
+  mediaIds?: ObjectId[];
   /** Date prévue en UTC. */
   scheduledAt: Date | null;
   /** Fuseau de l'utilisateur au moment de la programmation, pour l'affichage et les changements d'heure. */
@@ -78,6 +82,27 @@ export interface SocialAccountDoc {
   network: SocialNetworkId;
   status: "connected" | "expired" | "revoked" | "error";
   displayName: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MediaAssetDoc {
+  _id: ObjectId;
+  workspaceId: ObjectId;
+  brandId: ObjectId | null;
+  createdByUserId: string;
+  kind: "image";
+  /** Origine : envoyé par l'utilisateur ou créé avec un gabarit. */
+  source: "upload" | "template";
+  name: string;
+  /** Type réel détecté côté serveur (pas celui annoncé par le navigateur). */
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+  size: number;
+  width: number;
+  height: number;
+  /** Chemin dans le stockage objet ; toujours préfixé par ws/<workspaceId>/. */
+  storageKey: string;
+  status: "ready";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -125,6 +150,7 @@ export const COLLECTIONS = {
   socialAccounts: "socialAccounts",
   auditLogs: "auditLogs",
   generationJobs: "generationJobs",
+  mediaAssets: "mediaAssets",
   migrations: "migrations",
 } as const;
 
@@ -137,6 +163,7 @@ export function collections(db: Db) {
     socialAccounts: db.collection<SocialAccountDoc>(COLLECTIONS.socialAccounts),
     auditLogs: db.collection<AuditLogDoc>(COLLECTIONS.auditLogs),
     generationJobs: db.collection<GenerationJobDoc>(COLLECTIONS.generationJobs),
+    mediaAssets: db.collection<MediaAssetDoc>(COLLECTIONS.mediaAssets),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }

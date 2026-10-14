@@ -43,3 +43,21 @@ export const requireWorkspace = cache(async (): Promise<WorkspaceAccess & { user
   if (!access) throw new Error("Espace personnel inaccessible : adhésion manquante.");
   return { ...access, userId: user.id };
 });
+
+/**
+ * Variante pour les routes API : retourne null au lieu de rediriger.
+ * Mêmes vérifications que requireWorkspace (session, e-mail vérifié, adhésion en base).
+ */
+export async function getWorkspaceForApi(): Promise<(WorkspaceAccess & { userId: string }) | null> {
+  const session = await getSession();
+  if (!session?.user.emailVerified) return null;
+  const db = getDb();
+  const preferred = (await cookies()).get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  if (preferred) {
+    const access = await getWorkspaceAccess(db, session.user.id, preferred);
+    if (access) return { ...access, userId: session.user.id };
+  }
+  const personal = await ensurePersonalWorkspace(db, { id: session.user.id, name: session.user.name });
+  const access = await getWorkspaceAccess(db, session.user.id, personal._id.toHexString());
+  return access ? { ...access, userId: session.user.id } : null;
+}

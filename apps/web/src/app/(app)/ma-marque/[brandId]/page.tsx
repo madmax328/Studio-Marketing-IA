@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BRAND_FIELD_LABELS, missingRecommendedFields } from "@smia/shared";
 import { BrandForm } from "@/components/brand/brand-form";
-import { Alert } from "@/components/ui/card";
+import { BrandLogo } from "@/components/brand/brand-logo";
+import { Alert, Card } from "@/components/ui/card";
 import { updateBrandAction } from "@/server/actions/brands";
 import { getDb } from "@/server/db/client";
 import { getBrand } from "@/server/services/brands";
+import { listMedia } from "@/server/services/media";
 import { UserFacingError } from "@/server/services/errors";
 import { requireWorkspace } from "@/server/session";
 
@@ -21,7 +23,8 @@ export default async function BrandPage({ params, searchParams }: PageProps<"/ma
     throw error;
   });
 
-  const { _id, workspaceId, createdByUserId, schemaVersion, createdAt, updatedAt, ...input } = brand;
+  const { _id, workspaceId, createdByUserId, schemaVersion, createdAt, updatedAt, logoMediaId, ...input } = brand;
+  const images = await listMedia(getDb(), access, 1);
   const missing = missingRecommendedFields(input);
 
   return (
@@ -33,6 +36,14 @@ export default async function BrandPage({ params, searchParams }: PageProps<"/ma
           Pour de meilleures publications, complétez : {missing.map((field) => BRAND_FIELD_LABELS[field]).join(", ")}.
         </Alert>
       ) : null}
+      <Card className="space-y-3">
+        <h2 className="font-semibold">Logo</h2>
+        <BrandLogo
+          brandId={brandId}
+          currentLogoId={logoMediaId ? logoMediaId.toHexString() : null}
+          images={images.items.map((item) => ({ id: item._id.toHexString(), name: item.name }))}
+        />
+      </Card>
       <BrandForm action={updateBrandAction.bind(null, brandId)} initial={input} submitLabel="Enregistrer" />
     </div>
   );

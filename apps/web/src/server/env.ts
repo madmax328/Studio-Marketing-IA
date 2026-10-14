@@ -26,6 +26,9 @@ const serverEnvSchema = z.object({
   ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   AI_TEXT_MODEL: z.preprocess(emptyToUndefined, z.string().default("claude-opus-5-5")),
   AI_TEXT_EFFORT: z.preprocess(emptyToUndefined, z.enum(["low", "medium", "high"]).default("medium")),
+  // Stockage des médias (Vercel Blob). Le jeton est ajouté automatiquement par Vercel à la connexion d'un store.
+  BLOB_READ_WRITE_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
+  MEDIA_BLOB_ACCESS: z.preprocess(emptyToUndefined, z.enum(["private", "public"]).default("private")),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

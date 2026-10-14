@@ -11,6 +11,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   transpilePackages: ["@smia/shared"],
   poweredByHeader: false,
+  // Polices des visuels, lues à l'exécution : à inclure dans le déploiement.
+  outputFileTracingIncludes: { "/**": ["./assets/fonts/**"] },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -1,5 +1,11 @@
 import { ObjectId, type Db, type Filter } from "mongodb";
-import { checkTextLength, EDITABLE_POST_STATUSES, postDraftSchema, type PostStatus } from "@smia/shared";
+import {
+  checkTextLength,
+  EDITABLE_POST_STATUSES,
+  postDraftSchema,
+  SOCIAL_NETWORKS,
+  type PostStatus,
+} from "@smia/shared";
 import { collections, type PostDoc } from "@/server/db/collections";
 import { recordAudit } from "@/server/services/audit";
 import { getBrand } from "@/server/services/brands";
@@ -146,4 +152,38 @@ function assertEditable(post: PostDoc) {
 function assertTextFits(network: PostDoc["network"], text: string) {
   const problem = checkTextLength(network, text);
   if (problem) throw new UserFacingError(problem, "invalid_input");
+}
+
+export const MAX_MEDIA_PER_POST = 10;
+
+/** Remplace les médias joints à une publication (uniquement des médias du même espace). */
+export async function setPostMedia(db: Db, access: WorkspaceAccess, postId: string, rawIds: unknown): Promise<PostDoc> {
+  assertPermission(access, "content:write");
+  const ids = Array.isArray(rawIds) ? rawIds.filter((id): id is string => typeof id === "string") : [];
+  if (ids.length > MAX_MEDIA_PER_POST) {
+    throw new UserFacingError(`${MAX_MEDIA_PER_POST} images maximum par publication.`, "invalid_input");
+  }
+  const post = await getPost(db, access, postId);
+  assertEditable(post);
+  const network = SOCIAL_NETWORKS[post.network];
+  if (ids.length > 0 && !network.publishableMedia.includes("image")) {
+    throw new UserFacingError(`${network.label} n'accepte pas d'images.`, "invalid_input");
+  }
+  if (ids.length > 1 && !network.publishableMedia.includes("carousel")) {
+    throw new UserFacingError(`${network.label} n'accepte qu'une image par publication.`, "invalid_input");
+  }
+
+  const objectIds = [...new Set(ids)].filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  const found = await collections(db)
+    .mediaAssets.find({ _id: { $in: objectIds }, workspaceId: access.workspace._id }, { projection: { _id: 1 } })
+    .toArray();
+  if (found.length !== objectIds.length) throw new UserFacingError("Média introuvable.", "not_found");
+
+  const updated = await collections(db).posts.findOneAndUpdate(
+    { _id: post._id, workspaceId: access.workspace._id, status: { $in: [...EDITABLE_POST_STATUSES] } },
+    { $set: { mediaIds: objectIds, updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+  if (!updated) throw new UserFacingError("Cette publication ne peut plus être modifiée.", "conflict");
+  return updated;
 }

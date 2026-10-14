@@ -28,7 +28,9 @@
         "ANTHROPIC_API_KEY",
         "AI_TEXT_PROVIDER",
         "AI_TEXT_MODEL",
-        "AI_TEXT_EFFORT"
+        "AI_TEXT_EFFORT",
+        "BLOB_READ_WRITE_TOKEN",
+        "MEDIA_BLOB_ACCESS"
       ]
     },
     "dev": {

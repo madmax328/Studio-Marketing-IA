@@ -28,6 +28,9 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Migrations | Scripts versionnés (`apps/web/src/server/db/migrations`), table `migrations` | Index et changements de structure traçables |
 | IA texte | Interface `TextGenerationProvider` (`src/server/ai`), premier fournisseur : Claude (SDK officiel Anthropic, sortie structurée validée par Zod, repli automatique en cas de refus) | Interface prête pour d'autres fournisseurs et le mode local |
 | Garde-fous IA | Accord RGPD par espace avant tout envoi, quota mensuel configurable (`limits.monthlyTextGenerations`), une génération par `requestId` | Coûts maîtrisés, pas de double facturation |
+| Médias | Vercel Blob en mode privé derrière l'interface `MediaStorage` (`src/server/media/storage.ts`), fichiers sous `ws/<workspaceId>/`, servis par `/api/medias/<id>/fichier` après contrôle d'accès | Simple à brancher sur Vercel ; passage à un stockage S3/R2 possible sans toucher au reste |
+| Envoi de fichiers | Envoi direct du navigateur vers le stockage (jeton limité : emplacement, type, 15 Mo), puis vérification du contenu réel par sharp avant inscription en base | Pas de limite de taille des fonctions Vercel ; pas de faux fichiers |
+| Visuels | Gabarits rendus par `next/og` (Satori), convertis en JPEG par sharp ; police Montserrat (licence OFL, `apps/web/assets/fonts`) | Texte, logo et couleurs exacts ; JPEG accepté par toutes les API sociales |
 | Tests | Vitest ; tests d'intégration sur MongoDB réel en CI (`TEST_MONGODB_URI`) | Vérifie l'isolation des données sur une vraie base |
 
 ## Décisions à prendre aux étapes suivantes
@@ -35,7 +38,7 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Sujet | Recommandation | Étape |
 |---|---|---|
 | File de tâches et programmation | **Inngest** (fonctionne sur Vercel, `sleepUntil`, reprises, idempotence) ; alternative : Upstash QStash | 5 |
-| Stockage des médias | **Cloudflare R2** (compatible S3, pas de frais de sortie) | 3 |
+| Génération d'images par IA | Interface `ImageGenerationProvider` à ajouter ; fournisseur à choisir (coût, qualité, conditions commerciales) | 3 bis |
 | Fournisseur IA image | Interface `ImageGenerationProvider` ; logo et texte incrustés par gabarit, jamais générés par le modèle | 3 |
 | Workers vidéo (V2) | Service hors Vercel (Railway, Fly.io…) ou service de rendu externe | V2 |
 
@@ -68,7 +71,9 @@ leur étape commencera, pour ne pas maintenir de code vide.
 
 | `generationJobs` | Générations IA : demande, résultat, statut, consommation |
 
-Collections prévues : `campaigns`, `mediaAssets`, `creditAccounts`, `creditTransactions`,
+| `mediaAssets` | Médiathèque : type réel, dimensions, emplacement de stockage |
+
+Collections prévues : `campaigns`, `creditAccounts`, `creditTransactions`,
 `subscriptions`, `analyticsSnapshots`, `notifications`.
 
 ## Particularités de Next.js 16

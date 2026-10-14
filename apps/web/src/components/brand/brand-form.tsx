@@ -84,7 +84,7 @@ export function BrandForm({ action, initial, submitLabel }: BrandFormProps) {
           <TextField label="Couleurs de marque" name="brandColors" placeholder="#4F46E5, #F59E0B" defaultValue={join(initial?.brandColors)} hint="Format #RRGGBB, séparées par des virgules." />
           <TextField label="Polices autorisées" name="allowedFonts" defaultValue={join(initial?.allowedFonts)} hint="Séparées par des virgules." />
         </div>
-        <p className="text-xs text-muted">Le logo et les images de référence s&apos;ajouteront avec la médiathèque.</p>
+        <p className="text-xs text-muted">Le logo se choisit dans la section « Logo » de cette page, depuis la médiathèque.</p>
       </Card>
 
       <Card className="space-y-4">

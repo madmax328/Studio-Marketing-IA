@@ -5,13 +5,14 @@ const NAVIGATION = [
   { href: "/tableau-de-bord", label: "Tableau de bord" },
   { href: "/studio", label: "Studio de contenu" },
   { href: "/publications", label: "Publications" },
+  { href: "/medias", label: "Médiathèque" },
   { href: "/ma-marque", label: "Ma marque" },
   { href: "/reseaux", label: "Réseaux sociaux" },
   { href: "/parametres", label: "Paramètres" },
 ];
 
 /** Modules de la V1 pas encore livrés : affichés comme tels, sans lien factice. */
-const UPCOMING = ["Campagnes", "Images", "Calendrier", "Statistiques"];
+const UPCOMING = ["Campagnes", "Calendrier", "Vidéos", "Statistiques"];
 
 export function Sidebar({ userName, workspaceName }: { userName: string; workspaceName: string }) {
   return (

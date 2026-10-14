@@ -101,3 +101,18 @@ describe("génération", () => {
     expect(generationRequestSchema.safeParse({ brandId: "abc", networks: [], brief: "x", requestId: "1" }).success).toBe(false);
   });
 });
+
+describe("médias", () => {
+  it("choisit une couleur de texte lisible", async () => {
+    const { readableTextColor } = await import("./index");
+    expect(readableTextColor("#ffffff")).toBe("#111111");
+    expect(readableTextColor("#4f46e5")).toBe("#ffffff");
+    expect(readableTextColor("#facc15")).toBe("#111111");
+  });
+
+  it("valide une demande de visuel", async () => {
+    const { templateRenderSchema } = await import("./index");
+    expect(templateRenderSchema.safeParse({ brandId: "a", templateId: "promo", format: "square", title: "Soldes" }).success).toBe(true);
+    expect(templateRenderSchema.safeParse({ brandId: "a", templateId: "promo", format: "tiny", title: "Soldes" }).success).toBe(false);
+  });
+});

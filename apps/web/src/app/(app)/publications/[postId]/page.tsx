@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EDITABLE_POST_STATUSES, POST_STATUS_LABELS, roleHasPermission, SOCIAL_NETWORKS } from "@smia/shared";
 import { PostEditor } from "@/components/posts/post-editor";
+import { PostMediaPicker } from "@/components/posts/post-media-picker";
 import { Alert, Card } from "@/components/ui/card";
 import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
-import { getPost } from "@/server/services/posts";
+import { listMedia } from "@/server/services/media";
+import { getPost, MAX_MEDIA_PER_POST } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Publication" };
@@ -19,6 +21,13 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
     throw error;
   });
   const network = SOCIAL_NETWORKS[post.network];
+  const images = await listMedia(getDb(), access, 1);
+  const attached = (post.mediaIds ?? []).map((id) => id.toHexString());
+  // Les images jointes restent proposées même si elles ne sont plus dans la première page de la médiathèque.
+  const choices = [
+    ...attached.filter((id) => !images.items.some((item) => item._id.toHexString() === id)).map((id) => ({ id, name: "Image jointe" })),
+    ...images.items.map((item) => ({ id: item._id.toHexString(), name: item.name })),
+  ];
   const editable = EDITABLE_POST_STATUSES.includes(post.status) && roleHasPermission(access.role, "content:write");
 
   return (
@@ -31,12 +40,27 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
         <p className="text-sm text-muted">{POST_STATUS_LABELS[post.status]}</p>
       </header>
       {post.rationale ? <Alert>{post.rationale}</Alert> : null}
-      {!network.allowsTextOnly ? (
-        <Alert>{network.label} exige une image ou une vidéo : vous pourrez l&apos;ajouter avec la médiathèque.</Alert>
+      {!network.allowsTextOnly && attached.length === 0 ? (
+        <Alert tone="error">
+          {network.label} exige {network.publishableMedia.includes("image") ? "une image" : "une vidéo"} pour publier.
+          {network.publishableMedia.includes("image") ? " Choisissez-en une ci-dessous." : " Les vidéos arrivent dans une prochaine étape."}
+        </Alert>
       ) : null}
       <Card>
         <PostEditor postId={postId} network={post.network} initialText={post.text} editable={editable} />
       </Card>
+      {network.publishableMedia.includes("image") ? (
+        <Card className="space-y-3">
+          <h2 className="font-semibold">Images</h2>
+          <PostMediaPicker
+            postId={postId}
+            initial={attached}
+            images={choices}
+            editable={editable}
+            max={network.publishableMedia.includes("carousel") ? MAX_MEDIA_PER_POST : 1}
+          />
+        </Card>
+      ) : null}
       <p className="text-xs text-muted">
         La programmation et la publication automatique arrivent avec le calendrier et la connexion des réseaux.
       </p>
