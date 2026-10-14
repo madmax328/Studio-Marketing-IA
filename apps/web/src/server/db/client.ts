@@ -29,14 +29,20 @@ export function getDb(): Db {
 }
 
 /**
- * Applique les migrations en attente une fois par instance, au premier accès.
- * Permet de déployer sur Vercel sans lancer `pnpm db:migrate` à la main.
- * En cas d'échec, la tentative sera refaite à la requête suivante.
+ * Garantit une connexion active, puis applique les migrations en attente (une fois par instance).
+ *
+ * À appeler en début de requête. Après un échec de connexion (réseau, IP refusée…), le pilote
+ * conserve une connexion fermée et toutes les requêtes suivantes échouent avec
+ * « Topology is closed ». Appeler `connect()` recrée alors la connexion ; c'est immédiat
+ * quand elle est déjà ouverte.
+ * Les migrations permettent de déployer sur Vercel sans lancer `pnpm db:migrate` à la main.
  */
-export function ensureDatabaseReady(): Promise<void> {
+export async function ensureDatabaseReady(): Promise<void> {
+  await getMongoClient().connect();
   globalForMongo.__smiaDbReady ??= runMigrations(getDb(), () => {})
     .then(() => undefined)
     .catch((error: unknown) => {
+      // Nouvelle tentative à la requête suivante.
       globalForMongo.__smiaDbReady = undefined;
       throw error;
     });
