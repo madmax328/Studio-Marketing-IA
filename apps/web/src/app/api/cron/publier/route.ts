@@ -21,7 +21,8 @@ async function handler(request: Request): Promise<Response> {
   if (!authorized(request, secret)) return Response.json({ error: "Non autorisé." }, { status: 401 });
 
   await ensureDatabaseReady();
-  const summary = await runProductionPublishingCycle(Date.now() + 45_000);
+  // 25 s : sous la limite de durée des planificateurs gratuits (cron-job.org coupe à 30 s) ; le reste part au passage suivant.
+  const summary = await runProductionPublishingCycle(Date.now() + 25_000);
   return Response.json({ ok: true, ...summary });
 }
 
