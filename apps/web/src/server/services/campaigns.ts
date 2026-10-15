@@ -121,7 +121,7 @@ export async function proposeStrategy(
     access,
     userId,
     provider,
-    { requestId, kind: "campaign_strategy", brandId: brand._id, campaignId: campaign._id, request: { slots: dates.length } },
+    { requestId, kind: "campaign_strategy", operation: "campaign_strategy", brandId: brand._id, campaignId: campaign._id, request: { slots: dates.length } },
     () =>
       provider.generateCampaignStrategy({
         ...campaignContext(campaign, brand),
@@ -235,7 +235,7 @@ export async function generateCampaignBatch(
     access,
     userId,
     provider,
-    { requestId, kind: "campaign_posts", brandId: brand._id, campaignId: campaign._id, request: { slots: batch.map((s) => s.slotId) } },
+    { requestId, kind: "campaign_posts", operation: "campaign_posts", brandId: brand._id, campaignId: campaign._id, request: { slots: batch.map((s) => s.slotId) } },
     () =>
       provider.generateCampaignPosts({
         ...campaignContext(campaign, brand),
@@ -313,7 +313,7 @@ export async function regenerateCampaignPost(
     access,
     userId,
     provider,
-    { requestId, kind: "campaign_posts", brandId: brand._id, campaignId: campaign._id, request: { regenerate: postId } },
+    { requestId, kind: "campaign_posts", operation: "campaign_post_regeneration", brandId: brand._id, campaignId: campaign._id, request: { regenerate: postId } },
     () =>
       provider.generateCampaignPosts({
         ...campaignContext(campaign, brand),

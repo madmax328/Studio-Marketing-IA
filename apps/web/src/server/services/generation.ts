@@ -3,16 +3,18 @@ import {
   checkTextLength,
   composePostText,
   generationRequestSchema,
+  type CreditOperation,
   type GeneratedPost,
   type GenerationOutput,
 } from "@smia/shared";
 import { TextGenerationError, type ProviderResult, type TextGenerationProvider } from "@/server/ai/types";
 import { collections, type GenerationJobDoc } from "@/server/db/collections";
 import { recordAudit } from "@/server/services/audit";
+import { chargeCredits, refundCredits } from "@/server/services/billing";
 import { getBrand } from "@/server/services/brands";
 import { UserFacingError } from "@/server/services/errors";
 import { assertPermission } from "@/server/services/permissions";
-import { DEFAULT_WORKSPACE_LIMITS, type WorkspaceAccess } from "@/server/services/workspaces";
+import type { WorkspaceAccess } from "@/server/services/workspaces";
 
 export interface GeneratedPostView extends GeneratedPost {
   /** Texte final (corps + hashtags) proposé dans l'éditeur. */
@@ -26,20 +28,6 @@ export interface GenerationView {
   brandId: string;
   posts: GeneratedPostView[];
   missingInformation: string[];
-}
-
-export function monthlyTextGenerationLimit(access: WorkspaceAccess): number {
-  return access.workspace.limits.monthlyTextGenerations ?? DEFAULT_WORKSPACE_LIMITS.monthlyTextGenerations;
-}
-
-/** Générations IA du mois civil en cours (UTC), tous types confondus : réussies ou en cours. Les échecs ne comptent pas. */
-export async function countMonthlyTextGenerations(db: Db, access: WorkspaceAccess, now = new Date()): Promise<number> {
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  return collections(db).generationJobs.countDocuments({
-    workspaceId: access.workspace._id,
-    status: { $in: ["processing", "succeeded"] },
-    createdAt: { $gte: monthStart },
-  });
 }
 
 /** Enregistre l'accord de l'espace pour envoyer les données de marque au fournisseur d'IA. */
@@ -63,8 +51,9 @@ export function hasAiConsent(access: WorkspaceAccess, provider: TextGenerationPr
 
 /**
  * Exécute un appel au fournisseur d'IA avec les garde-fous communs :
- * fournisseur configuré, accord RGPD, quota mensuel, et une seule exécution par requestId
- * (une demande déjà réussie renvoie son résultat enregistré sans nouvel appel ni nouveau décompte).
+ * fournisseur configuré, accord RGPD, crédits débités avant l'appel (remboursés en cas d'échec),
+ * et une seule exécution par requestId (une demande déjà réussie renvoie son résultat
+ * enregistré sans nouvel appel ni nouveau débit).
  */
 export async function runAiJob<T>(
   db: Db,
@@ -74,6 +63,7 @@ export async function runAiJob<T>(
   params: {
     requestId: string;
     kind: GenerationJobDoc["kind"];
+    operation: CreditOperation;
     brandId: ObjectId;
     campaignId?: ObjectId;
     request: Record<string, unknown>;
@@ -91,14 +81,6 @@ export async function runAiJob<T>(
 
   const existing = await generationJobs.findOne({ workspaceId: access.workspace._id, requestId: params.requestId });
   if (existing) return outcomeOfExistingJob<T>(existing);
-
-  const limit = monthlyTextGenerationLimit(access);
-  if ((await countMonthlyTextGenerations(db, access)) >= limit) {
-    throw new UserFacingError(
-      `Vous avez utilisé vos ${limit} générations de ce mois. Passez à une offre supérieure pour en obtenir davantage.`,
-      "limit_reached",
-    );
-  }
 
   const now = new Date();
   const job: GenerationJobDoc = {
@@ -129,6 +111,15 @@ export async function runAiJob<T>(
     throw error;
   }
 
+  const chargeKey = `job:${job._id.toHexString()}`;
+  try {
+    await chargeCredits(db, access.workspace, { operation: params.operation, idempotencyKey: chargeKey, generationJobId: job._id });
+  } catch (error) {
+    const message = error instanceof UserFacingError ? error.message : "Le décompte des crédits a échoué.";
+    await generationJobs.updateOne({ _id: job._id }, { $set: { status: "failed", error: message, updatedAt: new Date() } });
+    throw error;
+  }
+
   try {
     const result = await run();
     await generationJobs.updateOne(
@@ -140,6 +131,8 @@ export async function runAiJob<T>(
     const message =
       error instanceof TextGenerationError ? error.message : "La génération a échoué. Réessayez dans un instant.";
     await generationJobs.updateOne({ _id: job._id }, { $set: { status: "failed", error: message, updatedAt: new Date() } });
+    // L'opération n'a rien produit : les crédits sont rendus.
+    await refundCredits(db, access.workspace._id, { chargeKey, generationJobId: job._id });
     if (!(error instanceof TextGenerationError)) console.error("Échec de génération", error);
     throw new UserFacingError(message, "unavailable");
   }
@@ -175,7 +168,7 @@ export async function generateTextPosts(
     access,
     userId,
     provider,
-    { requestId, kind: "text", brandId: brand._id, request: details },
+    { requestId, kind: "text", operation: "text_generation", brandId: brand._id, request: details },
     async () => {
       const result = await provider.generatePosts({
         brand,

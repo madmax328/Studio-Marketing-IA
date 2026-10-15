@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   CAMPAIGN_OBJECTIVE_LABELS,
   CAMPAIGN_STATUS_LABELS,
+  CREDIT_COSTS,
   POST_STATUS_LABELS,
   roleHasPermission,
   SOCIAL_NETWORKS,
@@ -80,6 +81,7 @@ export default async function CampaignPage({ params }: PageProps<"/campagnes/[ca
         })}
         pendingSlots={pending.length}
         batchSize={CAMPAIGN_BATCH_SIZE}
+        creditsPerBatch={CREDIT_COSTS.campaign_posts}
         aiReady={provider.isConfigured() && hasAiConsent(access, provider)}
         canWrite={roleHasPermission(access.role, "content:write")}
         canPublish={roleHasPermission(access.role, "content:publish")}

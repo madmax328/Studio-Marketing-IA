@@ -5,7 +5,9 @@ import { nextCookies } from "better-auth/next-js";
 import { getDb, getMongoClient } from "@/server/db/client";
 import { sendEmail } from "@/server/email";
 import { getServerEnv } from "@/server/env";
+import { getStripe, isStripeConfigured } from "@/server/billing/stripe";
 import { deleteUserData } from "@/server/services/account";
+import { cancelSubscriptionsOfOwner } from "@/server/services/subscriptions";
 
 function createAuth() {
   const env = getServerEnv();
@@ -44,6 +46,8 @@ function createAuth() {
       deleteUser: {
         enabled: true,
         async beforeDelete(user) {
+          // Résilier d'abord : un compte supprimé ne doit plus jamais être prélevé.
+          await cancelSubscriptionsOfOwner(getDb(), user.id, isStripeConfigured() ? getStripe() : null);
           await deleteUserData(user.id);
         },
       },

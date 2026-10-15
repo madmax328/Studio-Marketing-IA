@@ -33,7 +33,12 @@
         "MEDIA_BLOB_ACCESS",
         "CRON_SECRET",
         "SOCIAL_TOKEN_ENCRYPTION_KEY",
-        "SOCIAL_SIMULATION_ENABLED"
+        "SOCIAL_SIMULATION_ENABLED",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_PRICE_SOLO",
+        "STRIPE_PRICE_BUSINESS",
+        "STRIPE_PRICE_AGENCY"
       ]
     },
     "dev": {

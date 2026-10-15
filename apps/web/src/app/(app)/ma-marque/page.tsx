@@ -4,6 +4,7 @@ import { BRAND_TONE_LABELS, missingRecommendedFields, roleHasPermission } from "
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getDb } from "@/server/db/client";
+import { getEffectivePlan } from "@/server/services/billing";
 import { listBrands } from "@/server/services/brands";
 import { requireWorkspace } from "@/server/session";
 
@@ -12,7 +13,8 @@ export const metadata: Metadata = { title: "Ma marque" };
 export default async function BrandsPage() {
   const access = await requireWorkspace();
   const brands = await listBrands(getDb(), access);
-  const canCreate = roleHasPermission(access.role, "brand:write") && brands.length < access.workspace.limits.maxBrands;
+  const { limits } = await getEffectivePlan(getDb(), access.workspace);
+  const canCreate = roleHasPermission(access.role, "brand:write") && brands.length < limits.maxBrands;
 
   return (
     <div className="space-y-6">
@@ -20,6 +22,9 @@ export default async function BrandsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Ma marque</h1>
           <p className="text-sm text-muted">La mémoire de votre entreprise, utilisée pour chaque publication.</p>
+          <p className="text-xs text-muted">
+            {brands.length} / {limits.maxBrands} marque(s) avec votre offre.
+          </p>
         </div>
         {canCreate ? (
           <Link href="/ma-marque/nouvelle" className={buttonStyles("primary")}>

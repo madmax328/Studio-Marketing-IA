@@ -10,6 +10,7 @@ const NAVIGATION = [
   { href: "/medias", label: "Médiathèque" },
   { href: "/ma-marque", label: "Ma marque" },
   { href: "/reseaux", label: "Réseaux sociaux" },
+  { href: "/abonnement", label: "Abonnement" },
   { href: "/parametres", label: "Paramètres" },
 ];
 

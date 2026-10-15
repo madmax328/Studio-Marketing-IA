@@ -6,3 +6,4 @@ export * from "./generation/schema";
 export * from "./media/schema";
 export * from "./time/zoned";
 export * from "./campaign/schema";
+export * from "./billing/plans";

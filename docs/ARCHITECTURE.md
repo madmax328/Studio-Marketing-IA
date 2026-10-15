@@ -38,6 +38,9 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Jetons des réseaux | Chiffrés AES-256-GCM (`SOCIAL_TOKEN_ENCRYPTION_KEY`), jamais renvoyés au navigateur ni journalisés | Protection au repos |
 | Images vers les réseaux | Liens temporaires signés (HMAC, 2 h) `/api/medias/public/<id>` | Instagram et Threads téléchargent eux-mêmes l'image |
 | Mode test | Comptes « simulation » : toute la chaîne s'exécute sans rien envoyer ; statut affiché « Simulée », exclu des statistiques | Tester sans compte réel, sans jamais faire passer une simulation pour une vraie publication |
+| Offres | Collection `plans` (insérée par la migration 006 puis modifiable sans code) ; prix lus chez Stripe, jamais codés ; offre effective = abonnement actif, sinon gratuite ; dérogations possibles par espace (`limitOverrides`) | Tarifs et limites ajustables sans déploiement |
+| Abonnements | Stripe Checkout + portail client ; webhooks à signature vérifiée, idempotents (`stripeEvents`), état toujours relu chez Stripe (ordre des événements sans importance) ; résiliation automatique avant suppression d'un compte | Aucun prélèvement après suppression |
+| Crédits | Compte par espace et par mois (`creditAccounts`) débité de façon conditionnelle (jamais négatif, même en concurrence) ; journal immuable `creditTransactions` à clé unique ; débit avant l'appel IA, remboursement si échec ; visuels par gabarit et publication gratuits | Coûts cloud maîtrisés, aucune double facturation |
 | Tests | Vitest ; tests d'intégration sur MongoDB réel en CI (`TEST_MONGODB_URI`) | Vérifie l'isolation des données sur une vraie base |
 
 ## Décisions à prendre aux étapes suivantes
@@ -83,7 +86,11 @@ leur étape commencera, pour ne pas maintenir de code vide.
 
 | `campaigns` | Campagnes : paramètres de l'assistant, stratégie et plan |
 
-Collections prévues : `creditAccounts`, `creditTransactions`,
+| `plans`, `subscriptions` | Offres et abonnement de chaque espace |
+| `creditAccounts`, `creditTransactions` | Solde mensuel et journal immuable des crédits |
+| `stripeEvents` | Événements Stripe déjà traités |
+
+Collections prévues :
 `subscriptions`, `analyticsSnapshots`, `notifications`.
 
 ## Particularités de Next.js 16

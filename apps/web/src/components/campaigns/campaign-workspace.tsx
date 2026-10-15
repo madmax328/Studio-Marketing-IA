@@ -50,6 +50,7 @@ interface Props {
   posts: WorkspacePost[];
   pendingSlots: number;
   batchSize: number;
+  creditsPerBatch: number;
   aiReady: boolean;
   canWrite: boolean;
   canPublish: boolean;
@@ -57,7 +58,7 @@ interface Props {
 
 const inputClass = "w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm";
 
-export function CampaignWorkspace({ campaign, posts, pendingSlots, batchSize, aiReady, canWrite, canPublish }: Props) {
+export function CampaignWorkspace({ campaign, posts, pendingSlots, batchSize, creditsPerBatch, aiReady, canWrite, canPublish }: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(campaign.status !== "validated");
   const [strategy, setStrategy] = useState<CampaignStrategy | null>(campaign.strategy);
@@ -354,7 +355,7 @@ export function CampaignWorkspace({ campaign, posts, pendingSlots, batchSize, ai
                 <Button onClick={generateAll} disabled={busy !== null || !aiReady}>
                   {busy === "generate"
                     ? "Rédaction en cours…"
-                    : `Rédiger les publications (${pendingSlots} créneau${pendingSlots > 1 ? "x" : ""}, environ ${Math.ceil(pendingSlots / batchSize)} génération${Math.ceil(pendingSlots / batchSize) > 1 ? "s" : ""})`}
+                    : `Rédiger les publications (${pendingSlots} créneau${pendingSlots > 1 ? "x" : ""}, ${Math.ceil(pendingSlots / batchSize) * creditsPerBatch} crédits)`}
                 </Button>
               ) : null}
               {posts.some((p) => p.status === "draft") && canPublish ? (

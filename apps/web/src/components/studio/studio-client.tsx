@@ -39,14 +39,22 @@ interface PostCard extends GeneratedPostView {
   jobId: string;
 }
 
-export function StudioClient({ brands, remaining }: { brands: StudioBrand[]; remaining: number }) {
+export function StudioClient({
+  brands,
+  credits,
+  costPerGeneration,
+}: {
+  brands: StudioBrand[];
+  credits: number;
+  costPerGeneration: number;
+}) {
   const [networks, setNetworks] = useState<SocialNetworkId[]>(["facebook", "instagram"]);
   const [params, setParams] = useState<GenerationParams | null>(null);
   const [cards, setCards] = useState<PostCard[]>([]);
   const [missing, setMissing] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [left, setLeft] = useState(remaining);
+  const [left, setLeft] = useState(credits);
 
   async function generate(next: GenerationParams, targetNetworks: SocialNetworkId[]): Promise<GenerationView | null> {
     setError(null);
@@ -59,7 +67,7 @@ export function StudioClient({ brands, remaining }: { brands: StudioBrand[]; rem
       setError(result.error);
       return null;
     }
-    setLeft((value) => Math.max(0, value - 1));
+    setLeft((value) => Math.max(0, value - costPerGeneration));
     return result.data;
   }
 
@@ -171,8 +179,10 @@ export function StudioClient({ brands, remaining }: { brands: StudioBrand[]; rem
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted">Générations restantes ce mois-ci : {left}</p>
-            <Button type="submit" disabled={pending || left === 0}>
+            <p className="text-sm text-muted">
+              Crédits restants ce mois-ci : {left} · une génération = {costPerGeneration} crédit{costPerGeneration > 1 ? "s" : ""}
+            </p>
+            <Button type="submit" disabled={pending || left < costPerGeneration}>
               {pending ? "L'IA rédige… (jusqu'à une minute)" : "Générer les publications"}
             </Button>
           </div>

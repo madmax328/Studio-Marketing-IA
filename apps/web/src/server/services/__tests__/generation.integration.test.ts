@@ -9,6 +9,7 @@ import { TextGenerationError } from "@/server/ai/types";
 import { collections } from "@/server/db/collections";
 import { runMigrations } from "@/server/db/migrations";
 import { createBrand } from "@/server/services/brands";
+import { getCreditAccount, remainingCredits, syncCreditAllowance } from "@/server/services/billing";
 import { acceptAiConsent, generateTextPosts } from "@/server/services/generation";
 import { createDraft, deletePost, getPost, listPosts, updatePostText } from "@/server/services/posts";
 import { ensurePersonalWorkspace, getWorkspaceAccess, type WorkspaceAccess } from "@/server/services/workspaces";
@@ -85,24 +86,29 @@ describe.skipIf(!uri)("studio de contenu (MongoDB réel)", () => {
     await expect(generateTextPosts(db, bob, "bob", request(), provider)).rejects.toMatchObject({ code: "not_found" });
   });
 
-  it("ne compte pas les échecs et applique le quota mensuel", async () => {
+  it("débite les crédits, rembourse les échecs et bloque quand le solde est épuisé", async () => {
+    // Le test précédent a consommé 1 crédit. On limite l'espace à 3 crédits ce mois-ci.
+    await collections(db).workspaces.updateOne({ _id: alice.workspace._id }, { $set: { "limitOverrides.monthlyCredits": 3 } });
+    await syncCreditAllowance(db, alice.workspace._id);
+    alice = await refresh("alice", alice);
+
     const failing = fakeProvider({
       generatePosts: async () => {
         throw new TextGenerationError("Service indisponible", true);
       },
     }).provider;
     await expect(generateTextPosts(db, alice, "alice", request(), failing)).rejects.toThrow("Service indisponible");
+    expect(remainingCredits(await getCreditAccount(db, alice.workspace))).toBe(2);
 
-    await collections(db).workspaces.updateOne(
-      { _id: alice.workspace._id },
-      { $set: { "limits.monthlyTextGenerations": 2 } },
-    );
-    alice = await refresh("alice", alice);
     const { provider } = fakeProvider();
-    await generateTextPosts(db, alice, "alice", request(), provider); // 2e génération réussie
-    await expect(generateTextPosts(db, alice, "alice", request(), provider)).rejects.toMatchObject({
-      code: "limit_reached",
-    });
+    await generateTextPosts(db, alice, "alice", request(), provider);
+    await generateTextPosts(db, alice, "alice", request(), provider);
+    await expect(generateTextPosts(db, alice, "alice", request(), provider)).rejects.toMatchObject({ code: "limit_reached" });
+
+    const ledger = await collections(db).creditTransactions.find({ workspaceId: alice.workspace._id }).toArray();
+    expect(ledger.filter((t) => t.kind === "charge")).toHaveLength(4);
+    expect(ledger.filter((t) => t.kind === "refund")).toHaveLength(1);
+    expect(ledger.reduce((sum, t) => sum + t.amount, 0)).toBe(-3);
   });
 
   it("enregistre, modifie et supprime un brouillon dans son seul espace", async () => {

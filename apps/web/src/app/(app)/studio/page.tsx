@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { roleHasPermission } from "@smia/shared";
+import { CREDIT_COSTS, roleHasPermission } from "@smia/shared";
 import { AiConsent } from "@/components/studio/ai-consent";
 import { StudioClient } from "@/components/studio/studio-client";
 import { buttonStyles } from "@/components/ui/button";
@@ -8,11 +8,8 @@ import { Alert, Card } from "@/components/ui/card";
 import { getTextProvider } from "@/server/ai";
 import { getDb } from "@/server/db/client";
 import { listBrands } from "@/server/services/brands";
-import {
-  countMonthlyTextGenerations,
-  hasAiConsent,
-  monthlyTextGenerationLimit,
-} from "@/server/services/generation";
+import { getCreditAccount, remainingCredits } from "@/server/services/billing";
+import { hasAiConsent } from "@/server/services/generation";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Studio de contenu" };
@@ -55,7 +52,8 @@ export default async function StudioPage() {
       ) : (
         <StudioClient
           brands={brands.map((brand) => ({ id: brand._id.toHexString(), name: brand.name, tone: brand.tone }))}
-          remaining={Math.max(0, monthlyTextGenerationLimit(access) - (await countMonthlyTextGenerations(db, access)))}
+          credits={remainingCredits(await getCreditAccount(db, access.workspace))}
+          costPerGeneration={CREDIT_COSTS.text_generation}
         />
       )}
     </div>

@@ -3,10 +3,6 @@ import type { WorkspaceRole } from "@smia/shared";
 import { collections, type WorkspaceDoc } from "@/server/db/collections";
 import { recordAudit } from "@/server/services/audit";
 
-/** Limites appliquées à un nouvel espace tant que la facturation n'est pas en place. */
-export const DEFAULT_WORKSPACE_LIMITS = { maxBrands: 1, monthlyTextGenerations: 50 } satisfies Required<
-  WorkspaceDoc["limits"]
->;
 
 export interface WorkspaceAccess {
   workspace: WorkspaceDoc;
@@ -32,7 +28,6 @@ export async function ensurePersonalWorkspace(db: Db, user: { id: string; name: 
     name: user.name ? `Espace de ${user.name}` : "Mon espace",
     ownerUserId: user.id,
     personal: true,
-    limits: { ...DEFAULT_WORKSPACE_LIMITS },
     schemaVersion: 1,
     createdAt: now,
     updatedAt: now,

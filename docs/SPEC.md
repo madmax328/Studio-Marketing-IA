@@ -35,7 +35,7 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
 | 5a. Moteur de publication | File d'envoi (réservation atomique, reprises avec délai, verrous abandonnés), jetons chiffrés, notifications d'échec (application + e-mail), comptes de test en simulation | **Fait** |
 | 5b. Connecteurs réels | OAuth et publication Meta (Facebook, Instagram, Threads), LinkedIn, puis TikTok, YouTube, Pinterest, X | À faire (nécessite les applications validées par chaque réseau) |
 | 6. Analyse | Récupération des statistiques disponibles via les API, page de statistiques, premières recommandations | À faire |
-| 7. Abonnements | Stripe, offres configurables, crédits avec journal immuable | À faire |
+| 7. Abonnements | Stripe (paiement, portail client, webhooks vérifiés et idempotents), 4 offres configurables en base, crédits mensuels avec journal immuable, remboursement des échecs | **Fait** (prix à créer dans Stripe) |
 
 ### À ne pas oublier
 
@@ -43,6 +43,8 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
   interface `ImageGenerationProvider`. L'IA produit uniquement l'image de fond ; texte, logo et couleurs restent
   incrustés par les gabarits. Décision reportée par le porteur du projet le 14/10/2026.
 - **Avant l'ouverture commerciale : `SOCIAL_SIMULATION_ENABLED=false`** pour retirer les comptes de test.
+- **Limite de comptes sociaux par offre** (`maxSocialAccounts`) : à appliquer à la connexion des comptes réels (étape 5b).
+- **Contenu des offres** (noms, textes, limites, crédits) : provisoire, modifiable dans la collection `plans`.
 
 **Réseaux visés en V1** : Facebook, Instagram, LinkedIn, TikTok, YouTube, X, Pinterest, Threads.
 Chaque réseau est branché dès que sa validation officielle est obtenue (voir `docs/SOCIAL_NETWORKS.md`).

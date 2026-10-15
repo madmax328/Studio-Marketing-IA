@@ -5,6 +5,9 @@ import type {
   CampaignObjective,
   CampaignStatus,
   CampaignStrategy,
+  CreditOperation,
+  PlanId,
+  PlanLimits,
   PostStatus,
   SocialNetworkId,
   WorkspaceRole,
@@ -24,8 +27,10 @@ export interface WorkspaceDoc {
   ownerUserId: string;
   /** Espace personnel créé automatiquement pour chaque utilisateur. */
   personal: boolean;
-  /** Limites de l'offre. Configurables en base, jamais codées en dur dans l'interface. */
-  limits: { maxBrands: number; monthlyTextGenerations?: number };
+  /** Anciennes limites (avant les offres) : ignorées, retirées par la migration 006. */
+  limits?: unknown;
+  /** Dérogations aux limites de l'offre pour cet espace (geste commercial, tests). */
+  limitOverrides?: Partial<PlanLimits>;
   /** Accord donné pour envoyer les données de la marque à un fournisseur d'IA externe (RGPD). */
   aiConsent?: { provider: string; acceptedAt: Date; acceptedByUserId: string };
   schemaVersion: 1;
@@ -133,7 +138,7 @@ export interface OAuthStateDoc {
 export interface NotificationDoc {
   _id: ObjectId;
   workspaceId: ObjectId;
-  kind: "publish_failed" | "publish_succeeded" | "account_expired";
+  kind: "publish_failed" | "publish_succeeded" | "account_expired" | "payment_failed";
   title: string;
   body: string;
   link: string | null;
@@ -183,6 +188,68 @@ export interface MediaAssetDoc {
   status: "ready";
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Offre commerciale. Modifiable en base sans changer le code ; le prix vient de Stripe. */
+export interface PlanDoc {
+  _id: PlanId;
+  name: string;
+  description: string;
+  features: string[];
+  limits: PlanLimits;
+  /** Ordre d'affichage. */
+  order: number;
+  active: boolean;
+  updatedAt: Date;
+}
+
+/** Abonnement d'un espace (un document par espace, _id = workspaceId). */
+export interface SubscriptionDoc {
+  _id: ObjectId;
+  planId: PlanId;
+  status: "active" | "trialing" | "past_due" | "unpaid" | "canceled" | "incomplete" | "incomplete_expired" | "paused";
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripePriceId: string | null;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+  /** Date de l'événement Stripe appliqué en dernier (ignore les événements arrivés en retard). */
+  lastEventAt: Date | null;
+  updatedAt: Date;
+}
+
+/** Solde de crédits d'un espace pour un mois civil. */
+export interface CreditAccountDoc {
+  /** `${workspaceId}:${period}` */
+  _id: string;
+  workspaceId: ObjectId;
+  period: string;
+  allowance: number;
+  used: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** Mouvement de crédits : journal immuable (on n'y fait que des insertions). */
+export interface CreditTransactionDoc {
+  _id: ObjectId;
+  workspaceId: ObjectId;
+  period: string;
+  /** Négatif pour une consommation, positif pour un remboursement. */
+  amount: number;
+  kind: "charge" | "refund";
+  operation: CreditOperation;
+  /** Clé unique par espace : empêche de compter deux fois la même opération. */
+  idempotencyKey: string;
+  generationJobId: ObjectId | null;
+  createdAt: Date;
+}
+
+/** Événements Stripe déjà traités (les webhooks peuvent être renvoyés plusieurs fois). */
+export interface StripeEventDoc {
+  _id: string;
+  type: string;
+  processedAt: Date;
 }
 
 export interface GenerationJobDoc {
@@ -235,6 +302,11 @@ export const COLLECTIONS = {
   campaigns: "campaigns",
   oauthStates: "oauthStates",
   notifications: "notifications",
+  plans: "plans",
+  subscriptions: "subscriptions",
+  creditAccounts: "creditAccounts",
+  creditTransactions: "creditTransactions",
+  stripeEvents: "stripeEvents",
   migrations: "migrations",
 } as const;
 
@@ -251,6 +323,11 @@ export function collections(db: Db) {
     campaigns: db.collection<CampaignDoc>(COLLECTIONS.campaigns),
     oauthStates: db.collection<OAuthStateDoc>(COLLECTIONS.oauthStates),
     notifications: db.collection<NotificationDoc>(COLLECTIONS.notifications),
+    plans: db.collection<PlanDoc>(COLLECTIONS.plans),
+    subscriptions: db.collection<SubscriptionDoc>(COLLECTIONS.subscriptions),
+    creditAccounts: db.collection<CreditAccountDoc>(COLLECTIONS.creditAccounts),
+    creditTransactions: db.collection<CreditTransactionDoc>(COLLECTIONS.creditTransactions),
+    stripeEvents: db.collection<StripeEventDoc>(COLLECTIONS.stripeEvents),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }

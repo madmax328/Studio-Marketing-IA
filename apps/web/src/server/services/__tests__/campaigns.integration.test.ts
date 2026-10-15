@@ -46,7 +46,7 @@ describe.skipIf(!uri)("campagnes et calendrier (MongoDB réel)", () => {
     bob = (await getWorkspaceAccess(db, "bob", b._id.toHexString()))!;
     brandId = (await createBrand(db, alice, "alice", { name: "Café", timeZone: tz }))._id.toHexString();
     await acceptAiConsent(db, alice, "alice", provider);
-    await collections(db).workspaces.updateOne({ _id: alice.workspace._id }, { $set: { "limits.monthlyTextGenerations": 100 } });
+    await collections(db).workspaces.updateOne({ _id: alice.workspace._id }, { $set: { "limitOverrides.monthlyCredits": 100 } });
     alice = (await getWorkspaceAccess(db, "alice", a._id.toHexString()))!;
   });
 

@@ -32,6 +32,12 @@ export async function deleteUserData(
     await c.brands.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.posts.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.campaigns.deleteMany({ workspaceId: { $in: ownedIds } });
+    await c.notifications.deleteMany({ workspaceId: { $in: ownedIds } });
+    await c.socialAccounts.deleteMany({ workspaceId: { $in: ownedIds } });
+    await c.creditAccounts.deleteMany({ workspaceId: { $in: ownedIds } });
+    // Le journal de crédits n'est pas une pièce comptable (Stripe conserve les factures) : il est effacé avec le compte.
+    await c.creditTransactions.deleteMany({ workspaceId: { $in: ownedIds } });
+    await c.subscriptions.deleteMany({ _id: { $in: ownedIds } });
     await c.generationJobs.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.socialAccounts.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.workspaceMembers.deleteMany({ workspaceId: { $in: ownedIds } });

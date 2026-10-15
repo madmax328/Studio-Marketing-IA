@@ -71,3 +71,15 @@ L'envoi des publications programmées est déclenché par un appel à `/api/cron
    externe gratuit comme cron-job.org.
 3. Pour essayer sans compte réel : page « Réseaux sociaux » → « Connecter un compte de test (simulation) ».
    Les publications sont marquées « Simulée » et rien n'est envoyé.
+
+## Activer les abonnements (Stripe)
+
+1. Créer un compte sur stripe.com (mode **Test** pour commencer).
+2. **Produits** : créer un produit par offre payante (Solo, Business, Agence) avec un **prix récurrent mensuel**.
+   Copier chaque identifiant de prix (`price_…`) dans `STRIPE_PRICE_SOLO`, `STRIPE_PRICE_BUSINESS`, `STRIPE_PRICE_AGENCY`.
+3. **Développeurs → Clés API** : copier la clé secrète dans `STRIPE_SECRET_KEY`.
+4. **Développeurs → Webhooks** : ajouter l'URL `https://<votre-domaine>/api/stripe/webhook` avec les événements
+   `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `invoice.payment_failed`. Copier le secret de signature dans `STRIPE_WEBHOOK_SECRET`.
+5. **Paramètres → Portail client** : activer le portail (changement d'offre, résiliation, moyens de paiement, factures).
+6. Redéployer. Tester avec la carte `4242 4242 4242 4242` (date future, CVC quelconque).

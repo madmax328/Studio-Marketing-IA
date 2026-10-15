@@ -2,6 +2,7 @@ import { ObjectId, type Db } from "mongodb";
 import { brandInputSchema, type BrandInput } from "@smia/shared";
 import { collections, type BrandDoc } from "@/server/db/collections";
 import { recordAudit } from "@/server/services/audit";
+import { getEffectivePlan } from "@/server/services/billing";
 import { UserFacingError } from "@/server/services/errors";
 import { assertPermission } from "@/server/services/permissions";
 import type { WorkspaceAccess } from "@/server/services/workspaces";
@@ -36,10 +37,11 @@ export async function createBrand(db: Db, access: WorkspaceAccess, userId: strin
   const data = parseBrand(input);
   const { brands } = collections(db);
 
+  const { limits } = await getEffectivePlan(db, access.workspace);
   const count = await brands.countDocuments({ workspaceId: access.workspace._id });
-  if (count >= access.workspace.limits.maxBrands) {
+  if (count >= limits.maxBrands) {
     throw new UserFacingError(
-      `Votre offre permet ${access.workspace.limits.maxBrands} marque(s). Passez à une offre supérieure pour en ajouter.`,
+      `Votre offre permet ${limits.maxBrands} marque(s). Passez à une offre supérieure pour en ajouter.`,
       "limit_reached",
     );
   }

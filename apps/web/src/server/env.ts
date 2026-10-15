@@ -34,6 +34,12 @@ const serverEnvSchema = z.object({
   SOCIAL_TOKEN_ENCRYPTION_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   /** Comptes de test qui simulent l'envoi sans rien publier. À désactiver avant l'ouverture commerciale. */
   SOCIAL_SIMULATION_ENABLED: z.preprocess(emptyToUndefined, z.enum(["true", "false"]).default("true")),
+  // Abonnements (Stripe). Les identifiants de prix (price_…) se créent dans le tableau de bord Stripe.
+  STRIPE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  STRIPE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  STRIPE_PRICE_SOLO: z.preprocess(emptyToUndefined, z.string().optional()),
+  STRIPE_PRICE_BUSINESS: z.preprocess(emptyToUndefined, z.string().optional()),
+  STRIPE_PRICE_AGENCY: z.preprocess(emptyToUndefined, z.string().optional()),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
