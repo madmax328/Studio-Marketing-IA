@@ -30,7 +30,10 @@
         "AI_TEXT_MODEL",
         "AI_TEXT_EFFORT",
         "BLOB_READ_WRITE_TOKEN",
-        "MEDIA_BLOB_ACCESS"
+        "MEDIA_BLOB_ACCESS",
+        "CRON_SECRET",
+        "SOCIAL_TOKEN_ENCRYPTION_KEY",
+        "SOCIAL_SIMULATION_ENABLED"
       ]
     },
     "dev": {

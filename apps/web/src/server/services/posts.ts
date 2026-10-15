@@ -262,7 +262,7 @@ export async function setPostSchedule(
 
   const updated = await collections(db).posts.findOneAndUpdate(
     { _id: post._id, workspaceId: access.workspace._id, status: post.status },
-    { $set: { scheduledAt, status, updatedAt: new Date() } },
+    { $set: { scheduledAt, status, "publishing.nextAttemptAt": null, updatedAt: new Date() } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("La publication a changé entre-temps. Rechargez la page.", "conflict");
@@ -291,8 +291,10 @@ export async function duplicatePost(db: Db, access: WorkspaceAccess, userId: str
   assertPermission(access, "content:write");
   const post = await getPost(db, access, postId);
   const now = new Date();
+  // Le suivi d'envoi n'est pas copié (un champ null empêcherait la mise à jour de ses sous-champs).
+  const { publishing: _publishing, ...rest } = post;
   const copy: PostDoc = {
-    ...post,
+    ...rest,
     _id: new ObjectId(),
     status: "draft",
     scheduledAt: null,
@@ -332,4 +334,10 @@ export async function listCalendarPosts(
     filter.status = filters.status as PostStatus;
   }
   return collections(db).posts.find(filter).sort({ scheduledAt: 1 }).limit(1000).toArray();
+}
+
+/** Libellé de statut honnête : une publication « envoyée » en simulation n'est jamais présentée comme publiée. */
+export function postStatusLabel(post: Pick<PostDoc, "status" | "publishing">, labels: Record<PostStatus, string>): string {
+  if (post.status === "published" && post.publishing?.simulated) return "Simulée (rien n'a été publié)";
+  return labels[post.status];
 }

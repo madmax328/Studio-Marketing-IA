@@ -4,6 +4,8 @@ import { collections, type PostDoc } from "@/server/db/collections";
 import type { WorkspaceAccess } from "@/server/services/workspaces";
 
 export interface DashboardData {
+  /** Publications « envoyées » en mode simulation (rien n'est parti), comptées à part. */
+  simulatedCount: number;
   brandCount: number;
   connectedAccountCount: number;
   postsByStatus: Record<PostStatus, number>;
@@ -15,7 +17,8 @@ export async function getDashboardData(db: Db, access: WorkspaceAccess): Promise
   const c = collections(db);
   const workspaceId = access.workspace._id;
 
-  const [brandCount, connectedAccountCount, statusCounts, upcomingPosts] = await Promise.all([
+  const [simulatedCount, brandCount, connectedAccountCount, statusCounts, upcomingPosts] = await Promise.all([
+    c.posts.countDocuments({ workspaceId, status: "published", "publishing.simulated": true }),
     c.brands.countDocuments({ workspaceId }),
     c.socialAccounts.countDocuments({ workspaceId, status: "connected" }),
     c.posts
@@ -36,6 +39,7 @@ export async function getDashboardData(db: Db, access: WorkspaceAccess): Promise
 
   const postsByStatus = Object.fromEntries(POST_STATUSES.map((s) => [s, 0])) as Record<PostStatus, number>;
   for (const { _id, count } of statusCounts) postsByStatus[_id] = count;
+  postsByStatus.published -= simulatedCount;
 
-  return { brandCount, connectedAccountCount, postsByStatus, upcomingPosts };
+  return { simulatedCount, brandCount, connectedAccountCount, postsByStatus, upcomingPosts };
 }

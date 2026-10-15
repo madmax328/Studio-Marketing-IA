@@ -6,7 +6,6 @@ import { useState } from "react";
 import {
   POST_KIND_LABELS,
   POST_KINDS,
-  POST_STATUS_LABELS,
   SOCIAL_NETWORKS,
   type CampaignStatus,
   type CampaignStrategy,
@@ -30,6 +29,7 @@ export interface WorkspacePost {
   slotId: string | null;
   network: SocialNetworkId;
   status: PostStatus;
+  statusLabel: string;
   excerpt: string;
   localDate: string | null;
   localTime: string | null;
@@ -388,7 +388,7 @@ export function CampaignWorkspace({ campaign, posts, pendingSlots, batchSize, ai
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <span>
                               <span className="font-medium">{SOCIAL_NETWORKS[post.network].label}</span>
-                              <span className="text-muted"> · {POST_STATUS_LABELS[post.status]}</span>
+                              <span className="text-muted"> · {post.statusLabel}</span>
                               {post.localDate && (post.localDate !== slot.date || post.localTime !== slot.time) ? (
                                 <span className="text-muted"> · déplacée au {post.localDate} {post.localTime}</span>
                               ) : null}

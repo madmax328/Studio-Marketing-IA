@@ -14,9 +14,9 @@ const NAVIGATION = [
 ];
 
 /** Modules de la V1 pas encore livrés : affichés comme tels, sans lien factice. */
-const UPCOMING = ["Publication automatique", "Vidéos", "Statistiques"];
+const UPCOMING = ["Vidéos", "Statistiques"];
 
-export function Sidebar({ userName, workspaceName }: { userName: string; workspaceName: string }) {
+export function Sidebar({ userName, workspaceName, unreadAlerts }: { userName: string; workspaceName: string; unreadAlerts: number }) {
   return (
     <aside className="flex w-full flex-col gap-6 border-b border-border bg-surface p-4 md:min-h-screen md:w-64 md:border-r md:border-b-0">
       <div>
@@ -29,6 +29,14 @@ export function Sidebar({ userName, workspaceName }: { userName: string; workspa
             {item.label}
           </Link>
         ))}
+        <Link href="/notifications" className="rounded-lg px-3 py-2 text-sm hover:bg-background">
+          Alertes
+          {unreadAlerts > 0 ? (
+            <span className="ml-2 rounded-full bg-danger px-2 text-xs text-white" aria-label={`${unreadAlerts} non lues`}>
+              {unreadAlerts}
+            </span>
+          ) : null}
+        </Link>
       </nav>
       <div className="hidden md:block">
         <p className="px-3 text-xs font-medium tracking-wide text-muted uppercase">Bientôt</p>

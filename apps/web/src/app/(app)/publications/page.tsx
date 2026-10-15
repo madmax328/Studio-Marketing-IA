@@ -5,7 +5,7 @@ import { buttonStyles } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { getDb } from "@/server/db/client";
-import { listPosts } from "@/server/services/posts";
+import { listPosts, postStatusLabel } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Publications" };
@@ -70,7 +70,7 @@ export default async function PostsPage({ searchParams }: PageProps<"/publicatio
                 <Card className="space-y-1 transition hover:border-primary">
                   <p className="text-sm">
                     <span className="font-semibold">{SOCIAL_NETWORKS[post.network].label}</span>
-                    <span className="text-muted"> · {POST_STATUS_LABELS[post.status]}</span>
+                    <span className="text-muted"> · {postStatusLabel(post, POST_STATUS_LABELS)}</span>
                   </p>
                   <p className="line-clamp-2 text-sm text-muted">{post.text}</p>
                 </Card>

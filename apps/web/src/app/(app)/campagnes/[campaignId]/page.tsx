@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   CAMPAIGN_OBJECTIVE_LABELS,
   CAMPAIGN_STATUS_LABELS,
+  POST_STATUS_LABELS,
   roleHasPermission,
   SOCIAL_NETWORKS,
   toZoned,
@@ -15,7 +16,7 @@ import { collections } from "@/server/db/collections";
 import { CAMPAIGN_BATCH_SIZE, getCampaign, pendingSlotIds } from "@/server/services/campaigns";
 import { UserFacingError } from "@/server/services/errors";
 import { hasAiConsent } from "@/server/services/generation";
-import { schedulingProblems } from "@/server/services/posts";
+import { postStatusLabel, schedulingProblems } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Campagne" };
@@ -70,6 +71,7 @@ export default async function CampaignPage({ params }: PageProps<"/campagnes/[ca
             slotId: post.slotId ?? null,
             network: post.network,
             status: post.status,
+            statusLabel: postStatusLabel(post, POST_STATUS_LABELS),
             excerpt: post.text.slice(0, 220),
             localDate: local?.date ?? null,
             localTime: local?.time ?? null,

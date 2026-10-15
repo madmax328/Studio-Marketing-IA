@@ -5,6 +5,7 @@ import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getDb } from "@/server/db/client";
 import { getDashboardData } from "@/server/services/dashboard";
+import { listNotifications } from "@/server/services/notifications";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
@@ -16,6 +17,7 @@ function formatInTimeZone(date: Date, timeZone: string): string {
 export default async function DashboardPage() {
   const access = await requireWorkspace();
   const data = await getDashboardData(getDb(), access);
+  const alerts = (await listNotifications(getDb(), access, 5)).filter((n) => !n.readAt);
   const isEmpty = data.brandCount === 0;
 
   return (
@@ -45,12 +47,39 @@ export default async function DashboardPage() {
         </Card>
       ) : null}
 
+      {alerts.length > 0 ? (
+        <Card className="space-y-2 border-danger/40">
+          <h2 className="font-semibold text-danger">À traiter</h2>
+          <ul className="space-y-1 text-sm">
+            {alerts.map((alert) => (
+              <li key={alert._id.toHexString()}>
+                <span className="font-medium">{alert.title}</span> — {alert.body}{" "}
+                {alert.link ? (
+                  <Link href={alert.link} className="text-primary hover:underline">
+                    Voir
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <Link href="/notifications" className="text-sm text-primary hover:underline">
+            Toutes les alertes
+          </Link>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Programmées" value={data.postsByStatus.scheduled} />
         <Stat label="Publiées" value={data.postsByStatus.published} />
         <Stat label="Brouillons" value={data.postsByStatus.draft} />
         <Stat label="En échec" value={data.postsByStatus.failed} tone={data.postsByStatus.failed > 0 ? "danger" : undefined} />
       </div>
+
+      {data.simulatedCount > 0 ? (
+        <p className="text-xs text-muted">
+          {data.simulatedCount} envoi(s) en mode simulation, non comptés comme publiés : rien n&apos;est parti sur les réseaux.
+        </p>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="space-y-3">

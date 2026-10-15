@@ -1,4 +1,5 @@
 import type { Db, ObjectId } from "mongodb";
+import type { EncryptedValue } from "@/server/security/crypto";
 import type {
   BrandInput,
   CampaignObjective,
@@ -52,7 +53,6 @@ export interface BrandDoc extends BrandInput {
   updatedAt: Date;
 }
 
-/** Définition minimale : la programmation complète arrive avec le calendrier. */
 export interface PostDoc {
   _id: ObjectId;
   workspaceId: ObjectId;
@@ -74,20 +74,71 @@ export interface PostDoc {
   /** Fuseau de l'utilisateur au moment de la programmation, pour l'affichage et les changements d'heure. */
   timeZone: string;
   publishedAt: Date | null;
+  /** Suivi de l'envoi (absent tant que la publication n'a jamais été traitée). */
+  publishing?: PostPublishing;
   schemaVersion: 1;
   createdAt: Date;
   updatedAt: Date;
 }
 
-/** Définition minimale : les jetons OAuth chiffrés arrivent avec les intégrations. */
+export interface PostPublishing {
+  attempts: number;
+  /** Prochaine tentative après une erreur temporaire. */
+  nextAttemptAt: Date | null;
+  /** Verrou posé par le traitement en cours (évite deux envois simultanés). */
+  lockedAt: Date | null;
+  lockId: string | null;
+  socialAccountId: ObjectId | null;
+  externalId: string | null;
+  externalUrl: string | null;
+  /** Vrai si la publication a été « envoyée » en mode simulation : rien n'est parti sur le réseau. */
+  simulated: boolean;
+  lastError: string | null;
+  lastAttemptAt: Date | null;
+}
+
+/** Compte social connecté. Les jetons sont toujours chiffrés (AES-256-GCM). */
 export interface SocialAccountDoc {
   _id: ObjectId;
   workspaceId: ObjectId;
   network: SocialNetworkId;
-  status: "connected" | "expired" | "revoked" | "error";
+  /** Connecteur utilisé : réseau réel ou simulation (aucun envoi). */
+  provider: "meta" | "linkedin" | "simulation";
+  /** Identifiant du compte, de la page ou du profil chez le réseau. */
+  externalAccountId: string;
   displayName: string;
+  status: "connected" | "expired" | "revoked" | "error";
+  scopes: string[];
+  accessToken: EncryptedValue | null;
+  refreshToken: EncryptedValue | null;
+  tokenExpiresAt: Date | null;
+  lastCheckedAt: Date | null;
+  lastError: string | null;
+  connectedByUserId: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** État OAuth en cours (protection CSRF), à usage unique et de courte durée. */
+export interface OAuthStateDoc {
+  _id: string;
+  workspaceId: ObjectId;
+  userId: string;
+  provider: "meta" | "linkedin";
+  codeVerifier: string | null;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+export interface NotificationDoc {
+  _id: ObjectId;
+  workspaceId: ObjectId;
+  kind: "publish_failed" | "publish_succeeded" | "account_expired";
+  title: string;
+  body: string;
+  link: string | null;
+  readAt: Date | null;
+  createdAt: Date;
 }
 
 export interface CampaignDoc {
@@ -182,6 +233,8 @@ export const COLLECTIONS = {
   generationJobs: "generationJobs",
   mediaAssets: "mediaAssets",
   campaigns: "campaigns",
+  oauthStates: "oauthStates",
+  notifications: "notifications",
   migrations: "migrations",
 } as const;
 
@@ -196,6 +249,8 @@ export function collections(db: Db) {
     generationJobs: db.collection<GenerationJobDoc>(COLLECTIONS.generationJobs),
     mediaAssets: db.collection<MediaAssetDoc>(COLLECTIONS.mediaAssets),
     campaigns: db.collection<CampaignDoc>(COLLECTIONS.campaigns),
+    oauthStates: db.collection<OAuthStateDoc>(COLLECTIONS.oauthStates),
+    notifications: db.collection<NotificationDoc>(COLLECTIONS.notifications),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }

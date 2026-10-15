@@ -56,3 +56,18 @@ copiez le lien affiché pour confirmer votre compte.
    `SMTP_USER` et `SMTP_PASSWORD` = adresse et mot de passe de la boîte, `EMAIL_FROM` avec la même adresse.
 4. Dans MongoDB Atlas, autoriser l'accès réseau depuis Vercel (`0.0.0.0/0`).
 5. Les index MongoDB sont créés automatiquement au premier accès (`pnpm db:migrate` reste disponible).
+
+## Activer la publication automatique
+
+L'envoi des publications programmées est déclenché par un appel à `/api/cron/publier`, chaque minute.
+
+1. Dans Vercel, ajouter la variable `CRON_SECRET` (une longue chaîne aléatoire), puis redéployer.
+2. Créer une tâche planifiée qui appelle chaque minute :
+   - URL : `https://<votre-domaine>/api/cron/publier`
+   - En-tête : `Authorization: Bearer <CRON_SECRET>`
+
+   Avec l'offre Vercel Pro, Vercel Cron peut s'en charger (il envoie l'en-tête automatiquement).
+   Avec l'offre gratuite (Hobby), Vercel Cron est limité à une exécution par jour : utiliser un service
+   externe gratuit comme cron-job.org.
+3. Pour essayer sans compte réel : page « Réseaux sociaux » → « Connecter un compte de test (simulation) ».
+   Les publications sont marquées « Simulée » et rien n'est envoyé.

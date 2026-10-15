@@ -20,7 +20,7 @@ import type { PostDoc } from "@/server/db/collections";
 import { getDb } from "@/server/db/client";
 import { listBrands } from "@/server/services/brands";
 import { listCampaigns } from "@/server/services/campaigns";
-import { listCalendarPosts, type CalendarFilters } from "@/server/services/posts";
+import { listCalendarPosts, postStatusLabel, type CalendarFilters } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Calendrier" };
@@ -64,8 +64,8 @@ function PostChip({ post, timeZone }: { post: PostDoc; timeZone: string }) {
   return (
     <Link
       href={`/publications/${post._id.toHexString()}`}
-      className={cn("block truncate rounded border px-1.5 py-0.5 text-xs hover:border-primary", STATUS_STYLES[post.status])}
-      title={`${SOCIAL_NETWORKS[post.network].label} · ${POST_STATUS_LABELS[post.status]} · ${post.text.slice(0, 120)}`}
+      className={cn("block truncate rounded border px-1.5 py-0.5 text-xs hover:border-primary", STATUS_STYLES[post.status], post.publishing?.simulated && "border-dashed")}
+      title={`${SOCIAL_NETWORKS[post.network].label} · ${postStatusLabel(post, POST_STATUS_LABELS)} · ${post.text.slice(0, 120)}`}
     >
       {local?.time} {SOCIAL_NETWORKS[post.network].label}
     </Link>
@@ -256,7 +256,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calendr
                             <span className="font-medium">
                               {post.scheduledAt ? toZoned(post.scheduledAt, timeZone).time : ""} · {SOCIAL_NETWORKS[post.network].label}
                             </span>
-                            <span className="text-muted"> · {POST_STATUS_LABELS[post.status]}</span>
+                            <span className="text-muted"> · {postStatusLabel(post, POST_STATUS_LABELS)}</span>
                             <span className="mt-1 block truncate text-muted">{post.text}</span>
                           </Link>
                         </li>

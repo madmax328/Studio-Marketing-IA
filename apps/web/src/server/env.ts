@@ -29,6 +29,11 @@ const serverEnvSchema = z.object({
   // Stockage des médias (Vercel Blob). Le jeton est ajouté automatiquement par Vercel à la connexion d'un store.
   BLOB_READ_WRITE_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
   MEDIA_BLOB_ACCESS: z.preprocess(emptyToUndefined, z.enum(["private", "public"]).default("private")),
+  // Publication automatique
+  CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(16, "CRON_SECRET doit contenir au moins 16 caractères").optional()),
+  SOCIAL_TOKEN_ENCRYPTION_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  /** Comptes de test qui simulent l'envoi sans rien publier. À désactiver avant l'ouverture commerciale. */
+  SOCIAL_SIMULATION_ENABLED: z.preprocess(emptyToUndefined, z.enum(["true", "false"]).default("true")),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

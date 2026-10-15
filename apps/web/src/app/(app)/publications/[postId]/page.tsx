@@ -11,7 +11,7 @@ import { Alert, Card } from "@/components/ui/card";
 import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
 import { listMedia } from "@/server/services/media";
-import { getPost, MAX_MEDIA_PER_POST, schedulingProblems } from "@/server/services/posts";
+import { getPost, MAX_MEDIA_PER_POST, postStatusLabel, schedulingProblems } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Publication" };
@@ -42,8 +42,32 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
       </Link>
       <header>
         <h1 className="text-2xl font-semibold">{network.label}</h1>
-        <p className="text-sm text-muted">{POST_STATUS_LABELS[post.status]}</p>
+        <p className="text-sm text-muted">{postStatusLabel(post, POST_STATUS_LABELS)}</p>
       </header>
+      {post.publishing?.simulated && post.status === "published" ? (
+        <Alert>Envoi simulé avec un compte de test : rien n&apos;a été publié sur {network.label}.</Alert>
+      ) : null}
+      {post.status === "published" && !post.publishing?.simulated ? (
+        <Alert tone="success">
+          Publiée{post.publishedAt ? ` le ${new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short", timeZone: post.timeZone }).format(post.publishedAt)}` : ""}.
+          {post.publishing?.externalUrl ? (
+            <>
+              {" "}
+              <a href={post.publishing.externalUrl} target="_blank" rel="noreferrer" className="underline">
+                Voir sur {network.label}
+              </a>
+            </>
+          ) : null}
+        </Alert>
+      ) : null}
+      {post.publishing?.lastError && post.status !== "published" ? (
+        <Alert tone="error">
+          {post.status === "scheduled" && post.publishing.nextAttemptAt
+            ? `Échec temporaire (tentative ${post.publishing.attempts}) : ${post.publishing.lastError} Nouvel essai prévu automatiquement.`
+            : `Dernier envoi : ${post.publishing.lastError}`}
+        </Alert>
+      ) : null}
+      {post.status === "processing" ? <Alert>Envoi en cours…</Alert> : null}
       {post.rationale ? <Alert>{post.rationale}</Alert> : null}
       {!network.allowsTextOnly && attached.length === 0 ? (
         <Alert tone="error">
