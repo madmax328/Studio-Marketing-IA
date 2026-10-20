@@ -1,6 +1,6 @@
 import { SOCIAL_NETWORKS } from "@smia/shared";
 import { form, publishStep, sleep as defaultSleep, stringField, type FetchLike } from "@/server/social/http";
-import { PublishError, type PublishMedia, type SocialPublisher } from "../types";
+import { isVideo, PublishError, type PublishMedia, type SocialPublisher } from "../types";
 import { META_AUTH_CODES, META_RETRYABLE_CODES } from "./meta";
 
 export const THREADS_GRAPH_URL = "https://graph.threads.net/v1.0";
@@ -30,9 +30,18 @@ export function createThreadsPublisher(options: ThreadsPublisherOptions = {}): S
   const get = (path: string, token: string) =>
     publishStep(label, fetchImpl, `${THREADS_GRAPH_URL}/${path}`, { headers: { Authorization: `Bearer ${token}` } }, { finalStep: false, ...errors });
 
-  async function createContainer(userId: string, token: string, values: Record<string, string | boolean | undefined>): Promise<string> {
+  async function createContainerId(userId: string, token: string, values: Record<string, string | boolean | undefined>): Promise<string> {
     const id = stringField((await post(`${userId}/threads`, token, values, false)).body, "id");
     if (!id) throw new PublishError(`${label} n'a pas renvoyé d'identifiant de contenu.`, "retryable");
+    return id;
+  }
+
+  async function createContainer(userId: string, token: string, values: Record<string, string | boolean | undefined>): Promise<string> {
+    return waitForContainer(await createContainerId(userId, token, values), token);
+  }
+
+  /** Attend la préparation d'un conteneur ; s'il n'est pas prêt, l'erreur transporte de quoi le reprendre. */
+  async function waitForContainer(id: string, token: string, resume?: Record<string, string>): Promise<string> {
     for (let i = 0; i < CONTAINER_POLLS; i += 1) {
       const body = (await get(`${id}?fields=status,error_message`, token)).body;
       const status = stringField(body, "status");
@@ -43,12 +52,12 @@ export function createThreadsPublisher(options: ThreadsPublisherOptions = {}): S
       }
       await sleep(CONTAINER_POLL_MS);
     }
-    throw new PublishError(`${label} prépare encore la publication.`, "retryable");
+    throw new PublishError(`${label} prépare encore la publication : nouvel essai dans quelques minutes.`, "retryable", resume);
   }
 
   return {
     provider: "threads",
-    async publish({ post: content, account, accessToken, media }) {
+    async publish({ post: content, account, accessToken, media, resume }) {
       if (!accessToken) throw new PublishError("Jeton d'accès manquant.", "auth");
       if (media.length > THREADS_MAX_CAROUSEL) throw new PublishError(`${label} accepte au plus ${THREADS_MAX_CAROUSEL} images.`, "permanent");
       const userId = account.externalAccountId;
@@ -56,6 +65,10 @@ export function createThreadsPublisher(options: ThreadsPublisherOptions = {}): S
       let creationId: string;
       if (media.length === 0) {
         creationId = await createContainer(userId, accessToken, { media_type: "TEXT", text: content.text });
+      } else if (media[0] && isVideo(media[0])) {
+        // Vidéo : préparation parfois longue chez Threads, reprise au passage suivant.
+        const id = resume?.threadsContainer ?? (await createContainerId(userId, accessToken, { media_type: "VIDEO", video_url: media[0].publicUrl, text: content.text }));
+        creationId = await waitForContainer(id, accessToken, { threadsContainer: id });
       } else if (media.length === 1) {
         creationId = await createContainer(userId, accessToken, { media_type: "IMAGE", image_url: imageUrl(media[0] as PublishMedia), text: content.text });
       } else {

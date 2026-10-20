@@ -110,6 +110,8 @@ export interface PostPublishing {
   simulated: boolean;
   lastError: string | null;
   lastAttemptAt: Date | null;
+  /** Reprise d'un envoi en cours chez le réseau (vidéo en traitement) ; effacée à chaque modification. */
+  resume?: Record<string, string> | null;
 }
 
 export interface PostMetricsState {

@@ -1,6 +1,6 @@
 import { SOCIAL_NETWORKS } from "@smia/shared";
 import { isRecord, publishStep, stringField, type FetchLike } from "@/server/social/http";
-import { PublishError, type SocialPublisher } from "../types";
+import { isVideo, PublishError, type SocialPublisher } from "../types";
 
 const API_URL = "https://api.linkedin.com/rest";
 const MAX_IMAGES = 20;
@@ -50,6 +50,7 @@ export function createLinkedInPublisher(options: LinkedInPublisherOptions): Soci
     provider: "linkedin",
     async publish({ post, account, accessToken, media }) {
       if (!accessToken) throw new PublishError("Jeton d'accès manquant.", "auth");
+      if (media.some(isVideo)) throw new PublishError(`La publication de vidéos sur ${label} arrive bientôt.`, "permanent");
       if (media.length > MAX_IMAGES) throw new PublishError(`${label} accepte au plus ${MAX_IMAGES} images.`, "permanent");
       const author = account.externalAccountId;
 

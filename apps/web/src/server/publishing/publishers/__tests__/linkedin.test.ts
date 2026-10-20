@@ -10,6 +10,7 @@ function context(images: number): PublishContext {
     post: { _id: new ObjectId(), network: "linkedin", text: "Nouveau (enfin) !" } as PostDoc,
     account: { network: "linkedin", externalAccountId: "urn:li:person:abc", displayName: "Alice" } as SocialAccountDoc,
     accessToken: "jeton",
+    resume: null,
     media: Array.from({ length: images }, (_, index) => ({
       mediaId: `m${index}`,
       mimeType: "image/jpeg",

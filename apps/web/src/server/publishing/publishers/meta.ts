@@ -1,6 +1,6 @@
 import { SOCIAL_NETWORKS } from "@smia/shared";
 import { form, publishStep, sleep as defaultSleep, stringField, type FetchLike } from "@/server/social/http";
-import { PublishError, type PublishContext, type PublishMedia, type PublishResult, type SocialPublisher } from "../types";
+import { isVideo, PublishError, type PublishContext, type PublishMedia, type PublishResult, type SocialPublisher } from "../types";
 
 /** Codes d'erreur Graph API : jeton invalide ou permission manquante → compte à reconnecter. */
 export const META_AUTH_CODES = [102, 190, 10, 200] as const;
@@ -64,6 +64,12 @@ export function createMetaPublisher(options: MetaPublisherOptions): SocialPublis
     if (media.length === 0) {
       const response = await post(label, `${pageId}/feed`, token, { message: content.text }, true);
       postId = stringField(response.body, "id");
+    } else if (media[0] && isVideo(media[0])) {
+      // Vidéo : Facebook la télécharge depuis le lien signé, puis la traite de son côté.
+      const response = await post(label, `${pageId}/videos`, token, { file_url: media[0].publicUrl, description: content.text }, true);
+      const videoId = stringField(response.body, "id");
+      if (!videoId) throw new PublishError(`${label} a accepté la vidéo sans renvoyer son identifiant : vérifiez sur la Page.`, "uncertain");
+      return { externalId: videoId, externalUrl: `https://www.facebook.com/${pageId}/videos/${videoId}`, simulated: false };
     } else if (media.length === 1) {
       const response = await post(label, `${pageId}/photos`, token, { url: media[0]?.publicUrl, caption: content.text }, true);
       postId = stringField(response.body, "post_id") ?? stringField(response.body, "id");
@@ -84,14 +90,20 @@ export function createMetaPublisher(options: MetaPublisherOptions): SocialPublis
     return { externalId: postId, externalUrl: `https://www.facebook.com/${postId}`, simulated: false };
   }
 
-  async function publishToInstagram({ post: content, account, media }: PublishContext, token: string): Promise<PublishResult> {
+  async function publishToInstagram({ post: content, account, media, resume }: PublishContext, token: string): Promise<PublishResult> {
     const label = SOCIAL_NETWORKS.instagram.label;
     const igUserId = account.externalAccountId;
-    const problem = instagramMediaProblem(media);
+    const video = media.length === 1 && media[0] && isVideo(media[0]) ? media[0] : null;
+    const problem = video ? null : instagramMediaProblem(media);
     if (problem) throw new PublishError(problem, "permanent");
 
     let creationId: string;
-    if (media.length === 1) {
+    if (video) {
+      // Reel : le conteneur peut mettre plusieurs minutes à être prêt ; on le reprend au passage suivant.
+      const existing = resume?.instagramContainer;
+      const id = existing ?? (await createContainerId(label, igUserId, token, { media_type: "REELS", video_url: video.publicUrl, caption: content.text, share_to_feed: true }));
+      creationId = await waitForContainer(label, id, token, "la vidéo", { instagramContainer: id });
+    } else if (media.length === 1) {
       creationId = await createContainer(label, igUserId, token, { image_url: jpegUrl(media[0] as PublishMedia), caption: content.text });
     } else {
       const children: string[] = [];
@@ -114,20 +126,32 @@ export function createMetaPublisher(options: MetaPublisherOptions): SocialPublis
     return { externalId: mediaId, externalUrl: permalink, simulated: false };
   }
 
-  /** Crée un conteneur Instagram et attend qu'Instagram ait fini de télécharger l'image. */
-  async function createContainer(label: string, igUserId: string, token: string, values: Record<string, string | boolean>): Promise<string> {
+  async function createContainerId(label: string, igUserId: string, token: string, values: Record<string, string | boolean>): Promise<string> {
     const response = await post(label, `${igUserId}/media`, token, values, false);
     const id = stringField(response.body, "id");
     if (!id) throw new PublishError(`${label} n'a pas renvoyé d'identifiant de média.`, "retryable");
+    return id;
+  }
+
+  /**
+   * Attend qu'Instagram ait fini de préparer un conteneur. S'il n'est pas prêt à temps, l'erreur temporaire
+   * transporte de quoi le reprendre (`resume`) au lieu d'en créer un nouveau.
+   */
+  async function waitForContainer(label: string, id: string, token: string, what: string, resume?: Record<string, string>): Promise<string> {
     for (let i = 0; i < CONTAINER_POLLS; i += 1) {
       const status = stringField((await get(label, `${id}?fields=status_code`, token)).body, "status_code");
       if (status === "FINISHED") return id;
       if (status === "ERROR" || status === "EXPIRED") {
-        throw new PublishError(`${label} n'a pas pu traiter l'image (format ou dimensions non acceptés).`, "permanent");
+        throw new PublishError(`${label} n'a pas pu traiter ${what} (format ou dimensions non acceptés).`, "permanent");
       }
       await sleep(CONTAINER_POLL_MS);
     }
-    throw new PublishError(`${label} traite encore l'image.`, "retryable");
+    throw new PublishError(`${label} prépare encore ${what} : nouvel essai dans quelques minutes.`, "retryable", resume);
+  }
+
+  /** Crée un conteneur Instagram et attend qu'Instagram ait fini de télécharger l'image. */
+  async function createContainer(label: string, igUserId: string, token: string, values: Record<string, string | boolean>): Promise<string> {
+    return waitForContainer(label, await createContainerId(label, igUserId, token, values), token, "l'image");
   }
 }
 

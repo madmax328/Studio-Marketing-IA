@@ -7,11 +7,12 @@ import type { PublishContext, PublishMedia } from "../../types";
 
 const noSleep = async () => {};
 
-function context(network: "facebook" | "instagram", media: Partial<PublishMedia>[] = []): PublishContext {
+function context(network: "facebook" | "instagram", media: Partial<PublishMedia>[] = [], resume: Record<string, string> | null = null): PublishContext {
   return {
     post: { _id: new ObjectId(), network, text: "Bonjour #promo" } as PostDoc,
     account: { network, externalAccountId: network === "facebook" ? "PAGE1" : "IG1", displayName: "Ma page" } as SocialAccountDoc,
     accessToken: "jeton-page",
+    resume,
     media: media.map((item, index) => ({
       mediaId: `m${index}`,
       mimeType: "image/jpeg",
@@ -119,5 +120,45 @@ describe("connecteur Meta — Instagram", () => {
     expect(instagramMediaProblem([{ width: 1200, height: 628 }])).toBeNull();
     expect(instagramMediaProblem([])).not.toBeNull();
     expect(instagramMediaProblem(Array.from({ length: 11 }, () => ({ width: 1, height: 1 })))).not.toBeNull();
+  });
+});
+
+describe("connecteur Meta — vidéos", () => {
+  const video = { mimeType: "video/mp4", width: 1080, height: 1920, publicUrl: "https://app.test/api/medias/public/v?exp=1&sig=s" };
+
+  it("Facebook : vidéo envoyée par lien, avec sa description", async () => {
+    const fetch = fakeFetch([{ match: "/PAGE1/videos", replies: [{ body: { id: "V1" } }] }]);
+    const result = await createMetaPublisher({ graphVersion: "v24.0", fetch: fetch.impl }).publish(context("facebook", [video]));
+    expect(result).toEqual({ externalId: "V1", externalUrl: "https://www.facebook.com/PAGE1/videos/V1", simulated: false });
+    const body = new URLSearchParams(fetch.calls[0]?.body ?? "");
+    expect(body.get("file_url")).toBe(video.publicUrl);
+    expect(body.get("description")).toBe("Bonjour #promo");
+  });
+
+  it("Instagram : Reel encore en traitement → nouvel essai qui reprend le même conteneur, sans le recréer", async () => {
+    const first = fakeFetch([
+      { match: "/IG1/media", method: "POST", replies: [{ body: { id: "REEL1" } }] },
+      { match: "REEL1?fields=status_code", replies: [{ body: { status_code: "IN_PROGRESS" } }] },
+    ]);
+    const error = await createMetaPublisher({ graphVersion: "v24.0", fetch: first.impl, sleep: noSleep })
+      .publish(context("instagram", [video]))
+      .catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ kind: "retryable", resume: { instagramContainer: "REEL1" } });
+    const created = new URLSearchParams(first.calls[0]?.body ?? "");
+    expect(created.get("media_type")).toBe("REELS");
+    expect(created.get("video_url")).toBe(video.publicUrl);
+    expect(first.calls.some((call) => call.url.includes("media_publish"))).toBe(false);
+
+    const second = fakeFetch([
+      { match: "/IG1/media_publish", replies: [{ body: { id: "IGV" } }] },
+      { match: "REEL1?fields=status_code", replies: [{ body: { status_code: "FINISHED" } }] },
+      { match: "IGV?fields=permalink", replies: [{ body: { permalink: "https://www.instagram.com/reel/x/" } }] },
+    ]);
+    const result = await createMetaPublisher({ graphVersion: "v24.0", fetch: second.impl, sleep: noSleep }).publish(
+      context("instagram", [video], { instagramContainer: "REEL1" }),
+    );
+    expect(result.externalId).toBe("IGV");
+    // Aucun nouveau conteneur créé lors de la reprise.
+    expect(second.calls.some((call) => call.url.endsWith("/IG1/media"))).toBe(false);
   });
 });

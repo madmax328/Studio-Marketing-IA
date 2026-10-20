@@ -9,6 +9,7 @@ const ctx = (mimeTypes: string[]): PublishContext => ({
   post: { _id: new ObjectId(), network: "threads", text: "Salut" } as PostDoc,
   account: { network: "threads", externalAccountId: "TH1", displayName: "@moi" } as SocialAccountDoc,
   accessToken: "jeton",
+  resume: null,
   media: mimeTypes.map((mimeType, index) => ({
     mediaId: `m${index}`,
     mimeType,
@@ -57,5 +58,29 @@ describe("connecteur Threads", () => {
       kind: "permanent",
       message: expect.stringContaining("FAILED_DOWNLOADING_VIDEO"),
     });
+  });
+});
+
+describe("connecteur Threads — vidéos", () => {
+  it("publie une vidéo et reprend un conteneur en cours", async () => {
+    const base = ctx(["video/mp4"]);
+    const first = fakeFetch([
+      { match: "/TH1/threads", replies: [{ body: { id: "VC" } }] },
+      { match: "VC?fields=status", replies: [{ body: { status: "IN_PROGRESS" } }] },
+    ]);
+    await expect(createThreadsPublisher({ fetch: first.impl, sleep: async () => {} }).publish(base)).rejects.toMatchObject({
+      kind: "retryable",
+      resume: { threadsContainer: "VC" },
+    });
+    expect(new URLSearchParams(first.calls[0]?.body ?? "").get("media_type")).toBe("VIDEO");
+
+    const second = fakeFetch([
+      { match: "/TH1/threads_publish", replies: [{ body: { id: "T5" } }] },
+      { match: "VC?fields=status", replies: [{ body: { status: "FINISHED" } }] },
+      { match: "T5?fields=permalink", replies: [{ body: {} }] },
+    ]);
+    const result = await createThreadsPublisher({ fetch: second.impl, sleep: async () => {} }).publish({ ...base, resume: { threadsContainer: "VC" } });
+    expect(result.externalId).toBe("T5");
+    expect(second.calls.some((call) => call.url.endsWith("/TH1/threads"))).toBe(false);
   });
 });

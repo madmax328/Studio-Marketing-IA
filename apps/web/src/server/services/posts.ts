@@ -123,7 +123,7 @@ export async function updatePostText(
 
   const updated = await collections(db).posts.findOneAndUpdate(
     { _id: post._id, workspaceId: access.workspace._id, status: { $in: [...EDITABLE_POST_STATUSES] } },
-    { $set: { text, updatedAt: new Date() } },
+    { $set: { text, updatedAt: new Date() }, $unset: { "publishing.resume": "" } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("Cette publication ne peut plus être modifiée.", "conflict");
@@ -194,7 +194,8 @@ export async function setPostMedia(db: Db, access: WorkspaceAccess, postId: stri
 
   const updated = await collections(db).posts.findOneAndUpdate(
     { _id: post._id, workspaceId: access.workspace._id, status: { $in: [...EDITABLE_POST_STATUSES] } },
-    { $set: { mediaIds: objectIds, mediaKind, updatedAt: new Date() } },
+    // Un envoi en cours chez le réseau concernait les anciens médias : il ne doit pas être repris.
+    { $set: { mediaIds: objectIds, mediaKind, updatedAt: new Date() }, $unset: { "publishing.resume": "" } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("Cette publication ne peut plus être modifiée.", "conflict");
@@ -274,7 +275,7 @@ export async function setPostSchedule(
 
   const updated = await collections(db).posts.findOneAndUpdate(
     { _id: post._id, workspaceId: access.workspace._id, status: post.status },
-    { $set: { scheduledAt, status, "publishing.nextAttemptAt": null, updatedAt: new Date() } },
+    { $set: { scheduledAt, status, "publishing.nextAttemptAt": null, "publishing.resume": null, updatedAt: new Date() } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("La publication a changé entre-temps. Rechargez la page.", "conflict");

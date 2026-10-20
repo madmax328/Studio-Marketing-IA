@@ -115,7 +115,7 @@ async function processPost(
     );
 
   const fail = async (reason: string): Promise<"failed"> => {
-    await finish({ status: "failed", "publishing.lastError": reason, "publishing.nextAttemptAt": null });
+    await finish({ status: "failed", "publishing.lastError": reason, "publishing.nextAttemptAt": null, "publishing.resume": null });
     await recordAudit(deps.db, { workspaceId: post.workspaceId, actorUserId: null, action: "post.publish_failed", targetId: post._id.toHexString() });
     await deps.notifier.publishFailed(post, reason);
     return "failed";
@@ -169,7 +169,7 @@ async function processPost(
   }
 
   try {
-    const result = await publisher.publish({ post, account, accessToken, media });
+    const result = await publisher.publish({ post, account, accessToken, media, resume: post.publishing?.resume ?? null });
     await finish({
       status: "published",
       publishedAt: now(),
@@ -179,6 +179,7 @@ async function processPost(
       "publishing.simulated": result.simulated,
       "publishing.lastError": null,
       "publishing.nextAttemptAt": null,
+      "publishing.resume": null,
     });
     await recordAudit(deps.db, {
       workspaceId: post.workspaceId,
@@ -208,6 +209,7 @@ async function processPost(
         status: "scheduled",
         "publishing.lastError": error.message,
         "publishing.nextAttemptAt": new Date(now().getTime() + delay * 60_000),
+        "publishing.resume": error.resume ?? null,
       });
       return "retried";
     }
