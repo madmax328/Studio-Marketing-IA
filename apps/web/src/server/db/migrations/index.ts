@@ -6,6 +6,7 @@ import { migration003 } from "./003-media-assets";
 import { migration004 } from "./004-campaigns-calendar";
 import { migration005 } from "./005-publishing";
 import { migration006 } from "./006-billing";
+import { migration007 } from "./007-plan-features";
 
 export interface Migration {
   /** Identifiant unique et ordonné, ex. "001-initial-indexes". Ne jamais renommer. */
@@ -17,7 +18,7 @@ export interface Migration {
  * Liste ordonnée des migrations. Ajouter les nouvelles à la fin, ne jamais modifier une migration appliquée.
  * Chaque migration doit être idempotente : elle peut être lancée par plusieurs instances en même temps.
  */
-export const MIGRATIONS: readonly Migration[] = [migration001, migration002, migration003, migration004, migration005, migration006];
+export const MIGRATIONS: readonly Migration[] = [migration001, migration002, migration003, migration004, migration005, migration006, migration007];
 
 export async function runMigrations(db: Db, log: (message: string) => void = console.log): Promise<string[]> {
   const { migrations } = collections(db);

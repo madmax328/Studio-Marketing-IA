@@ -37,6 +37,13 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
 | 6. Analyse | Récupération des statistiques disponibles via les API, page de statistiques, premières recommandations | À faire |
 | 7. Abonnements | Stripe (paiement, portail client, webhooks vérifiés et idempotents), 4 offres configurables en base, crédits mensuels avec journal immuable, remboursement des échecs | **Fait** (prix à créer dans Stripe) |
 
+### Site public
+
+Accueil (`/`), Fonctionnalités, Tarifs (offres lues en base, prix lus chez Stripe, actualisés toutes les heures) et
+pages d'accès restylées. Thème « pilote automatique » : signalétique d'aéroport, tableau des départs à palettes
+(exemple signalé comme tel), cartes d'embarquement. L'état de chaque réseau affiché sur le site vient du catalogue
+`SOCIAL_NETWORKS` : il ne peut pas être en avance sur la réalité. **Pages légales : à faire avant l'ouverture.**
+
 ### À ne pas oublier
 
 - **Brancher un fournisseur d'images IA** (OpenAI gpt-image recommandé ; Google ou fal.ai possibles) derrière une
