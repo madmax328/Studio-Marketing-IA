@@ -24,14 +24,14 @@ export function BrandForm({ action, initial, submitLabel }: BrandFormProps) {
       {state.saved ? <Alert tone="success">Modifications enregistrées.</Alert> : null}
 
       <Card className="space-y-4">
-        <h2 className="font-semibold">L&apos;entreprise</h2>
-        <TextField label="Nom de l'entreprise *" name="name" required maxLength={120} defaultValue={initial?.name} />
+        <h2 className="font-semibold">Votre activité</h2>
+        <TextField label="Nom *" hint="Votre entreprise, votre marque, votre association, ou simplement votre nom." name="name" required maxLength={120} defaultValue={initial?.name} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Secteur d'activité" name="industry" placeholder="Ex. restaurant, coiffure, plomberie" defaultValue={initial?.industry} />
+          <TextField label="Secteur d'activité" name="industry" placeholder="Ex. coaching, association sportive, photographie, restaurant" defaultValue={initial?.industry} />
           <TextField label="Site internet" name="website" type="url" placeholder="https://" defaultValue={initial?.website} />
         </div>
         <TextAreaField
-          label="Description de l'entreprise"
+          label="Description de l'activité"
           name="description"
           rows={4}
           maxLength={2000}
@@ -50,16 +50,16 @@ export function BrandForm({ action, initial, submitLabel }: BrandFormProps) {
       </Card>
 
       <Card className="space-y-4">
-        <h2 className="font-semibold">Offre et clientèle</h2>
+        <h2 className="font-semibold">Ce que vous proposez et à qui</h2>
         <p className="text-sm text-muted">
           L&apos;IA n&apos;utilisera que ces informations : elle n&apos;inventera jamais de prix, de promotion ni de
           caractéristique.
         </p>
         <TextAreaField label="Public cible" name="targetAudience" defaultValue={initial?.targetAudience} />
-        <TextAreaField label="Produits et services" name="productsAndServices" rows={4} defaultValue={initial?.productsAndServices} />
-        <TextAreaField label="Prix et offres" name="pricesAndOffers" defaultValue={initial?.pricesAndOffers} />
+        <TextAreaField label="Produits, services ou contenus" name="productsAndServices" rows={4} defaultValue={initial?.productsAndServices} />
+        <TextAreaField label="Prix et offres" hint="Laissez vide si cela ne vous concerne pas." name="pricesAndOffers" defaultValue={initial?.pricesAndOffers} />
         <TextAreaField label="Promotions en cours" name="currentPromotions" defaultValue={initial?.currentPromotions} />
-        <TextAreaField label="Avantages concurrentiels" name="competitiveAdvantages" defaultValue={initial?.competitiveAdvantages} />
+        <TextAreaField label="Ce qui vous distingue" name="competitiveAdvantages" defaultValue={initial?.competitiveAdvantages} />
       </Card>
 
       <Card className="space-y-4">

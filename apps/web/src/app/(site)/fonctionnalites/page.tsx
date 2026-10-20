@@ -1,175 +1,149 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND_TONE_LABELS, CAMPAIGN_OBJECTIVES, IMAGE_FORMAT_IDS, IMAGE_FORMATS, TEMPLATE_IDS, TEMPLATE_LABELS } from "@smia/shared";
-import { BoardingPass, PassField } from "@/components/site/boarding-pass";
-import { SectionTitle } from "@/components/site/section-title";
+import { SectionHeading } from "@/components/site/section-heading";
+import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = {
   title: "Fonctionnalités",
-  description: "Mémoire de marque, rédaction par IA, visuels, campagnes, calendrier et publication automatique : le détail du studio.",
+  description: "Fiche de votre activité, écriture par IA, visuels, campagnes, calendrier et publication automatique : le détail du studio.",
 };
 
-interface Cabin {
-  gate: string;
-  flight: string;
+interface Feature {
   title: string;
   pitch: string;
   points: string[];
-  status: "En service" | "Bientôt";
+  tone: string;
+  soon?: boolean;
 }
 
-const CABINS: Cabin[] = [
+const FEATURES: Feature[] = [
   {
-    gate: "A1",
-    flight: "MRQ",
-    title: "Ma marque",
-    pitch: "Tout ce que l'IA doit savoir sur vous, rangé une fois pour toutes.",
+    title: "Votre fiche",
+    pitch: "Tout ce que le studio doit savoir sur vous, rangé une fois pour toutes.",
     points: [
-      "Activité, produits et services, prix et offres, promotions en cours, points forts.",
-      "Public visé, zone géographique, langues, fuseau horaire.",
-      `Ton au choix (${Object.values(BRAND_TONE_LABELS).join(", ").toLowerCase()}), style d'écriture, mots à utiliser ou à éviter.`,
-      "Couleurs, logo, coordonnées publiques et appel à l'action préféré.",
+      "Votre activité, ce que vous proposez, à qui, où, et ce qui vous distingue.",
+      `Votre ton (${Object.values(BRAND_TONE_LABELS).join(", ").toLowerCase()}), votre style, les mots à utiliser ou à éviter.`,
+      "Vos couleurs, votre logo, vos coordonnées publiques et ce que vous voulez que les gens fassent.",
+      "Plusieurs fiches possibles selon l'offre, par exemple pour plusieurs marques.",
     ],
-    status: "En service",
+    tone: "bg-mint",
   },
   {
-    gate: "A2",
-    flight: "CRE",
-    title: "Studio de rédaction",
+    title: "L'écriture",
     pitch: "Une idée en une phrase, une publication prête pour chaque réseau.",
     points: [
-      "Jusqu'à 3 variantes par réseau, chacune dans la longueur et les usages du réseau.",
-      "L'IA explique le rôle de chaque publication et signale l'information qui manque, au lieu de l'inventer.",
-      "Éditeur avec compteur de caractères, duplication, brouillons.",
-      "Vos données de marque ne partent chez le fournisseur d'IA qu'après votre accord.",
+      "Jusqu'à 3 versions par réseau, chacune dans la longueur et le style du réseau.",
+      "Le studio explique à quoi sert chaque publication et vous signale ce qui manque, au lieu de l'inventer.",
+      "Vous modifiez le texte comme vous voulez, avec un compteur de caractères.",
+      "Vos informations ne sont envoyées au service d'IA qu'après votre accord.",
     ],
-    status: "En service",
+    tone: "bg-butter",
   },
   {
-    gate: "A3",
-    flight: "VIS",
-    title: "Visuels",
+    title: "Les visuels",
     pitch: "Des images à vos couleurs, sans logiciel de graphisme.",
     points: [
-      `${TEMPLATE_IDS.length} gabarits : ${TEMPLATE_IDS.map((id) => TEMPLATE_LABELS[id].label.toLowerCase()).join(", ")}.`,
+      `${TEMPLATE_IDS.length} modèles : ${TEMPLATE_IDS.map((id) => TEMPLATE_LABELS[id].label.toLowerCase()).join(", ")}.`,
       `${IMAGE_FORMAT_IDS.length} formats : ${IMAGE_FORMAT_IDS.map((id) => IMAGE_FORMATS[id].label.toLowerCase()).join(", ")}.`,
-      "Votre logo et vos couleurs incrustés automatiquement ; vos propres photos dans la médiathèque.",
-      "Génération d'images par IA : prévue, en complément des gabarits.",
+      "Votre logo et vos couleurs ajoutés automatiquement ; vos propres photos rangées dans votre médiathèque.",
+      "Création d'images par IA : prévue, en complément des modèles.",
     ],
-    status: "En service",
+    tone: "bg-rose",
   },
   {
-    gate: "B1",
-    flight: "CMP",
-    title: "Campagnes",
-    pitch: "Un mois de publications, pensé comme un plan et pas au jour le jour.",
+    title: "Les campagnes",
+    pitch: "Plusieurs semaines de publications, pensées comme un tout.",
     points: [
-      `Un assistant en 9 étapes, ${CAMPAIGN_OBJECTIVES.length} objectifs possibles (faire connaître, promotion, événement, fidélisation…).`,
-      "L'IA propose une stratégie : messages clés, rythme, répartition par réseau. Vous la modifiez avant tout.",
-      "Rédaction de tout le plan, puis programmation en une fois ; chaque publication reste modifiable.",
+      `Un assistant en 9 étapes et ${CAMPAIGN_OBJECTIVES.length} objectifs au choix : vous faire connaître, annoncer un événement, lancer une nouveauté…`,
+      "Le studio propose un plan : messages, rythme, réseaux. Vous le modifiez avant tout.",
+      "Il écrit ensuite toutes les publications ; vous les programmez en une fois.",
     ],
-    status: "En service",
+    tone: "bg-lilac",
   },
   {
-    gate: "B2",
-    flight: "CAL",
-    title: "Calendrier",
-    pitch: "La tour de contrôle : ce qui part, quand, et où.",
+    title: "Le calendrier",
+    pitch: "Ce qui part, quand, et où.",
     points: [
-      "Vues mois, semaine et liste, filtres par réseau et par statut.",
-      "Heures affichées dans votre fuseau ; changements d'heure gérés (une heure qui n'existe pas est refusée).",
+      "Vue par mois, par semaine ou en liste, avec des filtres.",
+      "Heures affichées dans votre fuseau horaire ; changements d'heure été/hiver pris en compte.",
       "Décaler, annuler ou reprogrammer une publication jusqu'à son départ.",
     ],
-    status: "En service",
+    tone: "bg-sky",
   },
   {
-    gate: "B3",
-    flight: "PUB",
-    title: "Publication automatique",
-    pitch: "La publication part seule, à l'heure, sur le bon compte.",
+    title: "La publication automatique",
+    pitch: "Vos publications partent seules, à l'heure, sur le bon compte.",
     points: [
-      "Connexion par la page officielle de chaque réseau : jamais de mot de passe demandé.",
-      "Nouvel essai automatique si le réseau est momentanément indisponible ; jamais deux fois la même publication.",
-      "Alerte dans l'application et par e-mail si une publication est bloquée ou si un compte doit être reconnecté.",
-      "Réseau par réseau, l'état réel de chaque connexion est affiché sur la page d'accueil.",
+      "Vos comptes se connectent par la page officielle de chaque réseau : jamais de mot de passe demandé.",
+      "Nouvel essai automatique si le réseau ne répond pas, sans jamais publier deux fois.",
+      "Alerte dans le studio et par e-mail si une publication est bloquée ou si un compte doit être reconnecté.",
+      "L'état réel de chaque réseau est affiché sur la page d'accueil.",
     ],
-    status: "En service",
+    tone: "bg-tomato",
   },
   {
-    gate: "C1",
-    flight: "ANA",
-    title: "Analyse et amélioration",
-    pitch: "Comprendre ce qui fonctionne, et s'en servir pour la suite.",
-    points: [
-      "Statistiques réelles de chaque publication, telles que les réseaux les fournissent.",
-      "Premières recommandations à partir de vos propres résultats.",
-    ],
-    status: "Bientôt",
+    title: "Les résultats",
+    pitch: "Savoir ce qui marche, et s'en servir pour la suite.",
+    points: ["Les chiffres réels de chaque publication, tels que les réseaux les donnent.", "Des conseils tirés de vos propres résultats."],
+    tone: "bg-cream-2",
+    soon: true,
   },
 ];
 
 export default function FeaturesPage() {
   return (
     <>
-      <section className="tarmac text-paper">
-        <div className="mx-auto max-w-6xl px-4 pt-16 pb-16 sm:px-6 sm:pt-24">
-          <SectionTitle tone="dark" code="Plan de l'appareil" title={<>Visite de l&apos;appareil,<br />cabine par cabine.</>}>
-            Chaque fonction a sa porte. Celles marquées « bientôt » sont annoncées comme telles : rien n&apos;est présenté ici
-            avant d&apos;exister.
-          </SectionTitle>
-        </div>
-        <div className="hazard h-3" aria-hidden="true" />
+      <section className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 sm:pt-24">
+        <SectionHeading kicker="Fonctionnalités" title={<>Ce que fait le studio, <em>en détail.</em></>}>
+          Ce qui est marqué « bientôt » est annoncé comme tel : rien n&apos;est présenté ici avant d&apos;exister.
+        </SectionHeading>
       </section>
 
-      <section className="py-16 sm:py-24">
-        <div className="mx-auto max-w-5xl space-y-8 px-4 sm:px-6">
-          {CABINS.map((cabin) => (
-            <BoardingPass
-              key={cabin.gate}
-              className={cabin.status === "Bientôt" ? "opacity-80" : undefined}
-              stub={
-                <>
-                  <div className="grid grid-cols-3 gap-3 md:grid-cols-1">
-                    <PassField label="Porte" value={cabin.gate} />
-                    <PassField label="Vol" value={cabin.flight} />
-                    <PassField
-                      label="Statut"
-                      value={<span className={cabin.status === "Bientôt" ? "text-ink-soft" : "text-[#138a4b]"}>{cabin.status}</span>}
-                    />
-                  </div>
-                  {/* Code-barres décoratif du billet. */}
-                  <div aria-hidden="true" className="flex h-10 items-stretch gap-[2px]">
-                    {Array.from(`${cabin.gate}${cabin.flight}${cabin.title}${cabin.pitch}`.slice(0, 44)).map((char, index) => (
-                      <span key={index} className="bg-ink" style={{ width: `${(char.charCodeAt(0) % 4) + 1}px` }} />
-                    ))}
-                  </div>
-                </>
-              }
+      <section className="pb-20 sm:pb-28">
+        <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6">
+          {FEATURES.map((feature, index) => (
+            <article
+              key={feature.title}
+              className={cn("sticker grid overflow-hidden bg-white md:grid-cols-[0.9fr_1.4fr]", feature.soon && "border-dashed shadow-none")}
             >
-              <p className="font-board text-[10px] tracking-[0.2em] text-ink-soft uppercase">Cabine</p>
-              <h2 className="font-display text-5xl leading-none font-black uppercase">{cabin.title}</h2>
-              <p className="mt-3 text-lg">{cabin.pitch}</p>
-              <ul className="mt-5 space-y-2 text-ink-soft">
-                {cabin.points.map((point) => (
-                  <li key={point} className="flex gap-3">
-                    <span aria-hidden="true" className="mt-2 size-2 shrink-0 rotate-45 bg-signal" />
-                    {point}
-                  </li>
-                ))}
-              </ul>
-            </BoardingPass>
+              <div className={cn("flex flex-col justify-between gap-6 border-b-[1.5px] border-ink p-7 md:border-r-[1.5px] md:border-b-0", feature.tone)}>
+                <p className="font-serif text-6xl leading-none italic">{String(index + 1).padStart(2, "0")}</p>
+                <div>
+                  {feature.soon ? (
+                    <span className="mb-3 inline-block rounded-full border-[1.5px] border-dashed border-ink bg-white px-3 py-0.5 text-xs font-semibold">
+                      Bientôt
+                    </span>
+                  ) : null}
+                  <h2 className="font-serif text-5xl leading-none">{feature.title}</h2>
+                </div>
+              </div>
+              <div className="p-7">
+                <p className="text-xl font-semibold">{feature.pitch}</p>
+                <ul className="mt-5 space-y-3 text-ink-soft">
+                  {feature.points.map((point) => (
+                    <li key={point} className="flex gap-3">
+                      <span aria-hidden="true" className="text-tomato">✓</span>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
           ))}
         </div>
       </section>
 
-      <section className="bg-paper-2 py-16">
-        <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 px-4 sm:px-6 md:flex-row md:items-center md:justify-between">
-          <p className="font-display text-4xl leading-none font-black uppercase">Tout est à bord. Il ne manque que vous.</p>
-          <div className="flex gap-3">
-            <Link href="/inscription" className="rounded-full bg-ink px-6 py-3 font-semibold text-paper hover:bg-night-3">
-              Embarquer gratuitement
+      <section className="px-4 pb-20 sm:px-6">
+        <div className="sticker mx-auto flex max-w-6xl flex-col items-start gap-6 bg-butter p-8 md:flex-row md:items-center md:justify-between">
+          <p className="font-serif text-4xl leading-none">
+            Le plus simple, <em>c&apos;est d&apos;essayer.</em>
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/inscription" className="rounded-full border-[1.5px] border-ink bg-ink px-6 py-3 font-semibold text-cream hover:bg-white hover:text-ink">
+              Créer mon compte gratuit
             </Link>
-            <Link href="/tarifs" className="rounded-full border-2 border-ink px-6 py-3 font-semibold hover:bg-signal">
+            <Link href="/tarifs" className="rounded-full border-[1.5px] border-ink bg-white px-6 py-3 font-semibold hover:bg-cream-2">
               Voir les tarifs
             </Link>
           </div>

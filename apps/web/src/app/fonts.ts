@@ -1,8 +1,7 @@
-import { Big_Shoulders, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Instrument_Sans, Instrument_Serif } from "next/font/google";
 
-/** Signalétique d'aéroport : titres condensés, tableau des départs en chasse fixe, texte courant lisible. */
-export const displayFont = Big_Shoulders({ subsets: ["latin"], weight: "variable", variable: "--nf-display", display: "swap" });
-export const boardFont = JetBrains_Mono({ subsets: ["latin"], weight: ["500", "700"], variable: "--nf-board", display: "swap" });
+/** Site public : grands titres à empattements (italique pour les mots clés), texte courant très lisible. */
+export const serifFont = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--nf-serif", display: "swap" });
 export const bodyFont = Instrument_Sans({ subsets: ["latin"], weight: "variable", variable: "--nf-body", display: "swap" });
 
-export const siteFontVariables = `${displayFont.variable} ${boardFont.variable} ${bodyFont.variable}`;
+export const siteFontVariables = `${serifFont.variable} ${bodyFont.variable}`;

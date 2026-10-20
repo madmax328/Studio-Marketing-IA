@@ -21,7 +21,7 @@ export default async function BrandsPage() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Ma marque</h1>
-          <p className="text-sm text-muted">La mémoire de votre entreprise, utilisée pour chaque publication.</p>
+          <p className="text-sm text-muted">La mémoire de votre activité, utilisée pour chaque publication.</p>
           <p className="text-xs text-muted">
             {brands.length} / {limits.maxBrands} marque(s) avec votre offre.
           </p>

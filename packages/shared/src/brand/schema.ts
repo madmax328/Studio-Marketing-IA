@@ -65,7 +65,7 @@ const languageCode = z
  * et ne doit jamais inventer de prix, promotions ou coordonnées.
  */
 export const brandInputSchema = z.object({
-  name: trimmed(120).min(1, "Le nom de l'entreprise est obligatoire"),
+  name: trimmed(120).min(1, "Le nom est obligatoire"),
   industry: optionalText(120),
   description: optionalText(2000),
   website: optionalUrl,
@@ -114,9 +114,9 @@ export const BRAND_RECOMMENDED_FIELDS = [
 
 export const BRAND_FIELD_LABELS: Record<(typeof BRAND_RECOMMENDED_FIELDS)[number], string> = {
   industry: "Secteur d'activité",
-  description: "Description de l'entreprise",
+  description: "Description de l'activité",
   targetAudience: "Public cible",
-  productsAndServices: "Produits et services",
+  productsAndServices: "Produits, services ou contenus",
   preferredCallToAction: "Appel à l'action préféré",
 };
 

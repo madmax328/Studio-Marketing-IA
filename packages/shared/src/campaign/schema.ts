@@ -19,15 +19,15 @@ export const CAMPAIGN_OBJECTIVES = [
 export type CampaignObjective = (typeof CAMPAIGN_OBJECTIVES)[number];
 
 export const CAMPAIGN_OBJECTIVE_LABELS: Record<CampaignObjective, string> = {
-  notoriete: "Faire connaître l'entreprise",
-  promouvoir_produit: "Promouvoir un produit",
-  annoncer_promotion: "Annoncer une promotion",
-  clients_locaux: "Attirer des clients locaux",
+  notoriete: "Faire connaître votre activité",
+  promouvoir_produit: "Mettre en avant un produit, un service ou un contenu",
+  annoncer_promotion: "Annoncer une offre ou une promotion",
+  clients_locaux: "Toucher les personnes près de chez vous",
   visites_site: "Obtenir des visites sur le site",
-  demandes_devis: "Générer des demandes de devis",
+  demandes_devis: "Obtenir des demandes de devis ou de contact",
   communaute: "Développer une communauté",
-  fidelisation: "Fidéliser les clients",
-  lancement_produit: "Lancer un nouveau produit",
+  fidelisation: "Fidéliser votre public",
+  lancement_produit: "Lancer une nouveauté",
   evenement: "Communiquer sur un événement",
 };
 

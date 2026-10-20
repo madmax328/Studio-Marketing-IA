@@ -17,13 +17,13 @@ export const POST_KINDS = [
 export type PostKind = (typeof POST_KINDS)[number];
 
 export const POST_KIND_LABELS: Record<PostKind, string> = {
-  presentation_produit: "Présenter un produit ou service",
-  promotion: "Annoncer une promotion",
+  presentation_produit: "Présenter un produit, un service ou un contenu",
+  promotion: "Annoncer une offre ou une promotion",
   evenement: "Annoncer un événement",
   conseil: "Partager un conseil",
   coulisses: "Montrer les coulisses",
   question_communaute: "Poser une question à la communauté",
-  presentation_entreprise: "Présenter l'entreprise",
+  presentation_entreprise: "Présenter votre activité",
   libre: "Sujet libre",
 };
 
