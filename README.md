@@ -91,6 +91,10 @@ Générer la clé de chiffrement des jetons (PowerShell), à mettre dans `SOCIAL
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
 ```
 
+## Avant l'ouverture
+
+Check-list complète et vérification de l'installation : `docs/LANCEMENT.md`.
+
 ## Activer les abonnements (Stripe)
 
 1. Créer un compte sur stripe.com (mode **Test** pour commencer).
