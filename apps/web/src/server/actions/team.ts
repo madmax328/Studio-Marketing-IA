@@ -122,16 +122,16 @@ export async function acceptInvitationAction(token: string): Promise<ActionResul
   return { ok: true, data: null };
 }
 
-export async function approvePostAction(postId: string): Promise<ActionResult<null>> {
+export async function approvePostAction(postId: string, seenVersion: string): Promise<ActionResult<null>> {
   const access = await requireWorkspace();
   return run(["/publications", `/publications/${postId}`, "/calendrier", "/tableau-de-bord"], async () => {
-    await notifyDecision(await approvePost(getDb(), access, access.userId, postId));
+    await notifyDecision(await approvePost(getDb(), access, access.userId, postId, seenVersion));
   });
 }
 
-export async function rejectPostAction(postId: string, comment: string): Promise<ActionResult<null>> {
+export async function rejectPostAction(postId: string, comment: string, seenVersion: string): Promise<ActionResult<null>> {
   const access = await requireWorkspace();
   return run(["/publications", `/publications/${postId}`, "/calendrier", "/tableau-de-bord"], async () => {
-    await notifyDecision(await rejectPost(getDb(), access, access.userId, postId, comment));
+    await notifyDecision(await rejectPost(getDb(), access, access.userId, postId, comment, seenVersion));
   });
 }

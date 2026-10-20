@@ -363,10 +363,11 @@ export async function unschedulePost(db: Db, access: WorkspaceAccess, userId: st
  * Valide une publication en attente : elle est programmée à sa date (ou part au prochain passage si la date est passée).
  * Les conditions de programmation sont revérifiées.
  */
-export async function approvePost(db: Db, access: WorkspaceAccess, userId: string, postId: string, now = new Date()): Promise<PostDoc> {
+export async function approvePost(db: Db, access: WorkspaceAccess, userId: string, postId: string, seenVersion: unknown, now = new Date()): Promise<PostDoc> {
   assertPermission(access, "content:approve");
   const post = await getPost(db, access, postId);
   if (post.status !== "pending_approval") throw new UserFacingError("Cette publication n'attend pas de validation.", "conflict");
+  assertSameVersion(post, seenVersion);
   const problems = schedulingProblems(post);
   if (problems.length > 0) throw new UserFacingError(problems.join(" "), "invalid_input");
   const updated = await collections(db).posts.findOneAndUpdate(
@@ -389,12 +390,21 @@ export async function approvePost(db: Db, access: WorkspaceAccess, userId: strin
 }
 
 /** Refuse une publication en attente : elle redevient un brouillon, avec la remarque pour son auteur. */
-export async function rejectPost(db: Db, access: WorkspaceAccess, userId: string, postId: string, rawComment: unknown, now = new Date()): Promise<PostDoc> {
+export async function rejectPost(
+  db: Db,
+  access: WorkspaceAccess,
+  userId: string,
+  postId: string,
+  rawComment: unknown,
+  seenVersion: unknown,
+  now = new Date(),
+): Promise<PostDoc> {
   assertPermission(access, "content:approve");
   const comment = approvalCommentSchema.safeParse(typeof rawComment === "string" ? rawComment : "");
   if (!comment.success) throw new UserFacingError(comment.error.issues[0]?.message ?? "Remarque invalide.", "invalid_input");
   const post = await getPost(db, access, postId);
   if (post.status !== "pending_approval") throw new UserFacingError("Cette publication n'attend pas de validation.", "conflict");
+  assertSameVersion(post, seenVersion);
   const updated = await collections(db).posts.findOneAndUpdate(
     { _id: post._id, workspaceId: access.workspace._id, status: "pending_approval", updatedAt: post.updatedAt },
     {
@@ -412,6 +422,17 @@ export async function rejectPost(db: Db, access: WorkspaceAccess, userId: string
   if (!updated) throw new UserFacingError("La publication a été modifiée entre-temps. Rechargez la page pour voir la dernière version.", "conflict");
   await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "post.rejected", targetId: postId });
   return updated;
+}
+
+/**
+ * La personne qui valide doit avoir vu la dernière version : `seenVersion` est la date de modification de la
+ * publication affichée à l'écran (ISO). Si le texte ou les médias ont changé depuis, la décision est refusée.
+ */
+function assertSameVersion(post: PostDoc, seenVersion: unknown) {
+  const seen = typeof seenVersion === "string" ? new Date(seenVersion).getTime() : Number.NaN;
+  if (seen !== post.updatedAt.getTime()) {
+    throw new UserFacingError("La publication a été modifiée depuis que vous l'avez ouverte. Rechargez la page pour voir la dernière version.", "conflict");
+  }
 }
 
 /** Publications qui attendent une validation (les plus proches d'abord). */

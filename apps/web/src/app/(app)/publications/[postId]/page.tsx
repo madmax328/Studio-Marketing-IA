@@ -89,7 +89,7 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
               : ""}
             .
           </p>
-          {roleHasPermission(access.role, "content:approve") ? <PostApprovalPanel postId={postId} /> : null}
+          {roleHasPermission(access.role, "content:approve") ? <PostApprovalPanel postId={postId} version={post.updatedAt.toISOString()} /> : null}
         </Card>
       ) : null}
       {post.status === "draft" && post.approval?.decision === "rejected" ? (

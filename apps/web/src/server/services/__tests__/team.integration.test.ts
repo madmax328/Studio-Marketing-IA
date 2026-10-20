@@ -115,15 +115,18 @@ describe.skipIf(!uri)("équipes et agences (MongoDB réel)", () => {
     expect((await listPendingApprovals(db, customer)).map((post) => post._id.toHexString())).toEqual([id]);
     // Le client ne modifie rien, il valide.
     await expect(updatePostText(db, customer, id, "Autre texte", ids.client)).rejects.toMatchObject({ code: "forbidden" });
-    await expect(approvePost(db, editor, ids.editor, id)).rejects.toMatchObject({ code: "forbidden" });
+    const seen = requested.updatedAt.toISOString();
+    await expect(approvePost(db, editor, ids.editor, id, seen)).rejects.toMatchObject({ code: "forbidden" });
+    // Une version que le client n'a pas vue ne peut pas être validée.
+    await expect(approvePost(db, customer, ids.client, id, new Date(0).toISOString())).rejects.toMatchObject({ code: "conflict" });
 
-    const approved = await approvePost(db, customer, ids.client, id);
+    const approved = await approvePost(db, customer, ids.client, id, seen);
     expect(approved).toMatchObject({ status: "scheduled", approval: { decision: "approved", decidedByUserId: ids.client } });
 
     const edited = await updatePostText(db, editor, id, "Cours d'essai jeudi soir", ids.editor);
     expect(edited.status).toBe("pending_approval");
 
-    const rejected = await rejectPost(db, customer, ids.client, id, "Ajoutez l'heure du cours");
+    const rejected = await rejectPost(db, customer, ids.client, id, "Ajoutez l'heure du cours", edited.updatedAt.toISOString());
     expect(rejected).toMatchObject({ status: "draft", approval: { decision: "rejected", comment: "Ajoutez l'heure du cours" } });
 
     // Le propriétaire programme directement, sans attendre.

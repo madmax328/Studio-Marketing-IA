@@ -7,7 +7,7 @@ import { Alert } from "@/components/ui/card";
 import { approvePostAction, rejectPostAction } from "@/server/actions/team";
 
 /** Validation d'une publication en attente : la valider (elle part à sa date) ou la refuser avec une remarque. */
-export function PostApprovalPanel({ postId }: { postId: string }) {
+export function PostApprovalPanel({ postId, version }: { postId: string; /** Version affichée (date de modification, ISO). */ version: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export function PostApprovalPanel({ postId }: { postId: string }) {
             className="w-full rounded-xl border border-border bg-black/30 px-3.5 py-2.5 text-sm"
           />
           <div className="flex flex-wrap gap-2">
-            <Button variant="danger" disabled={pending} onClick={() => run(() => rejectPostAction(postId, comment))}>
+            <Button variant="danger" disabled={pending} onClick={() => run(() => rejectPostAction(postId, comment, version))}>
               {pending ? "Envoi…" : "Refuser"}
             </Button>
             <Button variant="ghost" disabled={pending} onClick={() => setRejecting(false)}>
@@ -52,7 +52,7 @@ export function PostApprovalPanel({ postId }: { postId: string }) {
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <Button disabled={pending} onClick={() => run(() => approvePostAction(postId))}>
+          <Button disabled={pending} onClick={() => run(() => approvePostAction(postId, version))}>
             {pending ? "Validation…" : "Valider et programmer"}
           </Button>
           <Button variant="secondary" disabled={pending} onClick={() => setRejecting(true)}>
