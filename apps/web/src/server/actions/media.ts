@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getImageProvider, getSpeechProvider } from "@/server/ai";
+import { notifyIfApprovalRequested } from "@/server/approval-notify";
 import { getDb } from "@/server/db/client";
 import { getMediaStorage } from "@/server/media/storage";
 import { UserFacingError } from "@/server/services/errors";
@@ -110,7 +111,7 @@ export async function setBrandLogoAction(brandId: string, mediaId: string | null
 export async function setPostMediaAction(postId: string, mediaIds: string[]): Promise<ActionResult<null>> {
   const access = await requireWorkspace();
   try {
-    await setPostMedia(getDb(), access, postId, mediaIds);
+    await notifyIfApprovalRequested(await setPostMedia(getDb(), access, postId, mediaIds, access.userId));
     revalidatePath(`/publications/${postId}`);
     return { ok: true, data: null };
   } catch (error) {

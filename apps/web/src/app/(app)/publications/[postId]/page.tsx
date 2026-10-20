@@ -7,12 +7,13 @@ import { hasAiConsent } from "@/server/services/generation";
 import { PostEditor } from "@/components/posts/post-editor";
 import { PostAccountPicker } from "@/components/posts/post-account-picker";
 import { PostMediaPicker } from "@/components/posts/post-media-picker";
+import { PostApprovalPanel } from "@/components/posts/post-approval";
 import { PostScheduler } from "@/components/posts/post-scheduler";
 import { Alert, Card } from "@/components/ui/card";
 import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
 import { listMedia } from "@/server/services/media";
-import { getPost, MAX_MEDIA_PER_POST, postStatusLabel, schedulingProblems } from "@/server/services/posts";
+import { getPost, MAX_MEDIA_PER_POST, needsApproval, postStatusLabel, schedulingProblems } from "@/server/services/posts";
 import { listSocialAccounts } from "@/server/services/social-accounts";
 import { requireWorkspace } from "@/server/session";
 
@@ -78,6 +79,25 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
         </Alert>
       ) : null}
       {post.status === "processing" ? <Alert>Envoi en cours…</Alert> : null}
+      {post.status === "pending_approval" ? (
+        <Card className="space-y-3 border-warning/40">
+          <h2 className="font-semibold">En attente de validation</h2>
+          <p className="text-sm text-muted">
+            Cette publication ne partira qu&apos;une fois validée
+            {post.approval?.requestedAt
+              ? ` (demande du ${new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: post.timeZone }).format(post.approval.requestedAt)})`
+              : ""}
+            .
+          </p>
+          {roleHasPermission(access.role, "content:approve") ? <PostApprovalPanel postId={postId} /> : null}
+        </Card>
+      ) : null}
+      {post.status === "draft" && post.approval?.decision === "rejected" ? (
+        <Alert tone="error">
+          Changements demandés lors de la validation{post.approval.comment ? ` : « ${post.approval.comment} »` : "."} Modifiez la
+          publication puis redemandez la validation.
+        </Alert>
+      ) : null}
       {post.status === "published" && !post.publishing?.simulated ? (
         <Card className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -175,6 +195,7 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
           problems={schedulingProblems(post)}
           canWrite={roleHasPermission(access.role, "content:write")}
           canPublish={roleHasPermission(access.role, "content:publish")}
+          needsApproval={needsApproval(access)}
           canRegenerate={
             Boolean(post.campaignId && post.slotId) &&
             ["draft", "failed"].includes(post.status) &&

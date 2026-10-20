@@ -6,6 +6,7 @@ import {
   canTransitionPost,
   checkContentCompatibility,
   missingRecommendedFields,
+  invitationSchema,
   roleHasPermission,
 } from "./index";
 
@@ -124,5 +125,27 @@ describe("campagnes", () => {
     expect(campaignInputSchema.safeParse(base).success).toBe(true);
     expect(campaignInputSchema.safeParse({ ...base, endDate: "2026-10-01" }).success).toBe(false);
     expect(campaignInputSchema.safeParse({ ...base, endDate: "2027-03-01" }).success).toBe(false);
+  });
+});
+
+describe("équipes et validation", () => {
+  it("le client consulte et valide, sans rien modifier ni publier", () => {
+    expect(roleHasPermission("client", "content:approve")).toBe(true);
+    expect(roleHasPermission("client", "content:write")).toBe(false);
+    expect(roleHasPermission("client", "content:publish")).toBe(false);
+    expect(roleHasPermission("editor", "content:approve")).toBe(false);
+    expect(roleHasPermission("admin", "content:approve")).toBe(true);
+  });
+
+  it("une publication à valider ne peut que partir (validée), revenir en brouillon ou être annulée", () => {
+    expect(canTransitionPost("draft", "pending_approval")).toBe(true);
+    expect(canTransitionPost("pending_approval", "scheduled")).toBe(true);
+    expect(canTransitionPost("pending_approval", "processing")).toBe(false);
+    expect(canTransitionPost("pending_approval", "published")).toBe(false);
+  });
+
+  it("invitation : adresse normalisée, rôle propriétaire impossible", () => {
+    expect(invitationSchema.parse({ email: " Bruno@Exemple.FR ", role: "editor" }).email).toBe("bruno@exemple.fr");
+    expect(invitationSchema.safeParse({ email: "a@b.fr", role: "owner" }).success).toBe(false);
   });
 });

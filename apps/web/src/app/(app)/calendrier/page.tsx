@@ -36,6 +36,7 @@ const LIST_DAYS = 60;
 
 const STATUS_STYLES: Record<PostStatus, string> = {
   draft: "border-border bg-background text-muted",
+  pending_approval: "border-warning/40 bg-warning/10",
   scheduled: "border-primary/40 bg-primary/10",
   processing: "border-primary/40 bg-primary/10",
   published: "border-success/40 bg-success/10",

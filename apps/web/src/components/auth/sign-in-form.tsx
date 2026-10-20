@@ -9,7 +9,7 @@ import { TextField } from "@/components/ui/field";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 
-export function SignInForm() {
+export function SignInForm({ next = null }: { next?: string | null }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -22,14 +22,14 @@ export function SignInForm() {
     const { error } = await authClient.signIn.email({
       email: String(form.get("email")),
       password: String(form.get("password")),
-      callbackURL: "/tableau-de-bord",
+      callbackURL: next ?? "/tableau-de-bord",
     });
     setPending(false);
     if (error) {
       setError(authErrorMessage(error));
       return;
     }
-    router.push("/tableau-de-bord");
+    router.push(next ?? "/tableau-de-bord");
     router.refresh();
   }
 
@@ -46,7 +46,7 @@ export function SignInForm() {
         <Link href="/mot-de-passe-oublie" className="text-primary hover:underline">
           Mot de passe oublié ?
         </Link>
-        <Link href="/inscription" className="text-primary hover:underline">
+        <Link href={next ? `/inscription?suite=${encodeURIComponent(next)}` : "/inscription"} className="text-primary hover:underline">
           Créer un compte
         </Link>
       </div>

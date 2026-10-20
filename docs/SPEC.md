@@ -81,6 +81,11 @@ voix off, sous-titres, gestion d'équipe et multi-marques pour les agences, Goog
 - **TikTok, YouTube, Pinterest, X, Google Business Profile — écrits.** Connexion (PKCE pour X, jetons courts renouvelés
   automatiquement), publication texte / images / vidéo selon le réseau, statistiques (sauf Google Business Profile).
   Audits et accès à demander côté réseaux (voir `docs/GUIDE_RESEAUX.md`).
+- **Équipes et agences — fait.** Invitations par e-mail (lien unique de 7 jours, adresse vérifiée), rôles propriétaire,
+  administrateur, rédacteur, lecteur et client (validation) ; validation des publications avant envoi (activable par
+  espace, toute modification d'une publication validée la renvoie en validation) ; espaces clients (offre Agence)
+  rattachés à l'abonnement de l'agence, crédits partagés, accès séparés ; sélecteur d'espace. Limites par offre :
+  `maxMembers`, `maxClientSpaces` (migration 012, modifiables en base).
 
 ### V3
 

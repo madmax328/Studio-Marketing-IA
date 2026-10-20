@@ -1,6 +1,7 @@
 export * from "./social/networks";
 export * from "./brand/schema";
 export * from "./workspace/roles";
+export * from "./workspace/team";
 export * from "./posts/status";
 export * from "./generation/schema";
 export * from "./media/schema";

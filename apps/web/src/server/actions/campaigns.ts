@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getTextProvider } from "@/server/ai";
+import { notifyIfApprovalRequested } from "@/server/approval-notify";
 import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
 import {
@@ -121,7 +122,7 @@ export async function setPostScheduleAction(
 ): Promise<ActionResult<null>> {
   const access = await requireWorkspace();
   try {
-    await setPostSchedule(getDb(), access, access.userId, postId, input, mode);
+    await notifyIfApprovalRequested(await setPostSchedule(getDb(), access, access.userId, postId, input, mode));
     refresh();
     revalidatePath(`/publications/${postId}`);
     return { ok: true, data: null };

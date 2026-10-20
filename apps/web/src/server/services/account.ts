@@ -1,4 +1,4 @@
-import type { Db } from "mongodb";
+import type { Db, ObjectId } from "mongodb";
 import { getDb } from "@/server/db/client";
 import { collections } from "@/server/db/collections";
 import { getMediaStorage, type MediaStorage } from "@/server/media/storage";
@@ -20,48 +20,56 @@ export async function deleteUserData(
   const owned = await c.workspaces.find({ ownerUserId: userId }, { projection: { _id: 1 } }).toArray();
   const ownedIds = owned.map((w) => w._id);
 
-  if (ownedIds.length > 0) {
-    // Fichiers d'abord : si le stockage échoue, le compte n'est pas supprimé et l'opération peut être relancée.
-    const media = await c.mediaAssets
-      .find({ workspaceId: { $in: ownedIds } }, { projection: { storageKey: 1, posterStorageKey: 1 } })
-      .toArray();
-    if (media.length > 0 && storage.isConfigured()) {
-      for (let i = 0; i < media.length; i += 100) {
-        await storage.remove(media.slice(i, i + 100).flatMap((m) => [m.storageKey, ...(m.posterStorageKey ? [m.posterStorageKey] : [])]));
-      }
-    }
-    // Voix off temporaires encore présentes (effacées sinon par le planificateur).
-    const voiceovers = await c.generationJobs
-      .find({ workspaceId: { $in: ownedIds }, kind: "voiceover", "result.clips.0": { $exists: true } }, { projection: { result: 1 } })
-      .toArray();
-    const voiceKeys = voiceovers.flatMap((job) => ((job.result as { clips?: { storageKey: string }[] } | null)?.clips ?? []).map((clip) => clip.storageKey));
-    if (voiceKeys.length > 0 && storage.isConfigured()) {
-      for (let i = 0; i < voiceKeys.length; i += 100) await storage.remove(voiceKeys.slice(i, i + 100));
-    }
-    await c.mediaAssets.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.brands.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.posts.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.analyticsSnapshots.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.campaigns.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.notifications.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.socialAccounts.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.creditAccounts.deleteMany({ workspaceId: { $in: ownedIds } });
-    // Le journal de crédits n'est pas une pièce comptable (Stripe conserve les factures) : il est effacé avec le compte.
-    await c.creditTransactions.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.subscriptions.deleteMany({ _id: { $in: ownedIds } });
-    await c.generationJobs.deleteMany({ workspaceId: { $in: ownedIds } });
-    // Demandes de connexion en cours (elles contiennent des jetons chiffrés).
-    await c.oauthStates.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.workspaceMembers.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.auditLogs.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.workspaces.deleteMany({ _id: { $in: ownedIds } });
-  }
+  await deleteWorkspacesData(db, storage, ownedIds);
 
   await c.workspaceMembers.deleteMany({ userId });
   await c.oauthStates.deleteMany({ userId });
   await c.testimonials.deleteMany({ userId });
   await c.auditLogs.updateMany({ actorUserId: userId }, { $set: { actorUserId: null } });
   await recordAudit(db, { workspaceId: null, actorUserId: null, action: "account.deleted" });
+}
+
+/**
+ * Supprime des espaces et tout leur contenu (fichiers d'abord : si le stockage échoue, rien n'est supprimé
+ * et l'opération peut être relancée).
+ */
+export async function deleteWorkspacesData(db: Db, storage: MediaStorage, ids: ObjectId[]): Promise<void> {
+  if (ids.length === 0) return;
+  const c = collections(db);
+  const media = await c.mediaAssets
+    .find({ workspaceId: { $in: ids } }, { projection: { storageKey: 1, posterStorageKey: 1 } })
+    .toArray();
+  if (media.length > 0 && storage.isConfigured()) {
+    for (let i = 0; i < media.length; i += 100) {
+      await storage.remove(media.slice(i, i + 100).flatMap((m) => [m.storageKey, ...(m.posterStorageKey ? [m.posterStorageKey] : [])]));
+    }
+  }
+  // Voix off temporaires encore présentes (effacées sinon par le planificateur).
+  const voiceovers = await c.generationJobs
+    .find({ workspaceId: { $in: ids }, kind: "voiceover", "result.clips.0": { $exists: true } }, { projection: { result: 1 } })
+    .toArray();
+  const voiceKeys = voiceovers.flatMap((job) => ((job.result as { clips?: { storageKey: string }[] } | null)?.clips ?? []).map((clip) => clip.storageKey));
+  if (voiceKeys.length > 0 && storage.isConfigured()) {
+    for (let i = 0; i < voiceKeys.length; i += 100) await storage.remove(voiceKeys.slice(i, i + 100));
+  }
+  await c.mediaAssets.deleteMany({ workspaceId: { $in: ids } });
+  await c.brands.deleteMany({ workspaceId: { $in: ids } });
+  await c.posts.deleteMany({ workspaceId: { $in: ids } });
+  await c.analyticsSnapshots.deleteMany({ workspaceId: { $in: ids } });
+  await c.campaigns.deleteMany({ workspaceId: { $in: ids } });
+  await c.notifications.deleteMany({ workspaceId: { $in: ids } });
+  await c.socialAccounts.deleteMany({ workspaceId: { $in: ids } });
+  await c.creditAccounts.deleteMany({ workspaceId: { $in: ids } });
+  // Le journal de crédits n'est pas une pièce comptable (Stripe conserve les factures) : il est effacé avec le compte.
+  await c.creditTransactions.deleteMany({ workspaceId: { $in: ids } });
+  await c.subscriptions.deleteMany({ _id: { $in: ids } });
+  await c.generationJobs.deleteMany({ workspaceId: { $in: ids } });
+  // Demandes de connexion en cours (elles contiennent des jetons chiffrés).
+  await c.oauthStates.deleteMany({ workspaceId: { $in: ids } });
+  await c.workspaceMembers.deleteMany({ workspaceId: { $in: ids } });
+  await c.auditLogs.deleteMany({ workspaceId: { $in: ids } });
+  await c.workspaceInvitations.deleteMany({ workspaceId: { $in: ids } });
+  await c.workspaces.deleteMany({ _id: { $in: ids } });
 }
 
 /** Rassemble les données personnelles et métier de l'utilisateur (droit à la portabilité). */

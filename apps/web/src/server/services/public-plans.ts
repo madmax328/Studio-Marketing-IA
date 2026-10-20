@@ -2,7 +2,7 @@ import "server-only";
 import type { PlanId, PlanLimits } from "@smia/shared";
 import { isStripeConfigured, priceIdsByPlan, priceLabel } from "@/server/billing/stripe";
 import { ensureDatabaseReady, getDb } from "@/server/db/client";
-import { listPlans } from "@/server/services/billing";
+import { listPlans, TEAM_LIMIT_DEFAULTS } from "@/server/services/billing";
 
 export interface PublicPlan {
   id: PlanId;
@@ -30,7 +30,7 @@ export async function getPublicPlans(): Promise<PublicPlan[] | null> {
         name: plan.name,
         description: plan.description,
         features: plan.features,
-        limits: plan.limits,
+        limits: { ...TEAM_LIMIT_DEFAULTS[plan._id], ...plan.limits },
         price: plan._id === "free" ? "0 €" : stripeReady && priceIds[plan._id] ? await priceLabel(priceIds[plan._id] as string) : null,
       })),
     );

@@ -1,3 +1,4 @@
+import { ROLE_LABELS } from "@smia/shared";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DeleteAccount } from "@/components/settings/delete-account";
@@ -8,7 +9,6 @@ import { requireUser, requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
-const ROLE_LABELS = { owner: "Propriétaire", admin: "Administrateur", editor: "Éditeur", viewer: "Lecteur" } as const;
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -24,7 +24,7 @@ export default async function SettingsPage() {
           {user.name} · {user.email}
         </p>
         <p className="text-sm text-muted">
-          Espace : {workspace.name} ({ROLE_LABELS[role]})
+          Espace : {workspace.name} ({ROLE_LABELS[role].label})
         </p>
       </Card>
 

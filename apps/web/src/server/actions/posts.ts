@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { notifyIfApprovalRequested } from "@/server/approval-notify";
 import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
 import { deletePost, updatePostText } from "@/server/services/posts";
@@ -15,7 +16,7 @@ export interface PostFormState {
 export async function updatePostAction(postId: string, _previous: PostFormState, form: FormData): Promise<PostFormState> {
   const access = await requireWorkspace();
   try {
-    await updatePostText(getDb(), access, postId, form.get("text"));
+    await notifyIfApprovalRequested(await updatePostText(getDb(), access, postId, form.get("text"), access.userId));
   } catch (error) {
     return { error: toMessage(error), saved: false };
   }

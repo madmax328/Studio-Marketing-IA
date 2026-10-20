@@ -60,8 +60,8 @@ describe.skipIf(!uri)("abonnements et crédits (MongoDB réel)", () => {
     await chargeCredits(db, workspace, { operation: "campaign_posts", idempotencyKey: key, generationJobId: null });
     await chargeCredits(db, workspace, { operation: "campaign_posts", idempotencyKey: key, generationJobId: null });
     expect((await getCreditAccount(db, workspace)).used).toBe(2);
-    await refundCredits(db, workspace._id, { chargeKey: key, generationJobId: null });
-    await refundCredits(db, workspace._id, { chargeKey: key, generationJobId: null });
+    await refundCredits(db, workspace, { chargeKey: key, generationJobId: null });
+    await refundCredits(db, workspace, { chargeKey: key, generationJobId: null });
     expect((await getCreditAccount(db, workspace)).used).toBe(0);
   });
 

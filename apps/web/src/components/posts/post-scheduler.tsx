@@ -22,6 +22,7 @@ export function PostScheduler({
   canWrite,
   canPublish,
   canRegenerate,
+  needsApproval = false,
 }: {
   postId: string;
   status: PostStatus;
@@ -32,13 +33,16 @@ export function PostScheduler({
   canWrite: boolean;
   canPublish: boolean;
   canRegenerate: boolean;
+  /** L'espace exige une validation et cette personne ne peut pas valider elle-même. */
+  needsApproval?: boolean;
 }) {
   const router = useRouter();
   const [date, setDate] = useState(localDate);
   const [time, setTime] = useState(localTime || "12:00");
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const movable = ["draft", "scheduled", "failed"].includes(status);
+  const movable = ["draft", "pending_approval", "scheduled", "failed"].includes(status);
+  const planned = status === "scheduled" || status === "pending_approval";
 
   async function run(label: string, action: () => Promise<{ ok: true; data: unknown } | { ok: false; error: string }>, success: string) {
     setBusy(label);
@@ -78,27 +82,41 @@ export function PostScheduler({
             variant="secondary"
             disabled={busy !== null || !date}
             onClick={() =>
-              run("plan", () => setPostScheduleAction(postId, { date, time }, "plan"), status === "scheduled" ? "Publication déplacée." : "Date enregistrée (brouillon).")
+              run(
+                "plan",
+                () => setPostScheduleAction(postId, { date, time }, "plan"),
+                status === "scheduled" && needsApproval
+                  ? "Publication déplacée : elle repasse en validation."
+                  : planned
+                    ? "Publication déplacée."
+                    : "Date enregistrée (brouillon).",
+              )
             }
           >
-            {status === "scheduled" ? "Déplacer" : "Enregistrer la date"}
+            {planned ? "Déplacer" : "Enregistrer la date"}
           </Button>
         ) : null}
-        {movable && canPublish && status !== "scheduled" ? (
+        {movable && canPublish && !planned ? (
           <Button
             disabled={busy !== null || !date || problems.length > 0}
-            onClick={() => run("schedule", () => setPostScheduleAction(postId, { date, time }, "schedule"), "Publication programmée.")}
+            onClick={() =>
+              run(
+                "schedule",
+                () => setPostScheduleAction(postId, { date, time }, "schedule"),
+                needsApproval ? "Publication envoyée en validation : elle partira une fois validée." : "Publication programmée.",
+              )
+            }
           >
-            {busy === "schedule" ? "Programmation…" : "Programmer"}
+            {busy === "schedule" ? "Envoi…" : needsApproval ? "Demander la validation" : "Programmer"}
           </Button>
         ) : null}
-        {status === "scheduled" && canPublish ? (
+        {planned && canPublish ? (
           <Button
             variant="ghost"
             disabled={busy !== null}
             onClick={() => run("unschedule", () => unschedulePostAction(postId), "Programmation annulée : la publication est redevenue un brouillon.")}
           >
-            Annuler la programmation
+            {status === "pending_approval" ? "Retirer la demande" : "Annuler la programmation"}
           </Button>
         ) : null}
         {canWrite ? (

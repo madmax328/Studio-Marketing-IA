@@ -3,7 +3,9 @@ import {
   checkTextLength,
   EDITABLE_POST_STATUSES,
   postDraftSchema,
+  approvalCommentSchema,
   postScheduleSchema,
+  roleHasPermission,
   SOCIAL_NETWORK_IDS,
   SOCIAL_NETWORKS,
   STUDIO_VIDEO_NETWORKS,
@@ -11,7 +13,7 @@ import {
   type PostStatus,
   type SocialNetworkId,
 } from "@smia/shared";
-import { collections, type PostDoc } from "@/server/db/collections";
+import { collections, type PostApproval, type PostDoc } from "@/server/db/collections";
 import { recordAudit } from "@/server/services/audit";
 import { getBrand } from "@/server/services/brands";
 import { UserFacingError } from "@/server/services/errors";
@@ -112,6 +114,7 @@ export async function updatePostText(
   access: WorkspaceAccess,
   postId: string,
   rawText: unknown,
+  userId = "",
 ): Promise<PostDoc> {
   assertPermission(access, "content:write");
   const text = typeof rawText === "string" ? rawText.trim() : "";
@@ -121,9 +124,10 @@ export async function updatePostText(
   assertEditable(post);
   assertTextFits(post.network, text);
 
+  const now = new Date();
   const updated = await collections(db).posts.findOneAndUpdate(
-    { _id: post._id, workspaceId: access.workspace._id, status: { $in: [...EDITABLE_POST_STATUSES] } },
-    { $set: { text, updatedAt: new Date() }, $unset: { "publishing.resume": "" } },
+    { _id: post._id, workspaceId: access.workspace._id, status: post.status },
+    { $set: { text, ...revalidation(access, post, userId, now), updatedAt: now }, $unset: { "publishing.resume": "" } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("Cette publication ne peut plus être modifiée.", "conflict");
@@ -148,6 +152,28 @@ export async function deletePost(db: Db, access: WorkspaceAccess, userId: string
   });
 }
 
+/** L'espace exige une validation et cette personne ne peut pas valider elle-même. */
+export function needsApproval(access: WorkspaceAccess): boolean {
+  return access.workspace.approvalRequired === true && !roleHasPermission(access.role, "content:approve");
+}
+
+const pendingApproval = (userId: string, now: Date): PostApproval => ({
+  requestedByUserId: userId,
+  requestedAt: now,
+  decision: "pending",
+  decidedByUserId: null,
+  decidedAt: null,
+  comment: null,
+});
+
+/**
+ * Une publication déjà validée et programmée, modifiée par quelqu'un qui ne peut pas valider,
+ * repasse en validation : la personne qui a validé n'a pas vu cette version.
+ */
+function revalidation(access: WorkspaceAccess, post: PostDoc, userId: string, now: Date): Partial<PostDoc> {
+  return needsApproval(access) && post.status === "scheduled" ? { status: "pending_approval", approval: pendingApproval(userId, now) } : {};
+}
+
 function assertEditable(post: PostDoc) {
   if (!EDITABLE_POST_STATUSES.includes(post.status)) {
     throw new UserFacingError("Cette publication ne peut plus être modifiée.", "conflict");
@@ -162,7 +188,7 @@ function assertTextFits(network: PostDoc["network"], text: string) {
 export const MAX_MEDIA_PER_POST = 10;
 
 /** Remplace les médias joints à une publication (uniquement des médias du même espace). */
-export async function setPostMedia(db: Db, access: WorkspaceAccess, postId: string, rawIds: unknown): Promise<PostDoc> {
+export async function setPostMedia(db: Db, access: WorkspaceAccess, postId: string, rawIds: unknown, userId = ""): Promise<PostDoc> {
   assertPermission(access, "content:write");
   const ids = Array.isArray(rawIds) ? rawIds.filter((id): id is string => typeof id === "string") : [];
   if (ids.length > MAX_MEDIA_PER_POST) {
@@ -192,10 +218,11 @@ export async function setPostMedia(db: Db, access: WorkspaceAccess, postId: stri
   }
   const mediaKind = found.length === 0 ? null : videos > 0 ? "video" : "image";
 
+  const now = new Date();
   const updated = await collections(db).posts.findOneAndUpdate(
-    { _id: post._id, workspaceId: access.workspace._id, status: { $in: [...EDITABLE_POST_STATUSES] } },
+    { _id: post._id, workspaceId: access.workspace._id, status: post.status },
     // Un envoi en cours chez le réseau concernait les anciens médias : il ne doit pas être repris.
-    { $set: { mediaIds: objectIds, mediaKind, updatedAt: new Date() }, $unset: { "publishing.resume": "" } },
+    { $set: { mediaIds: objectIds, mediaKind, ...revalidation(access, post, userId, now), updatedAt: now }, $unset: { "publishing.resume": "" } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("Cette publication ne peut plus être modifiée.", "conflict");
@@ -271,26 +298,49 @@ export async function setPostSchedule(
 ): Promise<PostDoc> {
   assertPermission(access, mode === "schedule" ? "content:publish" : "content:write");
   const post = await getPost(db, access, postId);
-  if (!["draft", "scheduled", "failed"].includes(post.status)) {
+  if (!["draft", "pending_approval", "scheduled", "failed"].includes(post.status)) {
     throw new UserFacingError("Cette publication ne peut plus être déplacée.", "conflict");
   }
   const scheduledAt = parseLocalDateTime(input, post.timeZone);
+  const now = new Date();
 
   let status: PostStatus = post.status === "failed" ? "draft" : post.status;
+  let approval: Partial<PostDoc> = {};
   if (mode === "schedule") {
     const problems = schedulingProblems(post);
     if (problems.length > 0) throw new UserFacingError(problems.join(" "), "invalid_input");
-    status = "scheduled";
+    if (needsApproval(access)) {
+      // Programmation demandée : elle partira une fois validée.
+      status = "pending_approval";
+      approval = { approval: pendingApproval(userId, now) };
+    } else {
+      status = "scheduled";
+      if (access.workspace.approvalRequired) {
+        approval = { approval: { ...pendingApproval(userId, now), decision: "approved", decidedByUserId: userId, decidedAt: now } };
+      }
+    }
+  } else {
+    // Simple changement de date : une publication validée repasse en validation si son auteur ne peut pas valider.
+    const again = revalidation(access, post, userId, now);
+    if (again.status) {
+      status = again.status;
+      approval = { approval: again.approval };
+    }
   }
 
   const updated = await collections(db).posts.findOneAndUpdate(
     { _id: post._id, workspaceId: access.workspace._id, status: post.status },
-    { $set: { scheduledAt, status, "publishing.nextAttemptAt": null, "publishing.resume": null, updatedAt: new Date() } },
+    { $set: { scheduledAt, status, ...approval, "publishing.nextAttemptAt": null, "publishing.resume": null, updatedAt: now } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("La publication a changé entre-temps. Rechargez la page.", "conflict");
   if (mode === "schedule") {
-    await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "post.scheduled", targetId: postId });
+    await recordAudit(db, {
+      workspaceId: access.workspace._id,
+      actorUserId: userId,
+      action: status === "pending_approval" ? "post.approval_requested" : "post.scheduled",
+      targetId: postId,
+    });
   }
   return updated;
 }
@@ -300,13 +350,78 @@ export async function unschedulePost(db: Db, access: WorkspaceAccess, userId: st
   assertPermission(access, "content:publish");
   const post = await getPost(db, access, postId);
   const updated = await collections(db).posts.findOneAndUpdate(
-    { _id: post._id, workspaceId: access.workspace._id, status: "scheduled" },
-    { $set: { status: "draft", updatedAt: new Date() } },
+    { _id: post._id, workspaceId: access.workspace._id, status: { $in: ["scheduled", "pending_approval"] } },
+    { $set: { status: "draft", approval: null, updatedAt: new Date() } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("Cette publication n'est pas (ou plus) programmée.", "conflict");
   await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "post.unscheduled", targetId: postId });
   return updated;
+}
+
+/**
+ * Valide une publication en attente : elle est programmée à sa date (ou part au prochain passage si la date est passée).
+ * Les conditions de programmation sont revérifiées.
+ */
+export async function approvePost(db: Db, access: WorkspaceAccess, userId: string, postId: string, now = new Date()): Promise<PostDoc> {
+  assertPermission(access, "content:approve");
+  const post = await getPost(db, access, postId);
+  if (post.status !== "pending_approval") throw new UserFacingError("Cette publication n'attend pas de validation.", "conflict");
+  const problems = schedulingProblems(post);
+  if (problems.length > 0) throw new UserFacingError(problems.join(" "), "invalid_input");
+  const updated = await collections(db).posts.findOneAndUpdate(
+    { _id: post._id, workspaceId: access.workspace._id, status: "pending_approval", updatedAt: post.updatedAt },
+    {
+      $set: {
+        status: "scheduled",
+        "approval.decision": "approved",
+        "approval.decidedByUserId": userId,
+        "approval.decidedAt": now,
+        "approval.comment": null,
+        updatedAt: now,
+      },
+    },
+    { returnDocument: "after" },
+  );
+  if (!updated) throw new UserFacingError("La publication a été modifiée entre-temps. Rechargez la page pour voir la dernière version.", "conflict");
+  await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "post.approved", targetId: postId });
+  return updated;
+}
+
+/** Refuse une publication en attente : elle redevient un brouillon, avec la remarque pour son auteur. */
+export async function rejectPost(db: Db, access: WorkspaceAccess, userId: string, postId: string, rawComment: unknown, now = new Date()): Promise<PostDoc> {
+  assertPermission(access, "content:approve");
+  const comment = approvalCommentSchema.safeParse(typeof rawComment === "string" ? rawComment : "");
+  if (!comment.success) throw new UserFacingError(comment.error.issues[0]?.message ?? "Remarque invalide.", "invalid_input");
+  const post = await getPost(db, access, postId);
+  if (post.status !== "pending_approval") throw new UserFacingError("Cette publication n'attend pas de validation.", "conflict");
+  const updated = await collections(db).posts.findOneAndUpdate(
+    { _id: post._id, workspaceId: access.workspace._id, status: "pending_approval", updatedAt: post.updatedAt },
+    {
+      $set: {
+        status: "draft",
+        "approval.decision": "rejected",
+        "approval.decidedByUserId": userId,
+        "approval.decidedAt": now,
+        "approval.comment": comment.data || null,
+        updatedAt: now,
+      },
+    },
+    { returnDocument: "after" },
+  );
+  if (!updated) throw new UserFacingError("La publication a été modifiée entre-temps. Rechargez la page pour voir la dernière version.", "conflict");
+  await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "post.rejected", targetId: postId });
+  return updated;
+}
+
+/** Publications qui attendent une validation (les plus proches d'abord). */
+export async function listPendingApprovals(db: Db, access: WorkspaceAccess, limit = 50): Promise<PostDoc[]> {
+  assertPermission(access, "content:read");
+  return collections(db)
+    .posts.find({ workspaceId: access.workspace._id, status: "pending_approval" })
+    .sort({ scheduledAt: 1 })
+    .limit(limit)
+    .toArray();
 }
 
 /** Duplique une publication en brouillon sans date. */
@@ -315,7 +430,8 @@ export async function duplicatePost(db: Db, access: WorkspaceAccess, userId: str
   const post = await getPost(db, access, postId);
   const now = new Date();
   // Le suivi d'envoi n'est pas copié (un champ null empêcherait la mise à jour de ses sous-champs).
-  const { publishing: _publishing, ...rest } = post;
+  // Ni le suivi d'envoi, ni les chiffres, ni la validation de l'original ne concernent la copie.
+  const { publishing: _publishing, metrics: _metrics, approval: _approval, ...rest } = post;
   const copy: PostDoc = {
     ...rest,
     _id: new ObjectId(),

@@ -2,12 +2,13 @@ import { z } from "zod";
 import { SOCIAL_NETWORK_IDS } from "../social/networks";
 
 /** Cycle de vie d'une publication. */
-export const POST_STATUSES = ["draft", "scheduled", "processing", "published", "failed", "cancelled"] as const;
+export const POST_STATUSES = ["draft", "pending_approval", "scheduled", "processing", "published", "failed", "cancelled"] as const;
 
 export type PostStatus = (typeof POST_STATUSES)[number];
 
 export const POST_STATUS_LABELS: Record<PostStatus, string> = {
   draft: "Brouillon",
+  pending_approval: "À valider",
   scheduled: "Programmée",
   processing: "En cours de publication",
   published: "Publiée",
@@ -16,11 +17,13 @@ export const POST_STATUS_LABELS: Record<PostStatus, string> = {
 };
 
 const ALLOWED_TRANSITIONS: Record<PostStatus, readonly PostStatus[]> = {
-  draft: ["scheduled", "cancelled"],
+  draft: ["scheduled", "pending_approval", "cancelled"],
+  /** Validée → programmée ; refusée ou retirée → brouillon. */
+  pending_approval: ["scheduled", "draft", "cancelled"],
   scheduled: ["draft", "processing", "cancelled"],
   processing: ["published", "failed", "scheduled"],
   published: [],
-  failed: ["scheduled", "draft", "cancelled"],
+  failed: ["scheduled", "pending_approval", "draft", "cancelled"],
   cancelled: ["draft"],
 };
 
@@ -33,7 +36,7 @@ export function canTransitionPost(from: PostStatus, to: PostStatus): boolean {
  * Statuts dans lesquels le contenu d'une publication peut encore être modifié ou supprimé.
  * Une publication programmée reste modifiable tant que l'envoi n'a pas commencé (statut processing).
  */
-export const EDITABLE_POST_STATUSES: readonly PostStatus[] = ["draft", "scheduled", "failed", "cancelled"];
+export const EDITABLE_POST_STATUSES: readonly PostStatus[] = ["draft", "pending_approval", "scheduled", "failed", "cancelled"];
 
 /** Enregistrement d'une publication en brouillon (validé côté serveur). */
 export const postDraftSchema = z.object({

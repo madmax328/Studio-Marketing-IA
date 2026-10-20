@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@/components/app/sign-out-button";
+import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
 import { SiteLogo } from "@/components/site/site-header";
+import type { WorkspaceSummary } from "@/server/services/client-spaces";
 import { cn } from "@/lib/cn";
 import { NAV_ICONS, type NavIconName } from "./nav-icons";
 
@@ -29,6 +31,7 @@ const GROUPS: { title: string; items: { href: string; label: string; icon: NavIc
     title: "Compte",
     items: [
       { href: "/ma-marque", label: "Ma marque", icon: "brand" },
+      { href: "/equipe", label: "Équipe", icon: "team" },
       { href: "/abonnement", label: "Abonnement", icon: "billing" },
       { href: "/parametres", label: "Paramètres", icon: "settings" },
     ],
@@ -52,7 +55,7 @@ function NavLink({ href, label, icon, active, badge }: { href: string; label: st
       <span className={cn(active ? "text-primary" : "text-muted group-hover:text-foreground")}>{NAV_ICONS[icon]}</span>
       {label}
       {badge && badge > 0 ? (
-        <span className="ml-auto rounded-full bg-primary px-1.5 py-px font-mono text-[10px] text-primary-foreground" aria-label={`${badge} non lues`}>
+        <span className="ml-auto rounded-full bg-primary px-1.5 py-px font-mono text-[10px] text-primary-foreground" aria-label={href === "/publications" ? `${badge} à valider` : `${badge} non lues`}>
           {badge}
         </span>
       ) : null}
@@ -60,7 +63,22 @@ function NavLink({ href, label, icon, active, badge }: { href: string; label: st
   );
 }
 
-export function Sidebar({ userName, workspaceName, unreadAlerts }: { userName: string; workspaceName: string; unreadAlerts: number }) {
+export function Sidebar({
+  userName,
+  workspaceName,
+  unreadAlerts,
+  workspaces,
+  activeWorkspaceId,
+  pendingApprovals,
+}: {
+  userName: string;
+  workspaceName: string;
+  unreadAlerts: number;
+  workspaces: WorkspaceSummary[];
+  activeWorkspaceId: string;
+  /** Publications à valider (pour les personnes qui valident). */
+  pendingApprovals: number;
+}) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const initials = userName
@@ -80,14 +98,20 @@ export function Sidebar({ userName, workspaceName, unreadAlerts }: { userName: s
           <SignOutButton compact />
         </div>
       </div>
-      <p className="hidden truncate px-5 text-xs text-muted md:block">{workspaceName}</p>
+      {workspaces.length > 1 ? (
+        <div className="px-4 pb-2 md:px-5 md:pb-0">
+          <WorkspaceSwitcher workspaces={workspaces} activeId={activeWorkspaceId} />
+        </div>
+      ) : (
+        <p className="hidden truncate px-5 text-xs text-muted md:block">{workspaceName}</p>
+      )}
 
       <nav aria-label="Navigation principale" className="flex gap-1 overflow-x-auto px-3 pb-3 md:mt-6 md:flex-1 md:flex-col md:gap-6 md:overflow-y-auto md:px-5 md:pb-0">
         {GROUPS.map((group) => (
           <div key={group.title} className="flex gap-1 md:flex-col md:gap-0.5">
             <p className="hidden px-3 pb-1.5 font-mono text-[10px] tracking-[0.14em] text-muted/70 uppercase md:block">{group.title}</p>
             {group.items.map((item) => (
-              <NavLink key={item.href} {...item} active={isActive(item.href)} />
+              <NavLink key={item.href} {...item} active={isActive(item.href)} badge={item.href === "/publications" ? pendingApprovals : undefined} />
             ))}
           </div>
         ))}

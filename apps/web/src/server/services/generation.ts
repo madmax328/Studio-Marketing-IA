@@ -135,7 +135,7 @@ export async function runAiJob<T>(
       error instanceof TextGenerationError ? error.message : "La génération a échoué. Réessayez dans un instant.";
     await generationJobs.updateOne({ _id: job._id }, { $set: { status: "failed", error: message, updatedAt: new Date() } });
     // L'opération n'a rien produit : les crédits sont rendus.
-    await refundCredits(db, access.workspace._id, { chargeKey, generationJobId: job._id });
+    await refundCredits(db, access.workspace, { chargeKey, generationJobId: job._id });
     if (!(error instanceof TextGenerationError)) console.error("Échec de génération", error);
     throw new UserFacingError(message, "unavailable");
   }

@@ -8,7 +8,7 @@ import { TextField } from "@/components/ui/field";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 
-export function SignUpForm() {
+export function SignUpForm({ next = null }: { next?: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -23,7 +23,7 @@ export function SignUpForm() {
       name: String(form.get("name")),
       email,
       password: String(form.get("password")),
-      callbackURL: "/tableau-de-bord",
+      callbackURL: next ?? "/tableau-de-bord",
     });
     setPending(false);
     if (error) {
@@ -81,7 +81,7 @@ export function SignUpForm() {
       </Button>
       <p className="text-center text-sm">
         Déjà inscrit ?{" "}
-        <Link href="/connexion" className="text-primary hover:underline">
+        <Link href={next ? `/connexion?suite=${encodeURIComponent(next)}` : "/connexion"} className="text-primary hover:underline">
           Se connecter
         </Link>
       </p>

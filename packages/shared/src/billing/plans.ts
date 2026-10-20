@@ -9,6 +9,10 @@ export interface PlanLimits {
   monthlyCredits: number;
   /** Comptes de réseaux sociaux réels connectés (les comptes de test ne comptent pas). */
   maxSocialAccounts: number;
+  /** Personnes dans l'espace (propriétaire compris). */
+  maxMembers: number;
+  /** Espaces clients rattachés à l'abonnement (agences). */
+  maxClientSpaces: number;
 }
 
 /**

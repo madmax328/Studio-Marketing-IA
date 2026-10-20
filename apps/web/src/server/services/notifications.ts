@@ -4,6 +4,7 @@ import { collections, type NotificationDoc, type PostDoc, type SocialAccountDoc 
 import type { Notifier } from "@/server/publishing/dispatcher";
 import type { ExpiryNotifier } from "@/server/publishing/tokens";
 import { assertPermission } from "@/server/services/permissions";
+import { approverEmails } from "@/server/services/team";
 import type { WorkspaceAccess } from "@/server/services/workspaces";
 
 type EmailSender = (message: { to: string; subject: string; text: string }) => Promise<void>;
@@ -103,4 +104,48 @@ export async function markAllNotificationsRead(db: Db, access: WorkspaceAccess):
     { workspaceId: access.workspace._id, readAt: null },
     { $set: { readAt: new Date() } },
   );
+}
+
+/** Prévient les personnes qui valident (dans l'application et par e-mail) qu'une publication les attend. */
+export async function notifyApprovalRequested(db: Db, post: PostDoc, sendEmail: EmailSender, appUrl: string): Promise<void> {
+  const network = SOCIAL_NETWORKS[post.network].label;
+  const link = `/publications/${post._id.toHexString()}`;
+  await createNotification(db, {
+    workspaceId: post.workspaceId,
+    kind: "approval_requested",
+    title: `Publication ${network} à valider`,
+    body: "Une publication attend votre validation avant de partir.",
+    link,
+  });
+  const recipients = await approverEmails(db, post.workspaceId);
+  for (const to of recipients) {
+    try {
+      await sendEmail({
+        to,
+        subject: `Publication ${network} à valider`,
+        text: `Bonjour,\n\nUne publication ${network} attend votre validation avant d'être envoyée.\n\nLa relire et la valider : ${appUrl}${link}`,
+      });
+    } catch (error) {
+      console.error("Envoi de l'e-mail de validation impossible", error instanceof Error ? error.message : error);
+    }
+  }
+}
+
+/** Informe l'auteur de la demande de la décision (validée ou refusée, avec la remarque). */
+export async function notifyApprovalDecision(db: Db, post: PostDoc, sendEmail: EmailSender, appUrl: string): Promise<void> {
+  const network = SOCIAL_NETWORKS[post.network].label;
+  const approved = post.approval?.decision === "approved";
+  const link = `/publications/${post._id.toHexString()}`;
+  const comment = post.approval?.comment ? ` Remarque : ${post.approval.comment}` : "";
+  const title = approved ? `Publication ${network} validée` : `Publication ${network} refusée`;
+  const body = approved ? "Elle partira à l'heure prévue." : `Elle est revenue en brouillon.${comment}`;
+  await createNotification(db, { workspaceId: post.workspaceId, kind: "approval_decided", title, body, link });
+  const requester = post.approval?.requestedByUserId;
+  if (!requester || !ObjectId.isValid(requester)) return;
+  try {
+    const user = await db.collection<{ email?: string }>("user").findOne({ _id: new ObjectId(requester) });
+    if (user?.email) await sendEmail({ to: user.email, subject: title, text: `Bonjour,\n\n${title}. ${body}\n\nVoir la publication : ${appUrl}${link}` });
+  } catch (error) {
+    console.error("Envoi de l'e-mail de décision impossible", error instanceof Error ? error.message : error);
+  }
 }

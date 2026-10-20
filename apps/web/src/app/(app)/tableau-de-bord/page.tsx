@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { POST_STATUS_LABELS, SOCIAL_NETWORKS } from "@smia/shared";
+import { POST_STATUS_LABELS, roleHasPermission, SOCIAL_NETWORKS } from "@smia/shared";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getDb } from "@/server/db/client";
 import { getAnalyticsOverview } from "@/server/services/analytics";
 import { getDashboardData } from "@/server/services/dashboard";
 import { listNotifications } from "@/server/services/notifications";
+import { listPendingApprovals } from "@/server/services/posts";
 import { shouldAskForTestimonial } from "@/server/services/testimonials";
 import { requireUser, requireWorkspace } from "@/server/session";
 
@@ -24,20 +25,46 @@ export default async function DashboardPage() {
   const isEmpty = data.brandCount === 0;
   const results = await getAnalyticsOverview(getDb(), access, { days: 30 });
   const askForTestimonial = await shouldAskForTestimonial(getDb(), access, user.id, new Date(user.createdAt));
+  const toApprove = roleHasPermission(access.role, "content:approve") ? await listPendingApprovals(getDb(), access, 5) : [];
+  const canWrite = roleHasPermission(access.role, "content:write");
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-semibold tracking-[-0.03em]">Tableau de bord</h1>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/studio" className={buttonStyles("secondary")}>
-            Générer une publication
-          </Link>
-          <Link href="/campagnes/nouvelle" className={buttonStyles("primary")}>
-            Créer une campagne
-          </Link>
-        </div>
+        {canWrite ? (
+          <div className="flex flex-wrap gap-2">
+            <Link href="/studio" className={buttonStyles("secondary")}>
+              Générer une publication
+            </Link>
+            <Link href="/campagnes/nouvelle" className={buttonStyles("primary")}>
+              Créer une campagne
+            </Link>
+          </div>
+        ) : null}
       </header>
+
+      {toApprove.length > 0 ? (
+        <Card className="space-y-3 border-warning/40">
+          <h2 className="font-semibold">À valider</h2>
+          <ul className="space-y-2 text-sm">
+            {toApprove.map((post) => (
+              <li key={post._id.toHexString()} className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="min-w-0 truncate">
+                  <span className="font-medium">{SOCIAL_NETWORKS[post.network].label}</span> — {post.text.slice(0, 90)}
+                  {post.text.length > 90 ? "…" : ""}
+                </span>
+                <Link href={`/publications/${post._id.toHexString()}`} className="shrink-0 text-primary hover:underline">
+                  Relire et valider
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link href="/publications?statut=pending_approval" className="text-sm text-primary hover:underline">
+            Toutes les publications à valider
+          </Link>
+        </Card>
+      ) : null}
 
       {isEmpty ? (
         <Card className="space-y-3">

@@ -6,6 +6,7 @@ import type {
   CampaignStatus,
   CampaignStrategy,
   CreditOperation,
+  InvitableRole,
   PlanId,
   PlanLimits,
   PostMetrics,
@@ -37,6 +38,10 @@ export interface WorkspaceDoc {
   aiConsent?: { provider: string; acceptedAt: Date; acceptedByUserId: string };
   /** Accords par fournisseur d'IA (texte, images…), indépendants les uns des autres. */
   aiConsents?: Record<string, { acceptedAt: Date; acceptedByUserId: string }>;
+  /** Espace client d'une agence : abonnement et crédits sont ceux de l'espace de l'agence. */
+  billingWorkspaceId?: ObjectId | null;
+  /** Les publications des rédacteurs doivent être validées avant d'être programmées. */
+  approvalRequired?: boolean;
   schemaVersion: 1;
   createdAt: Date;
   updatedAt: Date;
@@ -91,9 +96,33 @@ export interface PostDoc {
   publishing?: PostPublishing;
   /** Derniers chiffres relevés sur le réseau (publications réelles uniquement). */
   metrics?: PostMetricsState;
+  /** Validation avant programmation (espaces où elle est exigée). */
+  approval?: PostApproval | null;
   schemaVersion: 1;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface PostApproval {
+  requestedByUserId: string;
+  requestedAt: Date;
+  decision: "pending" | "approved" | "rejected";
+  decidedByUserId: string | null;
+  decidedAt: Date | null;
+  /** Remarque de la personne qui a refusé (affichée au rédacteur). */
+  comment: string | null;
+}
+
+/** Invitation à rejoindre un espace (lien à usage unique envoyé par e-mail ; seul son empreinte est gardée). */
+export interface WorkspaceInvitationDoc {
+  _id: ObjectId;
+  workspaceId: ObjectId;
+  email: string;
+  role: InvitableRole;
+  tokenHash: string;
+  invitedByUserId: string;
+  expiresAt: Date;
+  createdAt: Date;
 }
 
 export interface PostPublishing {
@@ -214,7 +243,14 @@ export interface OAuthStateDoc {
 export interface NotificationDoc {
   _id: ObjectId;
   workspaceId: ObjectId;
-  kind: "publish_failed" | "publish_succeeded" | "account_expired" | "account_expiring" | "payment_failed";
+  kind:
+    | "publish_failed"
+    | "publish_succeeded"
+    | "account_expired"
+    | "account_expiring"
+    | "payment_failed"
+    | "approval_requested"
+    | "approval_decided";
   title: string;
   body: string;
   link: string | null;
@@ -275,7 +311,8 @@ export interface PlanDoc {
   name: string;
   description: string;
   features: string[];
-  limits: PlanLimits;
+  /** Limites stockées ; les limites d'équipe peuvent manquer sur les offres créées avant la migration 012. */
+  limits: Omit<PlanLimits, "maxMembers" | "maxClientSpaces"> & Partial<Pick<PlanLimits, "maxMembers" | "maxClientSpaces">>;
   /** Ordre d'affichage. */
   order: number;
   active: boolean;
@@ -321,6 +358,8 @@ export interface CreditTransactionDoc {
   /** Clé unique par espace : empêche de compter deux fois la même opération. */
   idempotencyKey: string;
   generationJobId: ObjectId | null;
+  /** Espace client à l'origine de l'opération (crédits de l'agence). */
+  sourceWorkspaceId?: ObjectId;
   createdAt: Date;
 }
 
@@ -388,6 +427,7 @@ export const COLLECTIONS = {
   stripeEvents: "stripeEvents",
   analyticsSnapshots: "analyticsSnapshots",
   testimonials: "testimonials",
+  workspaceInvitations: "workspaceInvitations",
   migrations: "migrations",
 } as const;
 
@@ -411,6 +451,7 @@ export function collections(db: Db) {
     stripeEvents: db.collection<StripeEventDoc>(COLLECTIONS.stripeEvents),
     analyticsSnapshots: db.collection<AnalyticsSnapshotDoc>(COLLECTIONS.analyticsSnapshots),
     testimonials: db.collection<TestimonialDoc>(COLLECTIONS.testimonials),
+    workspaceInvitations: db.collection<WorkspaceInvitationDoc>(COLLECTIONS.workspaceInvitations),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }

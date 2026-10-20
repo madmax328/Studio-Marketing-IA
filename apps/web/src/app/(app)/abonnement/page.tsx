@@ -47,7 +47,9 @@ export default async function BillingPage({ searchParams }: PageProps<"/abonneme
       plans.map(async (plan) => [plan._id, stripeReady && priceIds[plan._id] ? await priceLabel(priceIds[plan._id] as string) : null] as const),
     ),
   );
-  const canManage = roleHasPermission(access.role, "billing:manage");
+  const isClientSpace = Boolean(access.workspace.billingWorkspaceId);
+  // Un espace client n'a pas d'abonnement propre : il dépend de celui de l'agence.
+  const canManage = roleHasPermission(access.role, "billing:manage") && !isClientSpace;
   const subscription = effective.subscription;
   const hasPaidSubscription = effective.planId !== "free";
   const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "Europe/Paris" });
@@ -64,6 +66,12 @@ export default async function BillingPage({ searchParams }: PageProps<"/abonneme
         </Alert>
       ) : null}
       {paiement === "annule" ? <Alert>Paiement annulé : aucun montant n&apos;a été prélevé.</Alert> : null}
+      {isClientSpace ? (
+        <Alert>
+          Espace client : l&apos;offre et les crédits sont ceux de l&apos;agence qui gère cet espace. Le journal ci-dessous montre
+          uniquement les opérations de cet espace.
+        </Alert>
+      ) : null}
       {!stripeReady ? <Alert>Le paiement en ligne n&apos;est pas encore activé : seule l&apos;offre gratuite est disponible.</Alert> : null}
 
       <div className="grid gap-4 md:grid-cols-2">

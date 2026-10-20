@@ -47,6 +47,9 @@ async function ensureCustomer(db: Db, access: WorkspaceAccess, email: string, de
 /** Page de paiement Stripe pour souscrire à une offre (propriétaire de l'espace uniquement). */
 export async function createCheckout(db: Db, access: WorkspaceAccess, email: string, planId: unknown, deps: BillingDeps): Promise<string> {
   assertPermission(access, "billing:manage");
+  if (access.workspace.billingWorkspaceId) {
+    throw new UserFacingError("Cet espace client dépend de l'abonnement de l'agence : rien à souscrire ici.", "conflict");
+  }
   if (typeof planId !== "string" || !(planId in deps.priceIds)) {
     throw new UserFacingError("Cette offre n'est pas encore disponible à la souscription.", "unavailable");
   }
