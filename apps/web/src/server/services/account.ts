@@ -49,6 +49,7 @@ export async function deleteUserData(
 
   await c.workspaceMembers.deleteMany({ userId });
   await c.oauthStates.deleteMany({ userId });
+  await c.testimonials.deleteMany({ userId });
   await c.auditLogs.updateMany({ actorUserId: userId }, { $set: { actorUserId: null } });
   await recordAudit(db, { workspaceId: null, actorUserId: null, action: "account.deleted" });
 }
@@ -75,6 +76,7 @@ export async function exportUserData(user: { id: string; name: string; email: st
     generations: await c.generationJobs
       .find({ workspaceId: { $in: ownedIds } }, { projection: { request: 1, result: 1, status: 1, createdAt: 1 } })
       .toArray(),
+    testimonial: await c.testimonials.findOne({ userId: user.id }, { projection: { _id: 0, userId: 0, workspaceId: 0 } }),
     socialAccounts: await c.socialAccounts
       .find({ workspaceId: { $in: ownedIds } }, { projection: { network: 1, displayName: 1, status: 1, createdAt: 1 } })
       .toArray(),

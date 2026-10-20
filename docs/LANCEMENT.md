@@ -37,6 +37,8 @@ Invoke-RestMethod -Uri "https://VOTRE-DOMAINE/api/sante" -Headers @{ Authorizati
 - [ ] E-mails : SMTP (ou Resend) et `EMAIL_FROM` avec votre propre adresse ; vérifier la réception (inscription,
       mot de passe oublié) et les dossiers de courrier indésirable.
 - [ ] `SOCIAL_SIMULATION_ENABLED=false`.
+- [ ] `ADMIN_EMAILS` = votre adresse e-mail, pour valider les avis sur `/admin/avis`.
+- [ ] Facultatif : `OPENAI_API_KEY` pour proposer la création d'images par IA.
 - [ ] Tâche cron-job.org active chaque minute sur `/api/cron/publier`.
 
 ## 5. Dernier essai complet

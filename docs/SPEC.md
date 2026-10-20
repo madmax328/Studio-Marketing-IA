@@ -37,6 +37,11 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
 | 6. Analyse | Récupération des statistiques disponibles via les API, page de statistiques, premières recommandations | **Fait** : relevés automatiques (Facebook, Instagram, Threads ; LinkedIn non disponible), page Statistiques, conseils fondés sur les résultats réels, meilleures publications transmises à l'IA comme exemples |
 | 7. Abonnements | Stripe (paiement, portail client, webhooks vérifiés et idempotents), 4 offres configurables en base, crédits mensuels avec journal immuable, remboursement des échecs | **Fait** (prix à créer dans Stripe) |
 
+### Après la V1 (fait)
+
+- Pages légales, guide de création des applications réseaux, préparation du lancement (`/api/sante`, CSP,
+  référencement), images par IA (OpenAI), témoignages réels avec validation.
+
 ### Site public
 
 Accueil (`/`), Fonctionnalités, Tarifs (offres lues en base, prix lus chez Stripe, actualisés toutes les heures) et

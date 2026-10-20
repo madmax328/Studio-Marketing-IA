@@ -8,6 +8,7 @@ import { ProductDemo } from "@/components/site/product-demo";
 import { SectionHeading } from "@/components/site/section-heading";
 import { cn } from "@/lib/cn";
 import { getPublicPlans } from "@/server/services/public-plans";
+import { getSiteTestimonials } from "@/server/services/public-testimonials";
 
 export const metadata: Metadata = {
   title: { absolute: "Studio Marketing IA · Vous décrivez, le studio écrit, crée et publie" },
@@ -114,7 +115,7 @@ function PrimaryButton({ href, children }: { href: string; children: ReactNode }
 }
 
 export default async function HomePage() {
-  const plans = await getPublicPlans();
+  const [plans, testimonials] = await Promise.all([getPublicPlans(), getSiteTestimonials()]);
 
   return (
     <>
@@ -270,6 +271,36 @@ export default async function HomePage() {
           </p>
         </div>
       </section>
+
+      {/* ---------- Avis (seulement des avis réels, validés, publiés avec l'accord de leur auteur) ---------- */}
+      {testimonials.length > 0 ? (
+        <section className="border-t border-line py-24 sm:py-32">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <SectionHeading eyebrow="Ils publient avec le studio" title="Ce qu'en disent nos utilisateurs." />
+            <ul className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {testimonials.map((item) => (
+                <li key={item.id} className="glass flex flex-col justify-between gap-6 rounded-2xl p-6">
+                  <div>
+                    <p aria-label={`${item.rating} sur 5`} className="text-sm tracking-widest">
+                      <span className="text-gold">{"★".repeat(item.rating)}</span>
+                      <span className="text-white/15">{"★".repeat(5 - item.rating)}</span>
+                    </p>
+                    <blockquote className="mt-4 leading-relaxed text-fg/90">« {item.text} »</blockquote>
+                  </div>
+                  <p className="text-sm">
+                    <span className="font-medium">{item.authorName}</span>
+                    <span className="text-fg-muted">
+                      {" "}
+                      · {item.authorRole}
+                      {item.city ? `, ${item.city}` : ""}
+                    </span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {/* ---------- Questions ---------- */}
       <section id="questions" className="scroll-mt-20 border-t border-line py-24 sm:py-32">

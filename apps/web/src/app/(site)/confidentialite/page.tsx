@@ -39,6 +39,12 @@ const DATA = [
     duration: "Jusqu'à la suppression du compte ; factures : durée légale",
   },
   {
+    what: "Votre avis sur le service, si vous en laissez un (note, texte, nom et activité affichés, ville)",
+    why: "Améliorer le service ; publication sur le site uniquement avec votre accord",
+    basis: "Consentement (publication), intérêt légitime (amélioration)",
+    duration: "Jusqu'à ce que vous le retiriez ou supprimiez votre compte",
+  },
+  {
     what: "Journal de sécurité (connexions, actions sensibles, sans contenu privé) et données techniques (adresse IP)",
     why: "Sécuriser le service, limiter les abus",
     basis: "Intérêt légitime",

@@ -7,7 +7,8 @@ import { getDb } from "@/server/db/client";
 import { getAnalyticsOverview } from "@/server/services/analytics";
 import { getDashboardData } from "@/server/services/dashboard";
 import { listNotifications } from "@/server/services/notifications";
-import { requireWorkspace } from "@/server/session";
+import { shouldAskForTestimonial } from "@/server/services/testimonials";
+import { requireUser, requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
 
@@ -17,10 +18,12 @@ function formatInTimeZone(date: Date, timeZone: string): string {
 
 export default async function DashboardPage() {
   const access = await requireWorkspace();
+  const user = await requireUser();
   const data = await getDashboardData(getDb(), access);
   const alerts = (await listNotifications(getDb(), access, 5)).filter((n) => !n.readAt);
   const isEmpty = data.brandCount === 0;
   const results = await getAnalyticsOverview(getDb(), access, { days: 30 });
+  const askForTestimonial = await shouldAskForTestimonial(getDb(), access, user.id, new Date(user.createdAt));
 
   return (
     <div className="space-y-6">
@@ -66,6 +69,18 @@ export default async function DashboardPage() {
           </ul>
           <Link href="/notifications" className="text-sm text-primary hover:underline">
             Toutes les alertes
+          </Link>
+        </Card>
+      ) : null}
+
+      {askForTestimonial ? (
+        <Card className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="font-semibold">Votre avis compte</h2>
+            <p className="text-sm text-muted">Deux minutes pour nous dire ce que le studio vous apporte, et ce qu&apos;il faudrait améliorer.</p>
+          </div>
+          <Link href="/avis" className={buttonStyles("secondary")}>
+            Donner mon avis
           </Link>
         </Card>
       ) : null}

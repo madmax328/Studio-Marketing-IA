@@ -42,6 +42,7 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Connecteurs réels | `src/server/publishing/publishers/*` (Meta, Threads, LinkedIn), `fetch` injectable et testé sans réseau ; erreurs classées (autorisation, temporaire, définitive, incertaine) | Même file d'envoi que la simulation |
 | Entretien des autorisations | À chaque passage du planificateur : jetons Threads renouvelés 10 jours avant expiration, alerte 7 jours avant pour les autres, comptes expirés marqués et signalés | L'utilisateur n'est jamais surpris par une publication bloquée |
 | Images par IA | Interface `ImageGenerationProvider`, premier fournisseur OpenAI (API Images, appel HTTP direct) ; même garde-fous que le texte (accord par fournisseur, crédits débités puis remboursés si échec, une exécution par demande) ; image sans texte recadrée au format choisi et rangée dans la médiathèque | Le texte et le logo restent exacts car ajoutés par les modèles de visuels |
+| Témoignages | Avis réels uniquement : demandés après 14 jours ou 3 publications parues, publiés seulement avec l'accord explicite de l'auteur et après validation (page `/admin/avis`, réservée à `ADMIN_EMAILS`) ; toute modification repasse en relecture ; section du site masquée sous 3 avis | Aucun faux avis (interdit et contraire aux règles du produit) |
 | Statistiques | Relevés par le planificateur (même appel que l'envoi, avec le temps restant) : 1 h après parution, puis toutes les 3 h (2 jours), 12 h (7 jours), 2 jours, arrêt à 30 jours ; publication réservée pendant le relevé ; historique dans `analyticsSnapshots`, dernier état sur la publication (`metrics`) | Aucun chiffre estimé : un indicateur non fourni reste absent ; simulations jamais mesurées |
 | Recommandations | Règles simples sur les résultats réels (réseau, créneau horaire, jour, images) ; au moins 6 publications mesurées, 3 par groupe et un écart de 30 % | Pas de conseil fondé sur le hasard |
 | Boucle d'amélioration | Les 3 publications réelles de la marque ayant le plus d'interactions (6 mois) sont transmises à l'IA comme exemples de style, balisées comme données | Les suivantes s'inspirent de ce qui marche, sans recopier ni reprendre de faits |
@@ -95,6 +96,7 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | `creditAccounts`, `creditTransactions` | Solde mensuel et journal immuable des crédits |
 | `stripeEvents` | Événements Stripe déjà traités |
 | `analyticsSnapshots` | Historique des chiffres relevés pour chaque publication |
+| `testimonials` | Avis des utilisateurs (un par compte), relus avant publication |
 
 Collections prévues : aucune pour l'instant.
 

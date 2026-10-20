@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { DeleteAccount } from "@/components/settings/delete-account";
 import { RevokeOtherSessions } from "@/components/settings/sessions";
 import { buttonStyles } from "@/components/ui/button";
@@ -30,6 +31,14 @@ export default async function SettingsPage() {
       <Card className="space-y-3">
         <h2 className="font-semibold">Sécurité</h2>
         <RevokeOtherSessions />
+      </Card>
+
+      <Card className="space-y-3">
+        <h2 className="font-semibold">Votre avis</h2>
+        <p className="text-sm text-muted">Dites-nous ce que vous pensez du studio. Vous pouvez modifier ou retirer votre avis à tout moment.</p>
+        <Link href="/avis" className={buttonStyles("secondary")}>
+          Donner ou modifier mon avis
+        </Link>
       </Card>
 
       <Card className="space-y-3">

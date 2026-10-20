@@ -51,6 +51,8 @@ const serverEnvSchema = z.object({
   LINKEDIN_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().optional()),
   LINKEDIN_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
   LINKEDIN_API_VERSION: z.preprocess(emptyToUndefined, z.string().regex(/^\d{6}$/).default("202609")),
+  /** Adresses e-mail autorisées à valider les avis (séparées par des virgules). */
+  ADMIN_EMAILS: z.preprocess(emptyToUndefined, z.string().default("")),
   // Abonnements (Stripe). Les identifiants de prix (price_…) se créent dans le tableau de bord Stripe.
   STRIPE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   STRIPE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),

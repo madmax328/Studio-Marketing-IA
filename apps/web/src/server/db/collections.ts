@@ -10,6 +10,7 @@ import type {
   PlanLimits,
   PostMetrics,
   PostStatus,
+  TestimonialStatus,
   SocialNetworkId,
   WorkspaceRole,
 } from "@smia/shared";
@@ -130,6 +131,24 @@ export interface AnalyticsSnapshotDoc {
   network: SocialNetworkId;
   collectedAt: Date;
   values: PostMetrics;
+}
+
+/** Avis d'un utilisateur (un par compte). */
+export interface TestimonialDoc {
+  _id: ObjectId;
+  userId: string;
+  workspaceId: ObjectId;
+  rating: number;
+  text: string;
+  authorName: string;
+  authorRole: string;
+  city: string;
+  /** Accord explicite pour une publication sur le site. */
+  publishConsent: boolean;
+  status: TestimonialStatus;
+  reviewedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /** Compte social connecté. Les jetons sont toujours chiffrés (AES-256-GCM). */
@@ -359,6 +378,7 @@ export const COLLECTIONS = {
   creditTransactions: "creditTransactions",
   stripeEvents: "stripeEvents",
   analyticsSnapshots: "analyticsSnapshots",
+  testimonials: "testimonials",
   migrations: "migrations",
 } as const;
 
@@ -381,6 +401,7 @@ export function collections(db: Db) {
     creditTransactions: db.collection<CreditTransactionDoc>(COLLECTIONS.creditTransactions),
     stripeEvents: db.collection<StripeEventDoc>(COLLECTIONS.stripeEvents),
     analyticsSnapshots: db.collection<AnalyticsSnapshotDoc>(COLLECTIONS.analyticsSnapshots),
+    testimonials: db.collection<TestimonialDoc>(COLLECTIONS.testimonials),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }
