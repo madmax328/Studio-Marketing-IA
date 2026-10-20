@@ -56,7 +56,7 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
       "Application Meta avec vérification d'entreprise",
       "Validation (App Review) des permissions de publication sur les Pages",
     ],
-    integrationStatus: "planned",
+    integrationStatus: "in_development",
   },
   instagram: {
     id: "instagram",
@@ -68,7 +68,7 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
       "Compte Instagram professionnel (Business ou Creator)",
       "Validation (App Review) de la permission de publication de contenu",
     ],
-    integrationStatus: "planned",
+    integrationStatus: "in_development",
   },
   linkedin: {
     id: "linkedin",
@@ -80,7 +80,7 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
       "Profil personnel : produit « Share on LinkedIn » (libre accès)",
       "Page entreprise : accès à la Community Management API (sur demande)",
     ],
-    integrationStatus: "planned",
+    integrationStatus: "in_development",
   },
   tiktok: {
     id: "tiktok",
@@ -135,7 +135,7 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
     allowsTextOnly: true,
     maxTextLength: 500,
     approvalRequirements: ["Threads API (Meta) avec validation (App Review) de la publication"],
-    integrationStatus: "planned",
+    integrationStatus: "in_development",
   },
 };
 

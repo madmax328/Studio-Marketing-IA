@@ -5,7 +5,9 @@ import { getDb } from "@/server/db/client";
 import { getServerEnv } from "@/server/env";
 import { UserFacingError } from "@/server/services/errors";
 import { markAllNotificationsRead } from "@/server/services/notifications";
+import { setPostAccount } from "@/server/services/posts";
 import { connectSimulationAccount, disconnectSocialAccount } from "@/server/services/social-accounts";
+import { confirmOAuthConnection } from "@/server/services/social-connections";
 import { requireWorkspace } from "@/server/session";
 import type { ActionResult } from "@/server/actions/studio";
 
@@ -43,6 +45,28 @@ export async function markNotificationsReadAction(): Promise<ActionResult<null>>
     await markAllNotificationsRead(getDb(), access);
     revalidatePath("/notifications");
     revalidatePath("/tableau-de-bord");
+    return { ok: true, data: null };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function confirmConnectionAction(stateId: string, keys: string[]): Promise<ActionResult<{ connected: number }>> {
+  const access = await requireWorkspace();
+  try {
+    const connected = await confirmOAuthConnection(getDb(), access, access.userId, stateId, keys);
+    revalidatePath("/reseaux");
+    return { ok: true, data: { connected } };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function setPostAccountAction(postId: string, accountId: string | null): Promise<ActionResult<null>> {
+  const access = await requireWorkspace();
+  try {
+    await setPostAccount(getDb(), access, postId, accountId);
+    revalidatePath(`/publications/${postId}`);
     return { ok: true, data: null };
   } catch (error) {
     return failure(error);

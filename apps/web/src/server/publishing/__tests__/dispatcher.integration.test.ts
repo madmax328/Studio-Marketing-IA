@@ -52,13 +52,14 @@ describe.skipIf(!uri)("file d'envoi (MongoDB réel)", () => {
     return post._id;
   }
 
-  async function addAccount(provider: "simulation" | "linkedin", network: PostDoc["network"] = "linkedin") {
+  async function addAccount(provider: "simulation" | "linkedin", network: PostDoc["network"] = "linkedin", externalAccountId = `${provider}-${network}`) {
+    const _id = new ObjectId();
     await collections(db).socialAccounts.insertOne({
-      _id: new ObjectId(),
+      _id,
       workspaceId,
       network,
       provider,
-      externalAccountId: `${provider}-${network}`,
+      externalAccountId,
       displayName: `Compte ${provider}`,
       status: "connected",
       scopes: [],
@@ -71,6 +72,7 @@ describe.skipIf(!uri)("file d'envoi (MongoDB réel)", () => {
       createdAt: clock,
       updatedAt: clock,
     });
+    return _id;
   }
 
   const get = (id: ObjectId) => collections(db).posts.findOne({ _id: id });
@@ -183,6 +185,35 @@ describe.skipIf(!uri)("file d'envoi (MongoDB réel)", () => {
     expect((await get(id))?.status).toBe("failed");
     expect((await collections(db).socialAccounts.findOne({ workspaceId }))?.status).toBe("expired");
     expect(notifier.accountExpired).toHaveBeenCalledTimes(1);
+  });
+
+  it("plusieurs comptes du réseau : refuse de deviner, puis envoie avec le compte choisi", async () => {
+    await addAccount("linkedin", "linkedin", "profil-a");
+    const chosen = await addAccount("linkedin", "linkedin", "profil-b");
+    const publish = vi.fn<SocialPublisher["publish"]>(async ({ account }) => ({ externalId: account.externalAccountId, externalUrl: null, simulated: false }));
+    const publishers = { linkedin: { provider: "linkedin" as const, publish } };
+
+    const ambiguous = await addPost();
+    await runPublishingCycle(deps(publishers));
+    expect((await get(ambiguous))?.publishing?.lastError).toContain("Plusieurs comptes LinkedIn");
+    expect(publish).not.toHaveBeenCalled();
+
+    const explicit = await addPost({ socialAccountId: chosen });
+    await runPublishingCycle(deps(publishers));
+    expect((await get(explicit))?.publishing?.externalId).toBe("profil-b");
+  });
+
+  it("compte choisi déconnecté ou expiré : échec clair, sans basculer sur un autre compte", async () => {
+    await addAccount("linkedin", "linkedin", "autre");
+    const gone = await addPost({ socialAccountId: new ObjectId() });
+    const expiredId = await addAccount("linkedin", "linkedin", "expire");
+    await collections(db).socialAccounts.updateOne({ _id: expiredId }, { $set: { status: "expired" } });
+    const expired = await addPost({ socialAccountId: expiredId });
+    const publish = vi.fn<SocialPublisher["publish"]>();
+    await runPublishingCycle(deps({ linkedin: { provider: "linkedin", publish } }));
+    expect((await get(gone))?.publishing?.lastError).toContain("n'est plus connecté");
+    expect((await get(expired))?.publishing?.lastError).toContain("doit être reconnecté");
+    expect(publish).not.toHaveBeenCalled();
   });
 
   it("deux passages simultanés n'envoient chaque publication qu'une fois", async () => {

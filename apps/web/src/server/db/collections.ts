@@ -79,6 +79,8 @@ export interface PostDoc {
   /** Fuseau de l'utilisateur au moment de la programmation, pour l'affichage et les changements d'heure. */
   timeZone: string;
   publishedAt: Date | null;
+  /** Compte choisi pour l'envoi ; nécessaire seulement si plusieurs comptes du réseau sont connectés. */
+  socialAccountId?: ObjectId | null;
   /** Suivi de l'envoi (absent tant que la publication n'a jamais été traitée). */
   publishing?: PostPublishing;
   schemaVersion: 1;
@@ -108,7 +110,7 @@ export interface SocialAccountDoc {
   workspaceId: ObjectId;
   network: SocialNetworkId;
   /** Connecteur utilisé : réseau réel ou simulation (aucun envoi). */
-  provider: "meta" | "linkedin" | "simulation";
+  provider: OAuthProviderId | "simulation";
   /** Identifiant du compte, de la page ou du profil chez le réseau. */
   externalAccountId: string;
   displayName: string;
@@ -117,6 +119,8 @@ export interface SocialAccountDoc {
   accessToken: EncryptedValue | null;
   refreshToken: EncryptedValue | null;
   tokenExpiresAt: Date | null;
+  /** Prévenu que l'autorisation arrive à expiration (une seule alerte par connexion). */
+  expiryWarnedAt?: Date | null;
   lastCheckedAt: Date | null;
   lastError: string | null;
   connectedByUserId: string;
@@ -124,13 +128,32 @@ export interface SocialAccountDoc {
   updatedAt: Date;
 }
 
-/** État OAuth en cours (protection CSRF), à usage unique et de courte durée. */
+/** Fournisseurs de connexion OAuth (Threads a ses propres identifiants, distincts de Facebook Login). */
+export type OAuthProviderId = "meta" | "threads" | "linkedin";
+
+/** Compte proposé après l'autorisation, en attente du choix de l'utilisateur. Jeton chiffré. */
+export interface PendingSocialAccount {
+  /** Clé de sélection : `${network}:${externalAccountId}`. */
+  key: string;
+  network: SocialNetworkId;
+  externalAccountId: string;
+  displayName: string;
+  scopes: string[];
+  accessToken: EncryptedValue;
+  tokenExpiresAt: Date | null;
+}
+
+/**
+ * État OAuth en cours (protection CSRF), à usage unique et de courte durée.
+ * Après le retour du réseau, il garde les comptes proposés jusqu'au choix de l'utilisateur.
+ */
 export interface OAuthStateDoc {
   _id: string;
   workspaceId: ObjectId;
   userId: string;
-  provider: "meta" | "linkedin";
+  provider: OAuthProviderId;
   codeVerifier: string | null;
+  pending?: { candidates: PendingSocialAccount[]; receivedAt: Date };
   expiresAt: Date;
   createdAt: Date;
 }
@@ -138,7 +161,7 @@ export interface OAuthStateDoc {
 export interface NotificationDoc {
   _id: ObjectId;
   workspaceId: ObjectId;
-  kind: "publish_failed" | "publish_succeeded" | "account_expired" | "payment_failed";
+  kind: "publish_failed" | "publish_succeeded" | "account_expired" | "account_expiring" | "payment_failed";
   title: string;
   body: string;
   link: string | null;

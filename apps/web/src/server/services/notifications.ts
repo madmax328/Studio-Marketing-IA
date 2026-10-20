@@ -2,6 +2,7 @@ import { ObjectId, type Db } from "mongodb";
 import { SOCIAL_NETWORKS } from "@smia/shared";
 import { collections, type NotificationDoc, type PostDoc, type SocialAccountDoc } from "@/server/db/collections";
 import type { Notifier } from "@/server/publishing/dispatcher";
+import type { ExpiryNotifier } from "@/server/publishing/tokens";
 import { assertPermission } from "@/server/services/permissions";
 import type { WorkspaceAccess } from "@/server/services/workspaces";
 
@@ -19,7 +20,7 @@ async function createNotification(db: Db, notification: Omit<NotificationDoc, "_
 }
 
 /** Notifications des échecs : dans l'application, et par e-mail au propriétaire de l'espace (au mieux). */
-export function createNotifier(db: Db, sendEmail: EmailSender, appUrl: string): Notifier {
+export function createNotifier(db: Db, sendEmail: EmailSender, appUrl: string): Notifier & ExpiryNotifier {
   async function email(workspaceId: ObjectId, subject: string, text: string) {
     try {
       const to = await ownerEmail(db, workspaceId);
@@ -60,6 +61,24 @@ export function createNotifier(db: Db, sendEmail: EmailSender, appUrl: string): 
         account.workspaceId,
         `Compte ${network} à reconnecter`,
         `Bonjour,\n\nL'autorisation du compte ${network} « ${account.displayName} » a expiré. Reconnectez-le : ${appUrl}/reseaux`,
+      );
+    },
+    async accountExpiring(account: SocialAccountDoc) {
+      const network = SOCIAL_NETWORKS[account.network].label;
+      const date = account.tokenExpiresAt
+        ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "Europe/Paris" }).format(account.tokenExpiresAt)
+        : "bientôt";
+      await createNotification(db, {
+        workspaceId: account.workspaceId,
+        kind: "account_expiring",
+        title: `Compte ${network} à reconnecter avant le ${date}`,
+        body: `${network} limite la durée de l'autorisation du compte ${account.displayName}. Reconnectez-le avant le ${date} pour que vos publications continuent de partir.`,
+        link: "/reseaux",
+      });
+      await email(
+        account.workspaceId,
+        `Compte ${network} à reconnecter avant le ${date}`,
+        `Bonjour,\n\n${network} limite la durée de l'autorisation du compte « ${account.displayName} ». Reconnectez-le avant le ${date} : ${appUrl}/reseaux`,
       );
     },
   };

@@ -5,6 +5,7 @@ import { EDITABLE_POST_STATUSES, POST_STATUS_LABELS, roleHasPermission, SOCIAL_N
 import { getTextProvider } from "@/server/ai";
 import { hasAiConsent } from "@/server/services/generation";
 import { PostEditor } from "@/components/posts/post-editor";
+import { PostAccountPicker } from "@/components/posts/post-account-picker";
 import { PostMediaPicker } from "@/components/posts/post-media-picker";
 import { PostScheduler } from "@/components/posts/post-scheduler";
 import { Alert, Card } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
 import { listMedia } from "@/server/services/media";
 import { getPost, MAX_MEDIA_PER_POST, postStatusLabel, schedulingProblems } from "@/server/services/posts";
+import { listSocialAccounts } from "@/server/services/social-accounts";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Publication" };
@@ -34,6 +36,9 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
     ...images.items.map((item) => ({ id: item._id.toHexString(), name: item.name })),
   ];
   const editable = EDITABLE_POST_STATUSES.includes(post.status) && roleHasPermission(access.role, "content:write");
+  const accounts = (await listSocialAccounts(getDb(), access)).filter((account) => account.network === post.network);
+  const chosen = post.socialAccountId ? accounts.find((account) => account._id.equals(post.socialAccountId as NonNullable<typeof post.socialAccountId>)) : null;
+  const connectedCount = accounts.filter((account) => account.status === "connected").length;
 
   return (
     <div className="space-y-6">
@@ -90,6 +95,35 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
           />
         </Card>
       ) : null}
+      <Card className="space-y-3">
+        <h2 className="font-semibold">Compte {network.label}</h2>
+        {accounts.length === 0 ? (
+          <p className="text-sm text-muted">
+            Aucun compte {network.label} n&apos;est connecté.{" "}
+            <Link href="/reseaux" className="text-primary hover:underline">
+              Connecter un compte
+            </Link>
+          </p>
+        ) : (
+          <>
+            <PostAccountPicker
+              postId={postId}
+              editable={editable}
+              selected={chosen ? chosen._id.toHexString() : null}
+              accounts={accounts.map((account) => ({
+                id: account._id.toHexString(),
+                label: `${account.displayName}${account.status === "connected" ? "" : " (à reconnecter)"}`,
+              }))}
+            />
+            {!chosen && connectedCount > 1 ? (
+              <Alert tone="error">Plusieurs comptes sont connectés : choisissez celui qui publiera, sinon l&apos;envoi sera refusé.</Alert>
+            ) : null}
+            {post.socialAccountId && !chosen ? (
+              <Alert tone="error">Le compte choisi a été déconnecté : choisissez-en un autre.</Alert>
+            ) : null}
+          </>
+        )}
+      </Card>
       <Card className="space-y-3">
         <h2 className="font-semibold">Date de publication</h2>
         {local ? (

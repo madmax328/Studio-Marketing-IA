@@ -34,6 +34,18 @@ const serverEnvSchema = z.object({
   SOCIAL_TOKEN_ENCRYPTION_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   /** Comptes de test qui simulent l'envoi sans rien publier. À désactiver avant l'ouverture commerciale. */
   SOCIAL_SIMULATION_ENABLED: z.preprocess(emptyToUndefined, z.enum(["true", "false"]).default("true")),
+  // Connecteurs réels. Chaque réseau s'active dès que ses identifiants d'application sont renseignés.
+  /** Application Meta (Facebook Login) : Pages Facebook et comptes Instagram professionnels. */
+  META_APP_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+  META_APP_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  META_GRAPH_VERSION: z.preprocess(emptyToUndefined, z.string().regex(/^v\d+\.\d+$/).default("v24.0")),
+  /** Identifiants Threads (cas d'usage « Threads API » de l'application Meta, identifiants distincts). */
+  THREADS_APP_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+  THREADS_APP_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  /** Application LinkedIn (produits « Sign In with LinkedIn using OpenID Connect » et « Share on LinkedIn »). */
+  LINKEDIN_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+  LINKEDIN_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  LINKEDIN_API_VERSION: z.preprocess(emptyToUndefined, z.string().regex(/^\d{6}$/).default("202609")),
   // Abonnements (Stripe). Les identifiants de prix (price_…) se créent dans le tableau de bord Stripe.
   STRIPE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   STRIPE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),

@@ -39,13 +39,15 @@ export async function deleteUserData(
     await c.creditTransactions.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.subscriptions.deleteMany({ _id: { $in: ownedIds } });
     await c.generationJobs.deleteMany({ workspaceId: { $in: ownedIds } });
-    await c.socialAccounts.deleteMany({ workspaceId: { $in: ownedIds } });
+    // Demandes de connexion en cours (elles contiennent des jetons chiffrés).
+    await c.oauthStates.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.workspaceMembers.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.auditLogs.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.workspaces.deleteMany({ _id: { $in: ownedIds } });
   }
 
   await c.workspaceMembers.deleteMany({ userId });
+  await c.oauthStates.deleteMany({ userId });
   await c.auditLogs.updateMany({ actorUserId: userId }, { $set: { actorUserId: null } });
   await recordAudit(db, { workspaceId: null, actorUserId: null, action: "account.deleted" });
 }

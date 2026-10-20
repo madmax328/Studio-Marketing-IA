@@ -3,6 +3,7 @@ import { ensureDatabaseReady, getDb } from "@/server/db/client";
 import { collections } from "@/server/db/collections";
 import { getServerEnv } from "@/server/env";
 import { verifySignedMedia } from "@/server/media/signed-urls";
+import { toJpeg } from "@/server/media/images";
 import { getMediaStorage } from "@/server/media/storage";
 
 /**
@@ -17,9 +18,17 @@ export async function GET(request: Request, context: RouteContext<"/api/medias/p
   }
   await ensureDatabaseReady();
   const media = await collections(getDb()).mediaAssets.findOne({ _id: new ObjectId(mediaId) });
-  const file = media ? await getMediaStorage().read(media.storageKey) : null;
-  if (!media || !file) return new Response("Introuvable.", { status: 404 });
-  return new Response(file.stream, {
-    headers: { "Content-Type": media.mimeType, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" },
-  });
+  if (!media) return new Response("Introuvable.", { status: 404 });
+  const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
+
+  // Certains réseaux (Instagram) n'acceptent que le JPEG : conversion à la demande.
+  if (url.searchParams.get("format") === "jpeg" && media.mimeType !== "image/jpeg") {
+    const bytes = await getMediaStorage().readBuffer(media.storageKey);
+    if (!bytes) return new Response("Introuvable.", { status: 404 });
+    return new Response(new Uint8Array(await toJpeg(bytes)), { headers: { ...headers, "Content-Type": "image/jpeg" } });
+  }
+
+  const file = await getMediaStorage().read(media.storageKey);
+  if (!file) return new Response("Introuvable.", { status: 404 });
+  return new Response(file.stream, { headers: { ...headers, "Content-Type": media.mimeType } });
 }

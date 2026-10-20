@@ -33,7 +33,7 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
 | 3. Visuels | Stockage objet, médiathèque, logo, gabarits avec incrustation du logo et des couleurs, images jointes aux publications | **Fait** (génération d'images par IA : fournisseur à choisir) |
 | 4. Campagnes et calendrier | Assistant de campagne en 9 étapes, stratégie proposée par l'IA et modifiable, rédaction par lots, calendrier (mois, semaine, liste) avec filtres, programmation, fuseaux horaires et changements d'heure | **Fait** |
 | 5a. Moteur de publication | File d'envoi (réservation atomique, reprises avec délai, verrous abandonnés), jetons chiffrés, notifications d'échec (application + e-mail), comptes de test en simulation | **Fait** |
-| 5b. Connecteurs réels | OAuth et publication Meta (Facebook, Instagram, Threads), LinkedIn, puis TikTok, YouTube, Pinterest, X | À faire (nécessite les applications validées par chaque réseau) |
+| 5b. Connecteurs réels | OAuth et publication Meta (Facebook, Instagram, Threads), LinkedIn, puis TikTok, YouTube, Pinterest, X | **En cours** : Facebook, Instagram, Threads et LinkedIn (profil) écrits et testés sans réseau réel, « en test » jusqu'au premier essai sur un vrai compte ; TikTok, YouTube, Pinterest, X à faire |
 | 6. Analyse | Récupération des statistiques disponibles via les API, page de statistiques, premières recommandations | À faire |
 | 7. Abonnements | Stripe (paiement, portail client, webhooks vérifiés et idempotents), 4 offres configurables en base, crédits mensuels avec journal immuable, remboursement des échecs | **Fait** (prix à créer dans Stripe) |
 
@@ -43,7 +43,9 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
   interface `ImageGenerationProvider`. L'IA produit uniquement l'image de fond ; texte, logo et couleurs restent
   incrustés par les gabarits. Décision reportée par le porteur du projet le 14/10/2026.
 - **Avant l'ouverture commerciale : `SOCIAL_SIMULATION_ENABLED=false`** pour retirer les comptes de test.
-- **Limite de comptes sociaux par offre** (`maxSocialAccounts`) : à appliquer à la connexion des comptes réels (étape 5b).
+- **Créer les applications Meta et LinkedIn** puis tester chaque connecteur sur un vrai compte (voir
+  `docs/SOCIAL_NETWORKS.md`) ; les pages légales (confidentialité, conditions) sont exigées par Meta pour l'App Review.
+- **Pages LinkedIn entreprise** : nécessitent la Community Management API (demande d'accès).
 - **Contenu des offres** (noms, textes, limites, crédits) : provisoire, modifiable dans la collection `plans`.
 
 **Réseaux visés en V1** : Facebook, Instagram, LinkedIn, TikTok, YouTube, X, Pinterest, Threads.

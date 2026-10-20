@@ -341,3 +341,30 @@ export function postStatusLabel(post: Pick<PostDoc, "status" | "publishing">, la
   if (post.status === "published" && post.publishing?.simulated) return "Simulée (rien n'a été publié)";
   return labels[post.status];
 }
+
+/**
+ * Choisit le compte utilisé pour l'envoi (null : le seul compte connecté du réseau).
+ * Le compte doit appartenir à l'espace et au réseau de la publication.
+ */
+export async function setPostAccount(db: Db, access: WorkspaceAccess, postId: string, accountId: unknown): Promise<PostDoc> {
+  assertPermission(access, "content:write");
+  const post = await getPost(db, access, postId);
+  assertEditable(post);
+  let socialAccountId: ObjectId | null = null;
+  if (accountId !== null && accountId !== "") {
+    if (typeof accountId !== "string" || !ObjectId.isValid(accountId)) throw new UserFacingError("Compte introuvable.", "not_found");
+    const account = await collections(db).socialAccounts.findOne(
+      { _id: new ObjectId(accountId), workspaceId: access.workspace._id, network: post.network },
+      { projection: { _id: 1 } },
+    );
+    if (!account) throw new UserFacingError("Compte introuvable.", "not_found");
+    socialAccountId = account._id;
+  }
+  const updated = await collections(db).posts.findOneAndUpdate(
+    { _id: post._id, workspaceId: access.workspace._id, status: post.status },
+    { $set: { socialAccountId, updatedAt: new Date() } },
+    { returnDocument: "after" },
+  );
+  if (!updated) throw new UserFacingError("La publication a changé entre-temps. Rechargez la page.", "conflict");
+  return updated;
+}

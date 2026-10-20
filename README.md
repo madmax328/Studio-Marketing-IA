@@ -72,6 +72,23 @@ L'envoi des publications programmées est déclenché par un appel à `/api/cron
 3. Pour essayer sans compte réel : page « Réseaux sociaux » → « Connecter un compte de test (simulation) ».
    Les publications sont marquées « Simulée » et rien n'est envoyé.
 
+## Connecter les vrais réseaux
+
+Chaque réseau s'active dès que ses identifiants sont dans Vercel (avec `SOCIAL_TOKEN_ENCRYPTION_KEY`) ; sinon son
+bouton reste « bientôt disponible ». Détails et premier test : `docs/SOCIAL_NETWORKS.md`.
+
+| Réseau | Où créer l'application | Variables | Adresse de retour à déclarer |
+|---|---|---|---|
+| Facebook + Instagram | developers.facebook.com (cas d'usage « Gérer tout sur votre Page ») | `META_APP_ID`, `META_APP_SECRET` | `https://<domaine>/api/reseaux/retour/meta` |
+| Threads | même application Meta, cas d'usage « Accéder à l'API Threads » | `THREADS_APP_ID`, `THREADS_APP_SECRET` | `https://<domaine>/api/reseaux/retour/threads` |
+| LinkedIn | linkedin.com/developers (produits « Share on LinkedIn » et « Sign In with LinkedIn using OpenID Connect ») | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | `https://<domaine>/api/reseaux/retour/linkedin` |
+
+Générer la clé de chiffrement des jetons (PowerShell), à mettre dans `SOCIAL_TOKEN_ENCRYPTION_KEY` et à ne plus changer :
+
+```powershell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+```
+
 ## Activer les abonnements (Stripe)
 
 1. Créer un compte sur stripe.com (mode **Test** pour commencer).

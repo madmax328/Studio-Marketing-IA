@@ -125,10 +125,26 @@ async function processPost(
   const problems = schedulingProblems(post);
   if (problems.length > 0) return fail(problems.join(" "));
 
-  const account = await c.socialAccounts.findOne(
-    { workspaceId: post.workspaceId, network: post.network, status: "connected" },
-    { sort: { createdAt: 1 } },
-  );
+  let account: SocialAccountDoc | null;
+  if (post.socialAccountId) {
+    account = await c.socialAccounts.findOne({ _id: post.socialAccountId, workspaceId: post.workspaceId, network: post.network });
+    if (!account) {
+      return fail(`Le compte ${network.label} choisi pour cette publication n'est plus connecté. Choisissez un compte, puis reprogrammez-la.`);
+    }
+    if (account.status !== "connected") {
+      return fail(`Le compte ${account.displayName} doit être reconnecté dans « Réseaux sociaux ». Reprogrammez ensuite la publication.`);
+    }
+  } else {
+    // Sans choix explicite, on n'envoie que s'il n'y a aucune ambiguïté sur le compte.
+    const candidates = await c.socialAccounts
+      .find({ workspaceId: post.workspaceId, network: post.network, status: "connected" })
+      .limit(2)
+      .toArray();
+    if (candidates.length > 1) {
+      return fail(`Plusieurs comptes ${network.label} sont connectés : choisissez celui à utiliser dans la publication, puis reprogrammez-la.`);
+    }
+    account = candidates[0] ?? null;
+  }
   if (!account) {
     return fail(`Aucun compte ${network.label} n'est connecté. Connectez-le dans « Réseaux sociaux », puis reprogrammez la publication.`);
   }
