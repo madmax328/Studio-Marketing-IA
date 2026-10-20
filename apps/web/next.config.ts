@@ -12,7 +12,8 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  `connect-src 'self' https://vercel.com https://*.vercel-storage.com${preview ? " https://vercel.live wss://*.pusher.com" : ""}`,
+  // ipc: et ipc.localhost : passerelle de l'application de bureau (IA locale), inerte dans un navigateur.
+  `connect-src 'self' https://vercel.com https://*.vercel-storage.com ipc: http://ipc.localhost${preview ? " https://vercel.live wss://*.pusher.com" : ""}`,
   `frame-src ${preview ? "https://vercel.live" : "'none'"}`,
   "frame-ancestors 'none'",
   "object-src 'none'",

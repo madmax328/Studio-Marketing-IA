@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import {
   BRAND_TONES,
   BRAND_TONE_LABELS,
@@ -17,7 +17,9 @@ import { TextCounter } from "@/components/posts/text-counter";
 import { Button } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/card";
 import { SelectField, TextAreaField } from "@/components/ui/field";
-import { generatePostsAction, saveDraftAction } from "@/server/actions/studio";
+import { LocalEngineSetup, useLocalAi } from "@/components/studio/local-engine";
+import { localGenerate } from "@/lib/desktop";
+import { completeLocalGenerationAction, generatePostsAction, prepareLocalGenerationAction, saveDraftAction } from "@/server/actions/studio";
 import type { GeneratedPostView, GenerationView } from "@/server/services/generation";
 
 interface StudioBrand {
@@ -43,10 +45,13 @@ export function StudioClient({
   brands,
   credits,
   costPerGeneration,
+  cloudBlocker = null,
 }: {
   brands: StudioBrand[];
   credits: number;
   costPerGeneration: number;
+  /** Ce qui empêche d'utiliser l'IA du cloud (service non configuré, accord à donner), affiché à sa place. */
+  cloudBlocker?: ReactNode;
 }) {
   const [networks, setNetworks] = useState<SocialNetworkId[]>(["facebook", "instagram"]);
   const [params, setParams] = useState<GenerationParams | null>(null);
@@ -55,14 +60,41 @@ export function StudioClient({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [left, setLeft] = useState(credits);
+  // Application de bureau : l'IA peut aussi tourner sur l'ordinateur (sans crédits).
+  const localAi = useLocalAi();
+  const localModels = localAi.status?.models ?? [];
+  const localReady = localAi.desktop && Boolean(localAi.status?.running) && localModels.length > 0;
+  const [engineChoice, setEngineChoice] = useState<"cloud" | "local" | null>(null);
+  const engine = engineChoice ?? (localReady || (localAi.desktop && cloudBlocker) ? "local" : "cloud");
+  const [localModel, setLocalModel] = useState<string | null>(null);
+  const model = localModel && localModels.includes(localModel) ? localModel : (localModels[0] ?? "");
+
+  async function generateLocally(request: Record<string, unknown>): Promise<GenerationView | null> {
+    const prepared = await prepareLocalGenerationAction(request);
+    if (!prepared.ok) {
+      setError(prepared.error);
+      return null;
+    }
+    let output: string;
+    try {
+      output = await localGenerate({ model, system: prepared.data.system, user: prepared.data.user, schema: prepared.data.schema });
+    } catch (exception) {
+      setError(typeof exception === "string" ? exception : "L'IA locale n'a pas répondu. Vérifiez qu'Ollama est lancé.");
+      return null;
+    }
+    const completed = await completeLocalGenerationAction({ jobId: prepared.data.jobId, output, model });
+    if (!completed.ok) {
+      setError(completed.error);
+      return null;
+    }
+    return completed.data;
+  }
 
   async function generate(next: GenerationParams, targetNetworks: SocialNetworkId[]): Promise<GenerationView | null> {
     setError(null);
-    const result = await generatePostsAction({
-      ...next,
-      networks: targetNetworks,
-      requestId: crypto.randomUUID(),
-    });
+    const request = { ...next, networks: targetNetworks, requestId: crypto.randomUUID() };
+    if (engine === "local") return generateLocally(request);
+    const result = await generatePostsAction(request);
     if (!result.ok) {
       setError(result.error);
       return null;
@@ -105,9 +137,58 @@ export function StudioClient({
   }
 
   const defaultBrand = brands[0];
+  const cloudUnavailable = engine === "cloud" && cloudBlocker !== null;
 
   return (
     <div className="space-y-6">
+      {localAi.desktop ? (
+        <Card className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-semibold">Moteur d&apos;écriture</h2>
+            <div className="flex rounded-full border border-border p-1 text-sm" role="radiogroup" aria-label="Moteur d'écriture">
+              {(["local", "cloud"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={engine === option}
+                  onClick={() => setEngineChoice(option)}
+                  className={`rounded-full px-3 py-1 transition ${engine === option ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground"}`}
+                >
+                  {option === "local" ? "Sur cet ordinateur (illimité)" : "Dans le cloud (crédits)"}
+                </button>
+              ))}
+            </div>
+          </div>
+          {engine === "local" ? (
+            localReady ? (
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <label htmlFor="local-model" className="text-muted">
+                  Modèle
+                </label>
+                <select
+                  id="local-model"
+                  value={model}
+                  onChange={(event) => setLocalModel(event.target.value)}
+                  className="rounded-lg border border-border bg-black/30 px-2 py-1 font-mono text-xs"
+                >
+                  {localModels.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-muted">Vos textes restent sur votre ordinateur. Plus lent que le cloud selon la machine.</span>
+              </div>
+            ) : (
+              <LocalEngineSetup state={localAi} />
+            )
+          ) : null}
+        </Card>
+      ) : null}
+
+      {cloudUnavailable ? cloudBlocker : null}
+      {cloudUnavailable || (engine === "local" && !localReady) ? null : (
       <form onSubmit={onSubmit} className="space-y-4">
         <Card className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -180,14 +261,17 @@ export function StudioClient({
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted">
-              Crédits restants ce mois-ci : {left} · une génération = {costPerGeneration} crédit{costPerGeneration > 1 ? "s" : ""}
+              {engine === "local"
+                ? "IA locale : aucun crédit utilisé."
+                : `Crédits restants ce mois-ci : ${left} · une génération = ${costPerGeneration} crédit${costPerGeneration > 1 ? "s" : ""}`}
             </p>
-            <Button type="submit" disabled={pending || left < costPerGeneration}>
-              {pending ? "L'IA rédige… (jusqu'à une minute)" : "Générer les publications"}
+            <Button type="submit" disabled={pending || (engine === "cloud" && left < costPerGeneration)}>
+              {pending ? (engine === "local" ? "Votre ordinateur rédige… (quelques minutes possibles)" : "L'IA rédige… (jusqu'à une minute)") : "Générer les publications"}
             </Button>
           </div>
         </Card>
       </form>
+      )}
 
       {error ? <Alert tone="error">{error}</Alert> : null}
 

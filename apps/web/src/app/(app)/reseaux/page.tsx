@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { roleHasPermission, SOCIAL_NETWORK_IDS, SOCIAL_NETWORKS, type IntegrationStatus } from "@smia/shared";
+import { DesktopNotice } from "@/components/desktop/desktop-notice";
 import { ConnectSimulationButton, DisconnectButton } from "@/components/social/account-buttons";
 import { buttonStyles } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/card";
@@ -78,6 +79,11 @@ export default async function NetworksPage({ searchParams }: PageProps<"/reseaux
       ) : typeof connexion === "string" && CONNECTION_MESSAGES[connexion] ? (
         <Alert tone={CONNECTION_MESSAGES[connexion].tone}>{CONNECTION_MESSAGES[connexion].text}</Alert>
       ) : null}
+
+      <DesktopNotice>
+        Pour connecter un réseau, ouvrez le studio dans votre navigateur habituel : certains réseaux (Google, YouTube…)
+        refusent les connexions depuis une application. Les comptes connectés apparaissent ensuite ici aussi.
+      </DesktopNotice>
 
       {simulationEnabled ? (
         <Alert>

@@ -55,6 +55,7 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Validation | Statut `pending_approval` (jamais pris par le planificateur) ; `approval` sur la publication (demande, décision, remarque) ; mises à jour conditionnées à `updatedAt` (on ne valide pas une version qu'on n'a pas vue) | Le client valide exactement ce qui partira |
 | Agences | Espace client = espace ordinaire avec `billingWorkspaceId` : offre, crédits et journal de crédits portés par l'espace de l'agence (`sourceWorkspaceId` pour la traçabilité) ; pas d'abonnement propre | Une seule facture, des accès séparés par client |
 | Repères anonymes | `computeBenchmarks` (`@smia/shared`) : écart à la médiane du compte, moyenne par compte puis entre comptes (chaque compte pèse pareil) ; k-anonymat (5 comptes, 30 publications) ; un seul document d'agrégats sans identifiant | Conseils utiles dès les premières publications, sans exposer personne |
+| Application de bureau | Tauri 2 (`apps/desktop`) : fenêtre sur le site distant ; capacité IPC limitée à `SMIA_APP_URL` (générée par `build.rs`) ; Ollama joint depuis Rust (pas de CORS, pas d'accès direct du site à la machine) ; serveur : `prepareLocalGeneration` / `completeLocalGeneration` (demande liée à la personne et à l'espace, 15 min, usage unique) | Génération illimitée sans coût cloud ni envoi des textes à un tiers |
 | Tests | Vitest ; tests d'intégration sur MongoDB réel en CI (`TEST_MONGODB_URI`) | Vérifie l'isolation des données sur une vraie base |
 
 ## Décisions à prendre aux étapes suivantes

@@ -95,3 +95,9 @@ voix off, sous-titres, gestion d'équipe et multi-marques pour les agences, Goog
 
 Application de bureau (Tauri 2) avec moteur IA local pour la génération illimitée sans coût cloud, vidéo générée par IA.
 L'architecture des fournisseurs IA est conçue dès la V1 pour accueillir ce mode local.
+
+État de la V3 :
+- **Application de bureau + IA locale — fait.** Fenêtre Tauri 2 ouvrant le site ; commandes Rust vers Ollama
+  (état, téléchargement de modèle, génération structurée) réservées au site du studio ; Studio : choix du moteur, aucun
+  crédit en local, réponse validée par le serveur comme celle du cloud. Installateur Windows compilé par GitHub
+  Actions (voir `docs/BUREAU.md`).

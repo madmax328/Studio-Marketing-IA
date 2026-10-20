@@ -1,0 +1,28 @@
+[package]
+name = "studio-marketing-ia"
+version = "0.1.0"
+description = "Studio Marketing IA : application de bureau avec IA locale"
+edition = "2021"
+publish = false
+
+[lib]
+name = "studio_marketing_ia_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+serde_json = "1"
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+futures-util = "0.3"
+url = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

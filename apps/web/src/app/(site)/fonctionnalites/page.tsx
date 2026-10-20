@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND_TONE_LABELS, CAMPAIGN_OBJECTIVES, IMAGE_FORMAT_IDS, IMAGE_FORMATS, TEMPLATE_IDS, TEMPLATE_LABELS } from "@smia/shared";
 import { FeatureBento } from "@/components/site/feature-bento";
-import { imageAiAvailable, voiceAiAvailable } from "@/lib/features";
+import { desktopDownloadUrl, imageAiAvailable, voiceAiAvailable } from "@/lib/features";
 
 export const metadata: Metadata = {
   title: "Fonctionnalités",
@@ -35,6 +35,9 @@ const FEATURES: Feature[] = [
       "Le studio explique à quoi sert chaque publication et vous signale ce qui manque, au lieu de l'inventer.",
       "Vous modifiez le texte comme vous voulez, avec un compteur de caractères.",
       "Vos informations ne sont envoyées au service d'IA qu'après votre accord.",
+      ...(desktopDownloadUrl()
+        ? ["Avec l'application de bureau (Windows), l'IA peut aussi écrire sur votre propre ordinateur : sans crédits, et sans que vos textes ne partent chez un service d'IA."]
+        : []),
     ],
   },
   {
@@ -86,7 +89,17 @@ const FEATURES: Feature[] = [
       "Vues, personnes touchées, j'aime, commentaires, partages, enregistrements : uniquement les chiffres que chaque réseau fournit, jamais d'estimation.",
       "Des conseils tirés de vos propres résultats (réseau, jour, heure, images), donnés seulement quand il y a assez de publications pour être fiables.",
       "Vos publications qui ont le mieux marché servent d'exemple au studio pour écrire les suivantes.",
-      "LinkedIn ne transmet pas encore ses chiffres au studio : ces publications sont signalées comme non mesurées.",
+      "Des repères anonymes tirés de l'ensemble des comptes du studio (au moins 5 comptes par repère), pour savoir quoi essayer dès le début.",
+      "LinkedIn (profils) et Google Business Profile ne transmettent pas leurs chiffres par publication : ces publications sont signalées comme non mesurées.",
+    ],
+  },
+  {
+    title: "Le travail en équipe",
+    pitch: "À plusieurs, ou pour plusieurs clients, sans se marcher dessus.",
+    points: [
+      "Invitations par e-mail, avec des rôles clairs : administrateur, rédacteur, lecteur, client.",
+      "Validation avant envoi : une publication préparée par un rédacteur attend l'accord d'un responsable ou du client.",
+      "Offre Agence : un espace séparé par client, avec ses propres accès ; un seul abonnement et des crédits partagés.",
     ],
   },
 ];

@@ -6,6 +6,7 @@ import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
 import { acceptAiConsent, generateTextPosts, type GenerationView } from "@/server/services/generation";
 import { createDraft } from "@/server/services/posts";
+import { completeLocalGeneration, prepareLocalGeneration, type LocalGenerationRequest } from "@/server/services/local-generation";
 import { requireWorkspace } from "@/server/session";
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string; code?: UserFacingError["code"] };
@@ -30,6 +31,26 @@ export async function generatePostsAction(input: unknown): Promise<ActionResult<
     const view = await generateTextPosts(getDb(), access, access.userId, input, getTextProvider());
     revalidatePath("/studio");
     return { ok: true, data: view };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** IA locale (application de bureau) : consignes à transmettre au modèle de l'ordinateur. */
+export async function prepareLocalGenerationAction(input: unknown): Promise<ActionResult<LocalGenerationRequest>> {
+  const access = await requireWorkspace();
+  try {
+    return { ok: true, data: await prepareLocalGeneration(getDb(), access, access.userId, input) };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** IA locale : réponse du modèle de l'ordinateur, validée comme une réponse du cloud. */
+export async function completeLocalGenerationAction(params: { jobId: string; output: string; model: string }): Promise<ActionResult<GenerationView>> {
+  const access = await requireWorkspace();
+  try {
+    return { ok: true, data: await completeLocalGeneration(getDb(), access, access.userId, params) };
   } catch (error) {
     return failure(error);
   }
