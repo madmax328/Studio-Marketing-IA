@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/server/db/client";
 import { getServerEnv } from "@/server/env";
 import { UserFacingError } from "@/server/services/errors";
+import { setBenchmarkSharing } from "@/server/services/benchmarks";
 import { markAllNotificationsRead } from "@/server/services/notifications";
 import { setPostAccount } from "@/server/services/posts";
 import { connectSimulationAccount, disconnectSocialAccount } from "@/server/services/social-accounts";
@@ -71,4 +72,15 @@ export async function setPostAccountAction(postId: string, accountId: string | n
   } catch (error) {
     return failure(error);
   }
+}
+
+export async function setBenchmarkSharingAction(value: boolean): Promise<ActionResult<null>> {
+  const access = await requireWorkspace();
+  try {
+    await setBenchmarkSharing(getDb(), access, access.userId, value);
+  } catch (error) {
+    return failure(error);
+  }
+  revalidatePath("/statistiques");
+  return { ok: true, data: null };
 }

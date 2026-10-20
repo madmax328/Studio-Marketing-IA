@@ -86,6 +86,10 @@ voix off, sous-titres, gestion d'équipe et multi-marques pour les agences, Goog
   espace, toute modification d'une publication validée la renvoie en validation) ; espaces clients (offre Agence)
   rattachés à l'abonnement de l'agence, crédits partagés, accès séparés ; sélecteur d'espace. Limites par offre :
   `maxMembers`, `maxClientSpaces` (migration 012, modifiables en base).
+- **Recommandations anonymisées entre clients — fait.** Chaque publication est comparée à l'habitude de son compte ;
+  écarts regroupés par réseau × horaire / jour / format ; repère publié à partir de 5 comptes et 30 publications,
+  conseil à partir d'un écart de 20 %. Agrégats seuls conservés (collection `benchmarks`), recalcul quotidien par le
+  planificateur ; participation par défaut avec retrait possible (et alors pas d'accès aux repères).
 
 ### V3
 

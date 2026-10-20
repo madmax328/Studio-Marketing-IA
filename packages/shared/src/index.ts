@@ -9,4 +9,5 @@ export * from "./time/zoned";
 export * from "./campaign/schema";
 export * from "./billing/plans";
 export * from "./analytics/metrics";
+export * from "./analytics/benchmarks";
 export * from "./testimonials/schema";

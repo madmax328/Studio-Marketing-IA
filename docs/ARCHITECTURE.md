@@ -54,6 +54,7 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Équipes | Invitations `workspaceInvitations` (empreinte SHA-256 du lien seulement, expiration TTL, une par adresse et par espace) ; acceptation réservée au compte dont l'adresse vérifiée est celle invitée ; rôle `client` = lecture + `content:approve` | Aucun lien réutilisable, aucune invitation détournée |
 | Validation | Statut `pending_approval` (jamais pris par le planificateur) ; `approval` sur la publication (demande, décision, remarque) ; mises à jour conditionnées à `updatedAt` (on ne valide pas une version qu'on n'a pas vue) | Le client valide exactement ce qui partira |
 | Agences | Espace client = espace ordinaire avec `billingWorkspaceId` : offre, crédits et journal de crédits portés par l'espace de l'agence (`sourceWorkspaceId` pour la traçabilité) ; pas d'abonnement propre | Une seule facture, des accès séparés par client |
+| Repères anonymes | `computeBenchmarks` (`@smia/shared`) : écart à la médiane du compte, moyenne par compte puis entre comptes (chaque compte pèse pareil) ; k-anonymat (5 comptes, 30 publications) ; un seul document d'agrégats sans identifiant | Conseils utiles dès les premières publications, sans exposer personne |
 | Tests | Vitest ; tests d'intégration sur MongoDB réel en CI (`TEST_MONGODB_URI`) | Vérifie l'isolation des données sur une vraie base |
 
 ## Décisions à prendre aux étapes suivantes

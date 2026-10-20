@@ -1,6 +1,7 @@
 import type { Db, ObjectId } from "mongodb";
 import type { EncryptedValue } from "@/server/security/crypto";
 import type {
+  BenchmarkGroup,
   BrandInput,
   CampaignObjective,
   CampaignStatus,
@@ -42,6 +43,8 @@ export interface WorkspaceDoc {
   billingWorkspaceId?: ObjectId | null;
   /** Les publications des rédacteurs doivent être validées avant d'être programmées. */
   approvalRequired?: boolean;
+  /** Participation aux repères anonymes entre comptes (vrai par défaut ; false = l'espace s'est retiré). */
+  benchmarkSharing?: boolean;
   schemaVersion: 1;
   createdAt: Date;
   updatedAt: Date;
@@ -123,6 +126,15 @@ export interface WorkspaceInvitationDoc {
   invitedByUserId: string;
   expiresAt: Date;
   createdAt: Date;
+}
+
+/** Repères anonymes entre comptes (un seul document, recalculé chaque jour). Aucun identifiant de compte. */
+export interface BenchmarkDoc {
+  _id: "global";
+  groups: BenchmarkGroup[];
+  /** Comptes participants ayant au moins une publication mesurée. */
+  participants: number;
+  computedAt: Date;
 }
 
 export interface PostPublishing {
@@ -428,6 +440,7 @@ export const COLLECTIONS = {
   analyticsSnapshots: "analyticsSnapshots",
   testimonials: "testimonials",
   workspaceInvitations: "workspaceInvitations",
+  benchmarks: "benchmarks",
   migrations: "migrations",
 } as const;
 
@@ -452,6 +465,7 @@ export function collections(db: Db) {
     analyticsSnapshots: db.collection<AnalyticsSnapshotDoc>(COLLECTIONS.analyticsSnapshots),
     testimonials: db.collection<TestimonialDoc>(COLLECTIONS.testimonials),
     workspaceInvitations: db.collection<WorkspaceInvitationDoc>(COLLECTIONS.workspaceInvitations),
+    benchmarks: db.collection<BenchmarkDoc>(COLLECTIONS.benchmarks),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }

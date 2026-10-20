@@ -39,6 +39,18 @@ const DATA = [
     duration: "Jusqu'à la suppression du compte",
   },
   {
+    what: "Repères anonymes : écarts moyens entre comptes, par réseau, horaire, jour et format (agrégats d'au moins 5 comptes)",
+    why: "Donner à chacun des conseils fondés sur l'expérience de l'ensemble des comptes",
+    basis: "Intérêt légitime (retrait possible à tout moment dans Statistiques)",
+    duration: "Recalculés chaque jour sur les 120 derniers jours",
+  },
+  {
+    what: "Membres et invitations d'un espace (adresse e-mail invitée, rôle)",
+    why: "Travailler à plusieurs dans un même espace",
+    basis: "Exécution du contrat",
+    duration: "Invitation : 7 jours au plus ; membre : jusqu'à son retrait ou la suppression de l'espace",
+  },
+  {
     what: "Abonnement et consommation de crédits (offre, statut, historique des crédits)",
     why: "Facturer et appliquer les limites de votre offre",
     basis: "Exécution du contrat ; obligations comptables (factures conservées par Stripe)",
@@ -113,6 +125,15 @@ export default function PrivacyPage() {
         votre mot de passe. Nous recevons uniquement les autorisations que vous accordez (publier, lire les statistiques de
         vos publications), et nous ne les utilisons que pour ces actions, à votre demande. Les jetons d&apos;accès sont
         chiffrés et ne sont jamais affichés.
+      </p>
+
+      <h2>Repères anonymes entre comptes</h2>
+      <p>
+        Pour vous conseiller, le studio compare chaque publication aux résultats habituels de son propre compte, puis
+        regroupe ces écarts par réseau, horaire, jour et format. Seuls ces regroupements sont conservés, et uniquement
+        lorsqu&apos;ils réunissent au moins 5 comptes et 30 publications : aucun compte, aucun texte et aucun chiffre d&apos;une
+        publication ne peut en être déduit. Vous pouvez retirer votre espace de ces calculs à tout moment depuis la page
+        Statistiques ; vous ne voyez alors plus les repères.
       </p>
 
       <h2>Destinataires et sous-traitants</h2>

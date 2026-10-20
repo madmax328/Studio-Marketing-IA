@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { METRIC_KEYS, METRIC_LABELS, MIN_POSTS_FOR_RECOMMENDATIONS, SOCIAL_NETWORKS } from "@smia/shared";
+import { METRIC_KEYS, METRIC_LABELS, MIN_POSTS_FOR_RECOMMENDATIONS, roleHasPermission, SOCIAL_NETWORKS } from "@smia/shared";
 import { buttonStyles } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { getDb } from "@/server/db/client";
+import { BenchmarkSharingToggle } from "@/components/stats/benchmark-sharing";
 import { ANALYTICS_PERIODS, getAnalyticsOverview, parsePeriod, type MeasuredPostView } from "@/server/services/analytics";
+import { getBenchmarkTips } from "@/server/services/benchmarks";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Statistiques" };
@@ -22,6 +24,8 @@ export default async function StatisticsPage({ searchParams }: PageProps<"/stati
   const access = await requireWorkspace();
   const overview = await getAnalyticsOverview(getDb(), access, { days });
   const metricsShown = METRIC_KEYS.filter((key) => overview.totals[key]);
+  const benchmarks = await getBenchmarkTips(getDb(), access);
+  const canManageWorkspace = roleHasPermission(access.role, "workspace:manage");
 
   return (
     <div className="space-y-8">
@@ -206,6 +210,39 @@ export default async function StatisticsPage({ searchParams }: PageProps<"/stati
           ) : null}
         </>
       )}
+      {/* Repères anonymes entre comptes */}
+      <Card className="space-y-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-lg font-semibold">Ce qui marche chez les autres comptes</h2>
+          {benchmarks.computedAt ? (
+            <p className="text-xs text-muted">
+              Mis à jour le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "Europe/Paris" }).format(benchmarks.computedAt)}
+            </p>
+          ) : null}
+        </div>
+        {!benchmarks.participating ? (
+          <p className="text-sm text-muted">Votre espace ne participe pas aux repères anonymes : ils ne s&apos;affichent donc pas ici.</p>
+        ) : benchmarks.tips.length === 0 ? (
+          <p className="text-sm text-muted">
+            Pas encore de repère fiable : il faut au moins 5 comptes et 30 publications mesurées par cas comparé, et un écart net.
+            Les repères apparaîtront ici au fil des publications.
+          </p>
+        ) : (
+          <ul className="grid gap-3 md:grid-cols-2">
+            {benchmarks.tips.map((tip) => (
+              <li key={tip.id} className="rounded-xl border border-border bg-white/[0.02] p-4">
+                <p className="font-medium">{tip.title}</p>
+                <p className="mt-1 text-sm text-muted">{tip.detail}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs text-muted">
+          Chaque publication est comparée aux résultats habituels de son propre compte, puis les écarts sont regroupés. Seuls ces
+          regroupements sont conservés : aucun compte, aucun texte ni aucun chiffre d&apos;une publication n&apos;est visible par les autres.
+        </p>
+        {canManageWorkspace ? <BenchmarkSharingToggle enabled={benchmarks.participating} /> : null}
+      </Card>
     </div>
   );
 }
