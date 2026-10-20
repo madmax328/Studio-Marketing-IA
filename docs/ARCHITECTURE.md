@@ -49,13 +49,14 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Offres | Collection `plans` (insérée par la migration 006 puis modifiable sans code) ; prix lus chez Stripe, jamais codés ; offre effective = abonnement actif, sinon gratuite ; dérogations possibles par espace (`limitOverrides`) | Tarifs et limites ajustables sans déploiement |
 | Abonnements | Stripe Checkout + portail client ; webhooks à signature vérifiée, idempotents (`stripeEvents`), état toujours relu chez Stripe (ordre des événements sans importance) ; résiliation automatique avant suppression d'un compte | Aucun prélèvement après suppression |
 | Crédits | Compte par espace et par mois (`creditAccounts`) débité de façon conditionnelle (jamais négatif, même en concurrence) ; journal immuable `creditTransactions` à clé unique ; débit avant l'appel IA, remboursement si échec ; visuels par gabarit et publication gratuits | Coûts cloud maîtrisés, aucune double facturation |
+| Vidéos | Montage et encodage dans le navigateur (WebCodecs via mediabunny, MP4 H.264) avec le même rendu que l'aperçu ; envoi direct vers Vercel Blob (80 Mo) ; le serveur relit le fichier (conteneur, codec, durée, dimensions) avant de l'accepter. Publication : vidéo de Page Facebook, Reels Instagram, vidéo Threads ; une préparation longue chez le réseau est reprise au passage suivant du planificateur (`publishing.resume`) sans recréer le contenu | Aucun serveur de rendu à payer ni à maintenir ; compatible Vercel Hobby |
 | Tests | Vitest ; tests d'intégration sur MongoDB réel en CI (`TEST_MONGODB_URI`) | Vérifie l'isolation des données sur une vraie base |
 
 ## Décisions à prendre aux étapes suivantes
 
 | Sujet | Recommandation | Étape |
 |---|---|---|
-| Workers vidéo (V2) | Service hors Vercel (Railway, Fly.io…) ou service de rendu externe | V2 |
+| Voix off et musique (V2) | Mixage audio dans le navigateur (Web Audio + encodage AAC/Opus), voix par un fournisseur de synthèse vocale | V2 |
 
 ## Règles de sécurité appliquées
 

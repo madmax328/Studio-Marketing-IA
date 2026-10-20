@@ -39,7 +39,7 @@ const FEATURES: Feature[] = [
   },
   {
     title: "Les visuels",
-    pitch: "Des images à vos couleurs, sans logiciel de graphisme.",
+    pitch: "Des images et des vidéos à vos couleurs, sans logiciel de graphisme.",
     points: [
       `${TEMPLATE_IDS.length} modèles : ${TEMPLATE_IDS.map((id) => TEMPLATE_LABELS[id].label.toLowerCase()).join(", ")}.`,
       `${IMAGE_FORMAT_IDS.length} formats : ${IMAGE_FORMAT_IDS.map((id) => IMAGE_FORMATS[id].label.toLowerCase()).join(", ")}.`,
@@ -47,6 +47,7 @@ const FEATURES: Feature[] = [
       imageAiAvailable()
         ? "Création d'images par IA à partir d'une simple description, sans texte incrusté : votre titre et votre logo sont ajoutés ensuite par les modèles."
         : "Création d'images par IA : prévue, en complément des modèles.",
+      "Courtes vidéos (jusqu'à 60 secondes) montées à partir de vos photos et de vos messages, avec transitions et carte de fin à votre logo, prêtes pour Facebook, Instagram (Reels) et Threads. Le montage se fait dans votre navigateur.",
     ],
   },
   {

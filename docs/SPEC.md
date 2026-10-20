@@ -68,8 +68,13 @@ Chaque réseau est branché dès que sa validation officielle est obtenue (voir 
 
 ### V2
 
-Recommandations avancées (apprentissage anonymisé entre clients), vidéos à partir de gabarits (FFmpeg sur worker),
+Recommandations avancées (apprentissage anonymisé entre clients), vidéos à partir de gabarits,
 voix off, sous-titres, gestion d'équipe et multi-marques pour les agences, Google Business Profile.
+
+État de la V2 :
+- **Vidéos courtes — fait.** Montage dans le navigateur à partir des images de la médiathèque (jusqu'à 8 diapositives,
+  60 s, 3 transitions, carte de fin), MP4 H.264 ; publication sur Facebook (vidéo de Page), Instagram (Reels) et
+  Threads. LinkedIn, TikTok et YouTube : à venir.
 
 ### V3
 
