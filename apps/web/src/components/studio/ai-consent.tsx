@@ -15,7 +15,7 @@ export function AiConsent({
   providerLabel: string;
   dataProcessor: string;
   canAccept: boolean;
-  kind?: "text" | "image" | "voice";
+  kind?: "text" | "image" | "voice" | "video";
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -28,6 +28,8 @@ export function AiConsent({
           ? "Pour créer vos images, votre description et le secteur de votre marque sont envoyés à "
           : kind === "voice"
             ? "Pour créer la voix off, le texte à lire et le ton de votre marque sont envoyés à "
+            : kind === "video"
+              ? "Pour créer vos vidéos, votre description, le secteur et les couleurs de votre marque sont envoyés à "
             : "Pour rédiger vos publications, les informations de votre marque et votre demande sont envoyées à "}
         <strong>{providerLabel}</strong>, un service d&apos;intelligence artificielle opéré par {dataProcessor}.
       </p>

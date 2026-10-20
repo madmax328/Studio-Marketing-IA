@@ -89,13 +89,22 @@ export function createTikTokPublisher(options: TikTokPublisherOptions = {}): Soc
     return first;
   }
 
-  async function initVideo(token: string, text: string, privacy: string, size: number): Promise<{ publishId: string; uploadUrl: string; ranges: { first: number; last: number }[] }> {
+  async function initVideo(token: string, text: string, privacy: string, size: number, aiGenerated: boolean): Promise<{ publishId: string; uploadUrl: string; ranges: { first: number; last: number }[] }> {
     const { chunkSize, ranges } = tiktokChunks(size);
     const body = (
       await step(
         `${API_URL}/video/init/`,
         json(token, {
-          post_info: { title: text.slice(0, 2200), privacy_level: privacy, disable_comment: false, disable_duet: false, disable_stitch: false, video_cover_timestamp_ms: 1000 },
+          post_info: {
+            title: text.slice(0, 2200),
+            privacy_level: privacy,
+            disable_comment: false,
+            disable_duet: false,
+            disable_stitch: false,
+            video_cover_timestamp_ms: 1000,
+            // Contenu créé par IA : étiqueté comme tel sur TikTok.
+            is_aigc: aiGenerated,
+          },
           source_info: { source: "FILE_UPLOAD", video_size: size, chunk_size: chunkSize, total_chunk_count: ranges.length },
         }),
         false,
@@ -160,7 +169,7 @@ export function createTikTokPublisher(options: TikTokPublisherOptions = {}): Soc
         const video = media[0] && isVideo(media[0]) ? media[0] : null;
         if (video) {
           const bytes = await video.read();
-          const init = await initVideo(accessToken, post.text, privacy, bytes.length);
+          const init = await initVideo(accessToken, post.text, privacy, bytes.length, video.aiGenerated === true);
           for (const [index, range] of init.ranges.entries()) {
             await step(init.uploadUrl, {
               method: "PUT",

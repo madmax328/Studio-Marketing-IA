@@ -101,3 +101,7 @@ L'architecture des fournisseurs IA est conçue dès la V1 pour accueillir ce mod
   (état, téléchargement de modèle, génération structurée) réservées au site du studio ; Studio : choix du moteur, aucun
   crédit en local, réponse validée par le serveur comme celle du cloud. Installateur Windows compilé par GitHub
   Actions (voir `docs/BUREAU.md`).
+- **Vidéo générée par IA — fait.** Fournisseur `VideoGenerationProvider` (OpenAI, modèles Sora) : description → vidéo
+  de 4 ou 8 s, verticale ou horizontale, sans texte ni logo ; travail asynchrone suivi par la page et terminé par le
+  planificateur si la page est fermée ; vidéo vérifiée (H.264/AAC) avant d'entrer dans la médiathèque ; crédits rendus
+  en cas d'échec ; contenu signalé « IA » à TikTok (`is_aigc`) et YouTube (`containsSyntheticMedia`).

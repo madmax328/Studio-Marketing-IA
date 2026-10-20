@@ -129,3 +129,30 @@ export const voiceoverRequestSchema = z.object({
     .max(MAX_VIDEO_SLIDES),
 });
 export type VoiceoverRequest = z.infer<typeof voiceoverRequestSchema>;
+
+// ---------- Vidéos par IA ----------
+
+/** Durées proposées pour une vidéo créée par IA (secondes) ; le coût en crédits dépend de la durée. */
+export const AI_VIDEO_SECONDS = [4, 8] as const;
+export type AiVideoSeconds = (typeof AI_VIDEO_SECONDS)[number];
+/** Orientations proposées (dimensions produites par le fournisseur). */
+export const AI_VIDEO_ORIENTATIONS = ["vertical", "horizontal"] as const;
+export type AiVideoOrientation = (typeof AI_VIDEO_ORIENTATIONS)[number];
+export const AI_VIDEO_ORIENTATION_LABELS: Record<AiVideoOrientation, string> = {
+  vertical: "Verticale 9:16 (Reels, TikTok, Shorts)",
+  horizontal: "Horizontale 16:9 (YouTube, LinkedIn)",
+};
+
+/** Demande de vidéo par IA (validée côté serveur). */
+export const videoGenerationRequestSchema = z.object({
+  requestId: z.uuid("Demande invalide."),
+  brandId: z.string().regex(/^[a-f0-9]{24}$/, "Marque invalide."),
+  description: z
+    .string()
+    .trim()
+    .min(15, "Décrivez la scène en une phrase au moins (15 caractères).")
+    .max(1000, "Description trop longue (1000 caractères au plus)."),
+  orientation: z.enum(AI_VIDEO_ORIENTATIONS).default("vertical"),
+  seconds: z.union([z.literal(4), z.literal(8)]).default(4),
+});
+export type VideoGenerationRequest = z.infer<typeof videoGenerationRequestSchema>;

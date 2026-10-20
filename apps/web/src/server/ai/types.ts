@@ -81,6 +81,25 @@ export interface ImageGenerationProvider extends AiProviderInfo {
   generateImage(input: ImageGenerationInput): Promise<ProviderResult<Buffer>>;
 }
 
+/** État d'une vidéo en cours de création chez le fournisseur. */
+export interface VideoJobState {
+  status: "queued" | "in_progress" | "completed" | "failed";
+  /** Avancement (0 à 100) si le fournisseur le donne. */
+  progress: number | null;
+  error: string | null;
+}
+
+/**
+ * Fournisseur de vidéos par IA (traitement long, asynchrone) : la création est lancée, suivie, puis le fichier
+ * est récupéré. Comme pour les images, la vidéo ne doit contenir ni texte ni logo.
+ */
+export interface VideoGenerationProvider extends AiProviderInfo {
+  startVideo(input: { prompt: string; orientation: "vertical" | "horizontal"; seconds: 4 | 8 }): Promise<{ id: string; model: string }>;
+  getVideo(id: string): Promise<VideoJobState>;
+  /** Fichier MP4 (ou image d'aperçu) d'une vidéo terminée. */
+  downloadVideo(id: string, variant: "video" | "thumbnail"): Promise<Buffer>;
+}
+
 /** Lecture d'un texte à voix haute (voix off). */
 export interface SpeechGenerationInput {
   text: string;

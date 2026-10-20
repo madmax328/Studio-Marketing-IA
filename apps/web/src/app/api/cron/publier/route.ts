@@ -5,7 +5,9 @@ import { ensureDatabaseReady, getDb } from "@/server/db/client";
 import { getServerEnv } from "@/server/env";
 import { getMediaStorage } from "@/server/media/storage";
 import { runProductionPublishingCycle } from "@/server/publishing";
+import { getVideoProvider } from "@/server/ai";
 import { refreshBenchmarks } from "@/server/services/benchmarks";
+import { advancePendingVideos } from "@/server/services/video-generation";
 import { purgeOldVoiceovers } from "@/server/services/voiceover";
 
 export const maxDuration = 60;
@@ -46,6 +48,13 @@ async function handler(request: Request): Promise<Response> {
   } catch (error) {
     console.error("Nettoyage des voix off impossible", error instanceof Error ? error.message : error);
   }
+  // Vidéos par IA en cours : récupérées même si personne ne regarde la page.
+  let videosFinished = 0;
+  try {
+    if (Date.now() < deadline) videosFinished = await advancePendingVideos(getDb(), getVideoProvider(), getMediaStorage(), deadline);
+  } catch (error) {
+    console.error("Suivi des vidéos IA impossible", error instanceof Error ? error.message : error);
+  }
   // Repères anonymes entre comptes : recalculés une fois par jour.
   let benchmarksRefreshed = false;
   try {
@@ -53,7 +62,7 @@ async function handler(request: Request): Promise<Response> {
   } catch (error) {
     console.error("Calcul des repères impossible", error instanceof Error ? error.message : error);
   }
-  return Response.json({ ok: true, ...summary, metrics, voiceoversPurged, benchmarksRefreshed });
+  return Response.json({ ok: true, ...summary, metrics, voiceoversPurged, videosFinished, benchmarksRefreshed });
 }
 
 export { handler as GET, handler as POST };

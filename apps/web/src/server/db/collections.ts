@@ -389,7 +389,7 @@ export interface GenerationJobDoc {
   userId: string;
   /** Identifiant fourni par le navigateur : une même demande n'est générée (et comptée) qu'une fois. */
   requestId: string;
-  kind: "text" | "campaign_strategy" | "campaign_posts" | "image" | "voiceover";
+  kind: "text" | "campaign_strategy" | "campaign_posts" | "image" | "voiceover" | "video";
   campaignId?: ObjectId;
   provider: string;
   model: string | null;

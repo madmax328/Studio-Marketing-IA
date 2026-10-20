@@ -73,7 +73,8 @@ export function createYouTubePublisher(options: YouTubePublisherOptions = {}): S
         },
         body: JSON.stringify({
           snippet: { title: youtubeTitle(post.text), description: post.text.slice(0, 5000), categoryId: "22" },
-          status: { privacyStatus: "public", selfDeclaredMadeForKids: false },
+          // Vidéo créée par IA : déclarée comme contenu synthétique (exigé par YouTube pour les contenus réalistes).
+          status: { privacyStatus: "public", selfDeclaredMadeForKids: false, containsSyntheticMedia: video.aiGenerated === true },
         }),
       }, false);
       const location = session.headers.get("location");

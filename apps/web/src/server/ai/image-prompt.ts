@@ -32,3 +32,20 @@ export function orientationFor(format: ImageFormatId): "square" | "portrait" | "
   if (width === height) return "square";
   return width > height ? "landscape" : "portrait";
 }
+
+/**
+ * Consigne envoyée au service de vidéos : même principe que les images (secteur, couleurs, description), sans texte
+ * ni logo à l'écran ; le nom et les informations de la marque restent ceux que l'utilisateur ajoute lui-même.
+ */
+export function buildVideoPrompt(brand: Pick<BrandInput, "industry" | "brandColors">, input: { description: string; orientation: "vertical" | "horizontal"; seconds: number }): string {
+  return [
+    `Courte vidéo de ${input.seconds} secondes pour les réseaux sociaux${brand.industry ? ` (secteur : ${brand.industry})` : ""}, format ${input.orientation === "vertical" ? "vertical 9:16" : "horizontal 16:9"}.`,
+    `Scène : ${input.description.replace(/\s+/g, " ").trim()}`,
+    "Image soignée et réaliste, mouvement de caméra doux et continu, lumière naturelle.",
+    brand.brandColors.length > 0 ? `Ambiance colorée en accord avec : ${brand.brandColors.slice(0, 4).join(", ")}.` : "",
+    "Impératif : aucun texte à l'écran, aucune lettre, aucun chiffre, aucun logo, aucune marque existante.",
+    "Pas de personne réelle connue ; si des personnes apparaissent, elles sont anonymes et naturelles.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}

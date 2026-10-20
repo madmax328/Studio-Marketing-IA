@@ -7,10 +7,18 @@ import { inspectVideo, videoProblems } from "../video";
 const fixture = readFileSync(join(__dirname, "fixtures/vp9-360x640-2s.mp4"));
 // Même chose avec du son Opus (voix off et musique mixées dans le navigateur), 4 s.
 const withSound = readFileSync(join(__dirname, "fixtures/vp9-opus-360x640-4s.mp4"));
+// Vidéo telle que l'acceptent les réseaux : H.264 et son AAC (produite avec ffmpeg).
+const publishable = readFileSync(join(__dirname, "fixtures/h264-aac-360x640-2s.mp4"));
 
 describe("vidéos", () => {
   it("lit le conteneur, le codec, les dimensions et la durée sans décoder", async () => {
     expect(await inspectVideo(fixture)).toEqual({ container: "MP4", codec: "vp9", audioCodec: null, width: 360, height: 640, durationSeconds: 2 });
+  });
+
+  it("accepte une vidéo H.264 avec son AAC", async () => {
+    const info = await inspectVideo(publishable);
+    expect(info).toMatchObject({ container: "MP4", codec: "avc", audioCodec: "aac", width: 360, height: 640 });
+    expect(videoProblems(info)).toEqual([]);
   });
 
   it("lit le codec du son", async () => {

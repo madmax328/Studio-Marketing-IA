@@ -244,6 +244,7 @@ export async function loadPostMedia(
         width: doc.width,
         height: doc.height,
         publicUrl: access.signedUrl(doc._id.toHexString()),
+        aiGenerated: doc.source === "ai",
         read: async () => {
           const bytes = await access.read(doc.storageKey);
           if (!bytes) throw new PublishError("Une image jointe est introuvable dans le stockage.", "permanent");

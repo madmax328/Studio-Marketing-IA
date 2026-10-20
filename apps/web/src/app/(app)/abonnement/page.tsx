@@ -28,6 +28,8 @@ const OPERATION_LABELS: Record<string, string> = {
   campaign_post_regeneration: "Régénération d'une publication",
   image_generation: "Création d'une image par IA",
   voiceover: "Voix off d'une vidéo",
+  video_generation_4s: "Vidéo par IA (4 s)",
+  video_generation_8s: "Vidéo par IA (8 s)",
 };
 
 export default async function BillingPage({ searchParams }: PageProps<"/abonnement">) {

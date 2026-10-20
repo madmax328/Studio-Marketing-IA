@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND_TONE_LABELS, CAMPAIGN_OBJECTIVES, IMAGE_FORMAT_IDS, IMAGE_FORMATS, TEMPLATE_IDS, TEMPLATE_LABELS } from "@smia/shared";
 import { FeatureBento } from "@/components/site/feature-bento";
-import { desktopDownloadUrl, imageAiAvailable, voiceAiAvailable } from "@/lib/features";
+import { desktopDownloadUrl, imageAiAvailable, videoAiAvailable, voiceAiAvailable } from "@/lib/features";
 
 export const metadata: Metadata = {
   title: "Fonctionnalités",
@@ -51,6 +51,7 @@ const FEATURES: Feature[] = [
         ? "Création d'images par IA à partir d'une simple description, sans texte incrusté : votre titre et votre logo sont ajoutés ensuite par les modèles."
         : "Création d'images par IA : prévue, en complément des modèles.",
       "Courtes vidéos (jusqu'à 60 secondes) montées à partir de vos photos et de vos messages, avec transitions, carte de fin à votre logo et musique de fond, prêtes pour Facebook, Instagram (Reels), Threads et LinkedIn. Le montage se fait dans votre navigateur.",
+      ...(videoAiAvailable() ? ["Vidéos créées par IA à partir d'une description (4 ou 8 secondes, sans texte ni logo à l'écran), vérifiées avant d'arriver dans votre médiathèque et signalées comme contenu IA sur TikTok et YouTube."] : []),
       ...(voiceAiAvailable() ? ["Voix off par IA avec sous-titres automatiques : vous écrivez le texte, une voix naturelle le lit, la musique baisse pendant qu'elle parle."] : []),
     ],
   },

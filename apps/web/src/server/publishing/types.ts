@@ -7,6 +7,8 @@ export interface PublishMedia {
   height: number;
   /** Lien temporaire signé, lisible par les serveurs du réseau (nécessaire pour Instagram par exemple). */
   publicUrl: string;
+  /** Média créé par IA : signalé comme tel aux réseaux qui le permettent (TikTok, YouTube). */
+  aiGenerated?: boolean;
   read(): Promise<Buffer>;
 }
 

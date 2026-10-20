@@ -1,19 +1,26 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CREDIT_COSTS, roleHasPermission } from "@smia/shared";
+import { AiVideoCreator } from "@/components/media/ai-video-creator";
+import { AiConsent } from "@/components/studio/ai-consent";
 import { VideoEditor } from "@/components/media/video-editor";
 import { buttonStyles } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/card";
-import { getSpeechProvider } from "@/server/ai";
+import { getSpeechProvider, getVideoProvider } from "@/server/ai";
 import { getDb } from "@/server/db/client";
 import { getServerEnv } from "@/server/env";
 import { getMediaStorage } from "@/server/media/storage";
 import { listBrands } from "@/server/services/brands";
+import { getCreditAccount, remainingCredits } from "@/server/services/billing";
 import { hasAiConsent } from "@/server/services/generation";
+import { listPendingVideoJobs } from "@/server/services/video-generation";
 import { listMedia } from "@/server/services/media";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Créer une vidéo" };
+
+/** La récupération d'une vidéo créée par IA (téléchargement, vérification, rangement) peut prendre du temps. */
+export const maxDuration = 120;
 
 /** Montage d'une courte vidéo à partir des images de la médiathèque, directement dans le navigateur. */
 export default async function VideoPage() {
@@ -22,6 +29,8 @@ export default async function VideoPage() {
   const brands = await listBrands(db, access);
   const images = await listMedia(db, access, 1, "image");
   const speech = getSpeechProvider();
+  const videoAi = getVideoProvider();
+  const showVideoAi = videoAi.isConfigured() && roleHasPermission(access.role, "content:write") && getMediaStorage().isConfigured() && brands.length > 0;
 
   return (
     <div className="space-y-6">
@@ -48,6 +57,20 @@ export default async function VideoPage() {
           </Link>
         </Card>
       ) : (
+        <>
+        {showVideoAi ? (
+          hasAiConsent(access, videoAi) ? (
+            <AiVideoCreator
+              brands={brands.map((brand) => ({ id: brand._id.toHexString(), name: brand.name }))}
+              credits={remainingCredits(await getCreditAccount(db, access.workspace))}
+              costs={{ 4: CREDIT_COSTS.video_generation_4s, 8: CREDIT_COSTS.video_generation_8s }}
+              pending={await listPendingVideoJobs(db, access)}
+            />
+          ) : (
+            <AiConsent kind="video" providerLabel={videoAi.label} dataProcessor={videoAi.dataProcessor} canAccept={roleHasPermission(access.role, "workspace:manage")} />
+          )
+        ) : null}
+        <h2 className="pt-2 text-lg font-semibold">Ou montez une vidéo avec vos photos</h2>
         <VideoEditor
           access={getServerEnv().MEDIA_BLOB_ACCESS}
           brands={brands.map((brand) => ({
@@ -67,6 +90,7 @@ export default async function VideoPage() {
             cost: CREDIT_COSTS.voiceover,
           }}
         />
+        </>
       )}
     </div>
   );

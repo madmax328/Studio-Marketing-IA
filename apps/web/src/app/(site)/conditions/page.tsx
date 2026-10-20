@@ -78,7 +78,8 @@ export default function TermsPage() {
         Chaque offre comprend un nombre de crédits par mois. Écrire des publications dans le studio consomme{" "}
         {CREDIT_COSTS.text_generation} crédit, proposer le plan d&apos;une campagne {CREDIT_COSTS.campaign_strategy}, écrire un
         lot de publications de campagne {CREDIT_COSTS.campaign_posts}, créer une image par IA (si la fonction est proposée){" "}
-        {CREDIT_COSTS.image_generation}, la voix off d&apos;une vidéo (si la fonction est proposée) {CREDIT_COSTS.voiceover}. Les crédits non utilisés ne sont pas reportés au mois
+        {CREDIT_COSTS.image_generation}, la voix off d&apos;une vidéo (si la fonction est proposée) {CREDIT_COSTS.voiceover}, une vidéo créée par IA (si la
+        fonction est proposée) {CREDIT_COSTS.video_generation_4s} pour 4 secondes ou {CREDIT_COSTS.video_generation_8s} pour 8 secondes. Les crédits non utilisés ne sont pas reportés au mois
         suivant. Un appel à l&apos;IA qui échoue est automatiquement remboursé. Les visuels par modèle et la publication ne
         consomment pas de crédits.
       </p>

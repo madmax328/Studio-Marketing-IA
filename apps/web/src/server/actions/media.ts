@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getImageProvider, getSpeechProvider } from "@/server/ai";
+import { getImageProvider, getSpeechProvider, getVideoProvider } from "@/server/ai";
 import { notifyIfApprovalRequested } from "@/server/approval-notify";
 import { getDb } from "@/server/db/client";
 import { getMediaStorage } from "@/server/media/storage";
@@ -9,6 +9,7 @@ import { UserFacingError } from "@/server/services/errors";
 import { createTemplateMedia, deleteMedia, registerUpload, registerVideo, setBrandLogo, uploadKeyFor } from "@/server/services/media";
 import { generateAiImage } from "@/server/services/image-generation";
 import { generateVoiceover, type VoiceoverResult } from "@/server/services/voiceover";
+import { pollVideoGeneration, startVideoGeneration, type VideoJobView } from "@/server/services/video-generation";
 import { setPostMedia } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
 import type { ActionResult } from "@/server/actions/studio";
@@ -80,6 +81,28 @@ export async function generateVoiceoverAction(input: unknown): Promise<ActionRes
   try {
     const result = await generateVoiceover(getDb(), access, access.userId, input, getSpeechProvider(), getMediaStorage());
     revalidatePath("/abonnement");
+    return { ok: true, data: result };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function startAiVideoAction(input: unknown): Promise<ActionResult<{ jobId: string }>> {
+  const access = await requireWorkspace();
+  try {
+    const result = await startVideoGeneration(getDb(), access, access.userId, input, getVideoProvider(), getMediaStorage());
+    revalidatePath("/abonnement");
+    return { ok: true, data: result };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function pollAiVideoAction(jobId: string): Promise<ActionResult<VideoJobView>> {
+  const access = await requireWorkspace();
+  try {
+    const result = await pollVideoGeneration(getDb(), access, jobId, getVideoProvider(), getMediaStorage());
+    if (result.status === "done") revalidatePath("/medias");
     return { ok: true, data: result };
   } catch (error) {
     return failure(error);

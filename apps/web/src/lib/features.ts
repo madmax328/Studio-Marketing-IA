@@ -12,6 +12,11 @@ export function desktopDownloadUrl(): string | null {
   return url && url.startsWith("https://") ? url : null;
 }
 
+/** Les vidéos par IA utilisent le même fournisseur (OpenAI) que les images. */
+export function videoAiAvailable(): boolean {
+  return imageAiAvailable();
+}
+
 /** La voix off utilise le même fournisseur (OpenAI) que les images. */
 export function voiceAiAvailable(): boolean {
   return imageAiAvailable();

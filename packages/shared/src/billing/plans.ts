@@ -29,6 +29,9 @@ export const CREDIT_COSTS = {
   image_generation: 3,
   /** Voix off d'une vidéo (toutes ses diapositives). */
   voiceover: 1,
+  /** Vidéo créée par IA (service coûteux, facturé à la seconde) : 4 s ou 8 s. */
+  video_generation_4s: 12,
+  video_generation_8s: 24,
 } as const;
 
 export type CreditOperation = keyof typeof CREDIT_COSTS;

@@ -3,7 +3,8 @@ import { getServerEnv } from "@/server/env";
 import { anthropicTextProvider } from "./anthropic";
 import { createOpenAiImageProvider } from "./openai-image";
 import { createOpenAiSpeechProvider } from "./openai-speech";
-import type { ImageGenerationProvider, SpeechGenerationProvider, TextGenerationProvider } from "./types";
+import { createOpenAiVideoProvider } from "./openai-video";
+import type { ImageGenerationProvider, SpeechGenerationProvider, TextGenerationProvider, VideoGenerationProvider } from "./types";
 
 const TEXT_PROVIDERS: Record<string, TextGenerationProvider> = {
   anthropic: anthropicTextProvider,
@@ -34,4 +35,11 @@ export function getSpeechProvider(): SpeechGenerationProvider {
   return speechProvider;
 }
 
-export type { ImageGenerationProvider, SpeechGenerationProvider, TextGenerationProvider } from "./types";
+const videoProvider = createOpenAiVideoProvider();
+
+/** Fournisseur de vidéos par IA (inactif tant que la clé OpenAI n'est pas renseignée). */
+export function getVideoProvider(): VideoGenerationProvider {
+  return videoProvider;
+}
+
+export type { ImageGenerationProvider, SpeechGenerationProvider, TextGenerationProvider, VideoGenerationProvider } from "./types";
