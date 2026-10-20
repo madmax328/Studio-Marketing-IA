@@ -2,59 +2,71 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 import type { PublicPlan } from "@/server/services/public-plans";
 
-const TONES = ["bg-cream-2", "bg-mint", "bg-butter", "bg-lilac"];
-
 /** Offres du site public : textes et limites lus en base, prix lu chez Stripe. */
 export function PlanCards({ plans }: { plans: PublicPlan[] | null }) {
   if (!plans || plans.length === 0) {
     return (
-      <p className="sticker-sm bg-white p-6 text-ink-soft">
+      <div className="glass rounded-2xl p-8 text-center text-fg-muted">
         Les offres s&apos;affichent ici dès que le studio est en ligne.{" "}
-        <Link href="/inscription" className="font-semibold text-ink underline">
+        <Link href="/inscription" className="font-medium text-fg underline underline-offset-4">
           Créer un compte gratuit
         </Link>
-      </p>
+      </div>
     );
   }
+  // L'offre mise en avant est la première offre payante (choix éditorial, pas une statistique).
+  const featured = plans.find((plan) => plan.id !== "free")?.id;
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {plans.map((plan, index) => (
-        <article key={plan.id} className="sticker flex flex-col overflow-hidden bg-white">
-          <div className={cn("border-b-[1.5px] border-ink p-5", TONES[index % TONES.length])}>
-            <h3 className="font-serif text-4xl leading-none">{plan.name}</h3>
-            <p className="mt-2 text-sm text-ink-soft">{plan.description}</p>
-          </div>
-          <div className="flex flex-1 flex-col gap-5 p-5">
-            <p className="text-2xl font-semibold">{plan.price ?? <span className="text-base font-normal text-ink-soft">Prix bientôt annoncé</span>}</p>
-            <dl className="grid grid-cols-3 gap-2 text-center">
-              {[
-                ["Marques", plan.limits.maxBrands],
-                ["Crédits IA / mois", plan.limits.monthlyCredits],
-                ["Comptes sociaux", plan.limits.maxSocialAccounts],
-              ].map(([label, value]) => (
-                <div key={label} className="flex flex-col-reverse rounded-xl bg-cream-2 px-1 py-2">
-                  <dt className="text-[11px] leading-tight text-ink-soft">{label}</dt>
-                  <dd className="text-xl font-semibold">{value}</dd>
-                </div>
-              ))}
-            </dl>
-            <ul className="flex-1 space-y-2 text-sm">
-              {plan.features.map((feature) => (
-                <li key={feature} className="flex gap-2">
-                  <span aria-hidden="true" className="text-tomato">✓</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {plans.map((plan) => {
+        const highlighted = plan.id === featured;
+        return (
+          <article
+            key={plan.id}
+            className={cn("flex flex-col rounded-2xl p-6", highlighted ? "ring-sun bg-gradient-to-b from-solar/[0.09] to-transparent" : "glass")}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium">{plan.name}</h3>
+              {highlighted ? <span className="rounded-full bg-solar/15 px-2.5 py-0.5 text-xs text-gold">Pour démarrer</span> : null}
+            </div>
+            <p className="mt-2 min-h-[2.75rem] text-sm leading-relaxed text-fg-muted">{plan.description}</p>
+            <p className="mt-6 text-3xl font-semibold tracking-tight">
+              {plan.price ?? <span className="text-base font-normal text-fg-muted">Prix bientôt annoncé</span>}
+            </p>
             <Link
               href="/inscription"
-              className="rounded-full border-[1.5px] border-ink bg-ink px-4 py-2.5 text-center text-sm font-semibold text-cream transition hover:bg-white hover:text-ink"
+              className={cn(
+                "mt-6 rounded-full px-4 py-2.5 text-center text-sm font-medium transition",
+                highlighted ? "bg-fg text-void hover:bg-white" : "border border-line-strong text-fg hover:bg-white/5",
+              )}
             >
               {plan.id === "free" ? "Créer mon compte gratuit" : "Commencer"}
             </Link>
-          </div>
-        </article>
-      ))}
+            <dl className="mt-6 space-y-2 border-t border-line pt-6 text-sm">
+              {[
+                ["Marques", plan.limits.maxBrands],
+                ["Crédits IA par mois", plan.limits.monthlyCredits],
+                ["Comptes sociaux", plan.limits.maxSocialAccounts],
+              ].map(([label, value]) => (
+                <div key={label} className="flex justify-between">
+                  <dt className="text-fg-muted">{label}</dt>
+                  <dd className="font-mono">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            <ul className="mt-6 space-y-2.5 text-sm">
+              {plan.features.map((feature) => (
+                <li key={feature} className="flex gap-2.5">
+                  <svg viewBox="0 0 16 16" className="mt-0.5 size-4 shrink-0 text-solar" aria-hidden="true">
+                    <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="text-fg/90">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        );
+      })}
     </div>
   );
 }

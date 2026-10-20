@@ -2,25 +2,25 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { SiteLogo } from "@/components/site/site-header";
 
-/** Pages d'accès : rappel de la promesse à gauche, formulaire à droite. */
+/** Pages d'accès : panneau de marque à gauche (sombre, comme le site), formulaire à droite. */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1fr_1fr]">
-      <aside className="relative hidden flex-col justify-between overflow-hidden border-r-[1.5px] border-ink bg-tomato p-10 text-ink lg:flex">
-        <Link href="/" aria-label="Retour au site">
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <aside className="site relative hidden flex-col justify-between overflow-hidden p-10 lg:flex">
+        <div aria-hidden="true" className="halo pointer-events-none absolute inset-0" />
+        <div aria-hidden="true" className="grid-fade pointer-events-none absolute inset-0" />
+        <Link href="/" aria-label="Retour au site" className="relative">
           <SiteLogo />
         </Link>
-        <div>
-          <p className="font-serif text-7xl leading-[0.9]">
-            Vos réseaux, <em>enfin</em> sans y penser.
+        <div className="relative max-w-md">
+          <p className="text-5xl leading-[1.05] font-semibold tracking-[-0.045em]">
+            Vous décrivez. <span className="text-sun">Le studio publie.</span>
           </p>
-          <p className="mt-6 max-w-sm text-ink/80">
-            Présentez votre activité une fois : le studio écrit, programme et publie pour vous.
-          </p>
+          <p className="mt-6 text-fg-muted">Présentez votre activité une fois : le studio écrit, programme et publie pour vous.</p>
         </div>
-        <ul className="flex flex-wrap gap-2 text-sm" aria-label="Rappels">
+        <ul className="relative flex flex-wrap gap-2 text-xs text-fg-muted" aria-label="Rappels">
           {["Offre gratuite", "Sans carte bancaire", "Jamais votre mot de passe"].map((item) => (
-            <li key={item} className="rounded-full border-[1.5px] border-ink bg-cream px-3 py-1">
+            <li key={item} className="glass rounded-full px-3 py-1.5">
               {item}
             </li>
           ))}
@@ -31,8 +31,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <Link href="/" className="text-sm text-muted hover:text-foreground">
             ← Retour au site
           </Link>
-          <Link href="/" className="lg:hidden" aria-label="Studio Marketing IA, accueil">
-            <span className="text-base font-semibold">Studio Marketing IA</span>
+          <Link href="/" className="text-sm font-semibold lg:hidden" aria-label="Studio Marketing IA, accueil">
+            Studio Marketing IA
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center py-10">

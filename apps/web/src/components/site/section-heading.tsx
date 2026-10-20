@@ -1,31 +1,25 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-/** Titre de section éditorial : numéro de chapitre, grand titre à empattements, chapeau. */
+/** En-tête de section : étiquette discrète, titre net, chapeau. */
 export function SectionHeading({
-  number,
-  kicker,
+  eyebrow,
   title,
   children,
+  align = "left",
   className,
-  tone = "dark",
 }: {
-  number?: string;
-  kicker: string;
+  eyebrow: string;
   title: ReactNode;
   children?: ReactNode;
+  align?: "left" | "center";
   className?: string;
-  tone?: "dark" | "light";
 }) {
   return (
-    <div className={cn("max-w-3xl", className)}>
-      <p className={cn("flex items-center gap-3 text-sm font-semibold", tone === "light" ? "text-cream/70" : "text-ink-soft")}>
-        {number ? <span className="font-serif text-lg italic">{number}</span> : null}
-        <span className={cn("h-px w-8", tone === "light" ? "bg-cream/40" : "bg-ink/40")} aria-hidden="true" />
-        {kicker}
-      </p>
-      <h2 className={cn("mt-3 font-serif text-5xl leading-[0.95] tracking-tight sm:text-6xl", tone === "light" ? "text-cream" : "text-ink")}>{title}</h2>
-      {children ? <div className={cn("mt-4 text-lg", tone === "light" ? "text-cream/75" : "text-ink-soft")}>{children}</div> : null}
+    <div className={cn("max-w-2xl", align === "center" && "mx-auto text-center", className)}>
+      <p className="font-mono text-xs tracking-[0.14em] text-solar uppercase">{eyebrow}</p>
+      <h2 className="mt-4 text-4xl font-semibold tracking-[-0.035em] text-balance sm:text-5xl">{title}</h2>
+      {children ? <div className="mt-5 text-lg leading-relaxed text-pretty text-fg-muted">{children}</div> : null}
     </div>
   );
 }

@@ -1,87 +1,70 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { CREDIT_COSTS, SOCIAL_NETWORK_IDS, SOCIAL_NETWORKS, type IntegrationStatus } from "@smia/shared";
-import { PersonaDemo } from "@/components/site/persona-demo";
+import { FeatureBento } from "@/components/site/feature-bento";
 import { PlanCards } from "@/components/site/plan-cards";
+import { ProductDemo } from "@/components/site/product-demo";
 import { SectionHeading } from "@/components/site/section-heading";
 import { cn } from "@/lib/cn";
 import { getPublicPlans } from "@/server/services/public-plans";
 
 export const metadata: Metadata = {
-  title: { absolute: "Studio Marketing IA · Vos réseaux sociaux, écrits et publiés pour vous" },
+  title: { absolute: "Studio Marketing IA · Vous décrivez, le studio écrit, crée et publie" },
   description:
-    "Décrivez votre activité une fois : le studio écrit vos publications, crée vos visuels et les publie à l'heure prévue sur vos réseaux sociaux.",
+    "Présentez votre activité une fois : le studio écrit vos publications, crée vos visuels et les publie à l'heure prévue sur vos réseaux sociaux.",
 };
 
 /** Les offres (base + Stripe) sont relues toutes les heures. */
 export const revalidate = 3600;
 
-const AUDIENCES = [
-  "Indépendants",
-  "Associations",
-  "Artisans",
-  "Coachs",
-  "Restaurants",
-  "Photographes",
-  "Consultants",
-  "Créateurs",
-  "Boutiques en ligne",
-  "Professions libérales",
-  "PME",
-  "Agences",
-  "Clubs sportifs",
-  "Collectivités",
-];
-
 const STEPS = [
-  {
-    title: "Présentez votre activité",
-    text: "Ce que vous faites, pour qui, votre façon de parler, vos couleurs. Une fois pour toutes : le studio s'en souvient.",
-    tone: "bg-mint",
-  },
-  {
-    title: "Relisez les publications",
-    text: "Le studio écrit une version adaptée à chaque réseau et prépare les visuels. Vous corrigez ce que vous voulez.",
-    tone: "bg-butter",
-  },
-  {
-    title: "Elles partent toutes seules",
-    text: "Choisissez le jour et l'heure. La publication part sur le bon compte, et vous êtes prévenu si quelque chose bloque.",
-    tone: "bg-lilac",
-  },
+  { title: "Présentez votre activité", text: "Ce que vous faites, pour qui, votre ton et vos couleurs. Une seule fois : le studio s'en souvient." },
+  { title: "Relisez les propositions", text: "Une version pour chaque réseau, avec ses visuels. Vous modifiez ce que vous voulez, en quelques secondes." },
+  { title: "Laissez partir", text: "Choisissez le jour et l'heure. Les publications partent seules, et vous êtes prévenu si quelque chose bloque." },
 ];
 
-const FOR_WHO = [
-  { who: "Indépendants et professions libérales", why: "Être présent en ligne sans y passer ses soirées.", tone: "bg-mint" },
-  { who: "Associations et clubs", why: "Annoncer les événements, remercier les bénévoles, garder le lien.", tone: "bg-butter" },
-  { who: "Commerces et restaurants", why: "Faire savoir ce qui est nouveau cette semaine, sans y penser chaque jour.", tone: "bg-rose" },
-  { who: "Créateurs et formateurs", why: "Publier régulièrement autour de vos contenus et de vos projets.", tone: "bg-sky" },
-  { who: "PME", why: "Une communication suivie, cohérente sur tous les réseaux, avec plusieurs marques si besoin.", tone: "bg-lilac" },
-  { who: "Agences", why: "Préparer les publications de plusieurs marques, chacune avec sa propre fiche.", tone: "bg-cream-2" },
+const AUDIENCES = [
+  { who: "Indépendants et professions libérales", why: "Être visible sans y consacrer ses soirées." },
+  { who: "Associations et clubs", why: "Annoncer les événements, mobiliser les bénévoles, garder le lien." },
+  { who: "Commerces et restaurants", why: "Faire savoir ce qui est nouveau, chaque semaine, sans y penser." },
+  { who: "Créateurs et formateurs", why: "Publier régulièrement autour de vos contenus et de vos projets." },
+  { who: "PME", why: "Une communication suivie et cohérente sur tous vos réseaux." },
+  { who: "Agences", why: "Préparer les publications de plusieurs marques, chacune avec sa propre fiche." },
 ];
 
 const STATUS: Record<IntegrationStatus, { label: string; className: string }> = {
-  available: { label: "Disponible", className: "bg-mint" },
-  in_development: { label: "En test", className: "bg-butter" },
-  planned: { label: "Bientôt", className: "bg-cream-2 text-ink-soft" },
+  available: { label: "Disponible", className: "bg-ok/10 text-ok" },
+  in_development: { label: "En test", className: "bg-gold/10 text-gold" },
+  planned: { label: "Bientôt", className: "bg-white/5 text-fg-dim" },
 };
+
+const icon = (path: ReactNode) => (
+  <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {path}
+  </svg>
+);
 
 const PROMISES = [
   {
     title: "Rien d'inventé",
-    text: "Le studio n'utilise que ce que vous lui avez dit. Il n'invente ni prix, ni promotion, ni coordonnées : s'il manque une information, il vous le signale.",
+    text: "Le studio n'utilise que ce que vous lui avez dit : ni prix, ni promotion, ni coordonnées inventés. S'il manque une information, il vous le signale.",
+    icon: icon(<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3zM9 12l2 2 4-4" />),
   },
   {
     title: "Jamais votre mot de passe",
-    text: "Vos comptes se connectent par la page officielle de chaque réseau. Vous pouvez retirer l'accès à tout moment.",
+    text: "Vos comptes se connectent par la page officielle de chaque réseau. Vous retirez l'accès quand vous voulez.",
+    icon: icon(<path d="M7 11V8a5 5 0 0110 0v3M5 11h14v10H5zM12 15v2" />),
   },
   {
     title: "Rien ne part sans vous",
-    text: "Une publication ne part que si vous l'avez programmée. Vous pouvez la modifier, la décaler ou l'annuler avant son départ.",
+    text: "Une publication ne part que si vous l'avez programmée. Modifiable, décalable ou annulable jusqu'à son départ.",
+    icon: icon(<path d="M12 7v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z" />),
   },
   {
-    title: "Vos données restent à vous",
+    title: "Vos données vous appartiennent",
     text: "Export complet en un clic. Suppression définitive du compte et de vos fichiers quand vous le décidez.",
+    icon: icon(<path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" />),
   },
 ];
 
@@ -101,26 +84,34 @@ function networksAnswer(): string {
 const FAQ: { q: string; a: string }[] = [
   {
     q: "Je n'y connais rien aux réseaux sociaux. C'est pour moi ?",
-    a: "Oui. Vous décrivez votre activité avec vos mots, le studio s'occupe de la mise en forme pour chaque réseau. Vous gardez la main : chaque publication se relit et se modifie avant de partir.",
+    a: "Oui. Vous décrivez votre activité avec vos mots, le studio s'occupe de la mise en forme pour chaque réseau. Chaque publication se relit et se modifie avant de partir.",
   },
   {
-    q: "Je ne suis pas une entreprise, ça marche quand même ?",
-    a: "Oui : association, club, créateur, profession libérale, collectivité… Le studio s'adapte à ce que vous êtes. Il ne parlera pas de « clients » ou de « produits » si ce n'est pas votre cas.",
+    q: "Je ne suis pas une entreprise. Ça marche quand même ?",
+    a: "Oui : association, club, créateur, profession libérale, collectivité… Le studio s'adapte à ce que vous êtes et ne parle pas de « clients » ou de « produits » si ce n'est pas votre cas.",
   },
   { q: "Sur quels réseaux puis-je publier ?", a: networksAnswer() },
   {
     q: "Qu'est-ce qu'un crédit IA ?",
-    a: `C'est ce que consomme l'intelligence artificielle. Écrire des publications dans le studio coûte ${CREDIT_COSTS.text_generation} crédit, préparer la stratégie d'une campagne ${CREDIT_COSTS.campaign_strategy}, écrire un lot de publications de campagne ${CREDIT_COSTS.campaign_posts}. Les visuels et l'envoi des publications ne coûtent rien, et un essai qui échoue est remboursé.`,
+    a: `C'est ce que consomme l'intelligence artificielle. Écrire des publications coûte ${CREDIT_COSTS.text_generation} crédit, préparer le plan d'une campagne ${CREDIT_COSTS.campaign_strategy}, écrire un lot de publications de campagne ${CREDIT_COSTS.campaign_posts}. Les visuels et l'envoi ne coûtent rien, et un essai qui échoue est remboursé.`,
   },
-  {
-    q: "Et les vidéos ?",
-    a: "Pas encore : le studio publie aujourd'hui des textes et des images. La création de vidéos est prévue dans une prochaine version.",
-  },
+  { q: "Et les vidéos ?", a: "Pas encore : le studio publie aujourd'hui des textes et des images. La création de vidéos est prévue dans une prochaine version." },
   {
     q: "Que deviennent mes données ?",
     a: "Elles restent dans votre espace, séparées de celles des autres utilisateurs. Vous pouvez tout exporter ou supprimer votre compte depuis les paramètres ; un abonnement éventuel est alors résilié automatiquement.",
   },
 ];
+
+function PrimaryButton({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className="inline-flex items-center gap-2 rounded-full bg-fg px-6 py-3 text-sm font-medium text-void shadow-[0_0_0_1px_rgb(255_255_255/0.1),0_8px_30px_-8px_rgb(255_122_69/0.6)] transition hover:bg-white">
+      {children}
+      <svg viewBox="0 0 16 16" className="size-4" aria-hidden="true">
+        <path d="M3 8h10m-4-4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </Link>
+  );
+}
 
 export default async function HomePage() {
   const plans = await getPublicPlans();
@@ -128,169 +119,117 @@ export default async function HomePage() {
   return (
     <>
       {/* ---------- Ouverture ---------- */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-6xl gap-12 px-4 pt-14 pb-16 sm:px-6 sm:pt-20 lg:grid-cols-[1fr_1.25fr] lg:items-center">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-butter px-3 py-1 text-sm font-semibold">
-              <span aria-hidden="true">✦</span> Pour tous ceux qui ont mieux à faire
+      <section className="relative overflow-x-clip">
+        <div aria-hidden="true" className="halo pointer-events-none absolute inset-x-0 -top-16 h-[44rem]" />
+        <div aria-hidden="true" className="grid-fade pointer-events-none absolute inset-x-0 -top-16 h-[44rem]" />
+        <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-20 sm:px-6 sm:pt-24">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs text-fg-muted">
+              <span className="size-1.5 rounded-full bg-solar" aria-hidden="true" />
+              Pour les indépendants, associations, créateurs et entreprises
             </p>
-            <h1 className="mt-6 font-serif text-[clamp(3.2rem,8vw,6.2rem)] leading-[0.9] tracking-tight">
-              Vos réseaux sociaux, <em className="text-tomato">écrits et publiés</em> pour vous.
+            <h1 className="mt-7 text-[clamp(2.6rem,7vw,5.25rem)] leading-[1.02] font-semibold tracking-[-0.045em] text-balance">
+              Vous décrivez.
+              <br />
+              <span className="text-sun">Le studio écrit, crée et publie.</span>
             </h1>
-            <p className="mt-6 max-w-xl text-lg text-ink-soft">
-              Présentez votre activité une fois. Le studio écrit vos publications, crée vos visuels et les publie à
-              l&apos;heure prévue sur vos réseaux. Vous relisez, il s&apos;occupe du reste.
+            <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-pretty text-fg-muted">
+              Présentez votre activité une fois. Vos publications sont écrites pour chaque réseau, illustrées à vos
+              couleurs et publiées à l&apos;heure prévue. Vous relisez, c&apos;est tout.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/inscription"
-                className="rounded-full border-[1.5px] border-ink bg-tomato px-6 py-3 font-semibold shadow-[3px_3px_0_#17140f] transition hover:translate-x-px hover:translate-y-px hover:shadow-[2px_2px_0_#17140f]"
-              >
-                Créer mon compte gratuit
-              </Link>
-              <Link href="#comment" className="rounded-full border-[1.5px] border-ink bg-white px-6 py-3 font-semibold hover:bg-cream-2">
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+              <PrimaryButton href="/inscription">Créer mon compte gratuit</PrimaryButton>
+              <Link href="#comment" className="rounded-full px-5 py-3 text-sm font-medium text-fg-muted transition hover:text-fg">
                 Comment ça marche ?
               </Link>
             </div>
-            <p className="mt-4 text-sm text-ink-soft">Offre gratuite, sans carte bancaire.</p>
+            <p className="mt-4 text-xs text-fg-dim">Offre gratuite · sans carte bancaire</p>
           </div>
-          <PersonaDemo />
+          <div className="relative mt-16">
+            <div aria-hidden="true" className="absolute -inset-x-10 -top-10 bottom-0 rounded-[3rem] bg-gradient-to-b from-solar/10 to-transparent blur-3xl" />
+            <div className="relative">
+              <ProductDemo />
+            </div>
+          </div>
         </div>
-      </section>
-
-      {/* ---------- Bandeau des publics ---------- */}
-      <section aria-label="Pour qui" className="overflow-hidden border-y-[1.5px] border-ink bg-ink py-4 text-cream">
-        <div className="marquee" aria-hidden="true">
-          {[0, 1].map((copy) => (
-            <p key={copy} className="flex shrink-0 items-center font-serif text-3xl whitespace-nowrap italic">
-              {AUDIENCES.map((audience) => (
-                <span key={audience} className="flex items-center">
-                  <span className="px-6">{audience}</span>
-                  <span className="text-tomato not-italic">✦</span>
-                </span>
-              ))}
-            </p>
-          ))}
-        </div>
-        <p className="sr-only">Pour les {AUDIENCES.join(", ").toLowerCase()}.</p>
       </section>
 
       {/* ---------- Comment ça marche ---------- */}
-      <section id="comment" className="scroll-mt-28 py-20 sm:py-28">
+      <section id="comment" className="scroll-mt-20 border-t border-line py-24 sm:py-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionHeading number="01" kicker="Comment ça marche" title={<>Trois étapes, <em>puis plus rien à faire.</em></>} />
-          <ol className="mt-12 grid gap-6 md:grid-cols-3">
+          <SectionHeading eyebrow="Comment ça marche" title="Trois étapes. Ensuite, plus rien à faire." />
+          <ol className="relative mt-14 grid gap-4 md:grid-cols-3">
+            <span aria-hidden="true" className="absolute top-[2.15rem] right-[16%] left-[16%] hidden h-px bg-gradient-to-r from-solar/0 via-solar/50 to-solar/0 md:block" />
             {STEPS.map((step, index) => (
-              <li key={step.title} className={cn("sticker p-7", step.tone)}>
-                <p className="font-serif text-7xl leading-none">{index + 1}</p>
-                <h3 className="mt-6 text-xl font-semibold">{step.title}</h3>
-                <p className="mt-2 text-ink-soft">{step.text}</p>
+              <li key={step.title} className="glass relative rounded-2xl p-6">
+                <span className="relative grid size-9 place-items-center rounded-full border border-line-strong bg-void font-mono text-xs text-solar">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="mt-6 text-lg font-medium tracking-tight">{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-fg-muted">{step.text}</p>
               </li>
             ))}
           </ol>
-          <p className="mt-8 flex flex-wrap items-center gap-3 text-ink-soft">
-            <span className="rounded-full border-[1.5px] border-dashed border-ink px-3 py-1 text-sm font-semibold text-ink">Bientôt</span>
-            Les résultats de chaque publication et des conseils pour faire mieux la fois suivante.
+          <p className="mt-6 flex flex-wrap items-center gap-3 text-sm text-fg-muted">
+            <span className="rounded-full border border-dashed border-line-strong px-2.5 py-0.5 font-mono text-[11px] tracking-wide uppercase">Bientôt</span>
+            Les résultats de chaque publication, et des conseils pour faire mieux la fois suivante.
           </p>
         </div>
       </section>
 
-      {/* ---------- Pour qui ---------- */}
-      <section id="pour-qui" className="scroll-mt-28 bg-cream-2 py-20 sm:py-28">
+      {/* ---------- Fonctionnalités ---------- */}
+      <section className="border-t border-line py-24 sm:py-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionHeading number="02" kicker="Pour qui ?" title={<>Pour vous, <em>quelle que soit votre activité.</em></>}>
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <SectionHeading eyebrow="Fonctionnalités" title="Tout ce qu'il faut. Rien de compliqué." />
+            <Link href="/fonctionnalites" className="shrink-0 text-sm text-fg-muted transition hover:text-fg">
+              Voir le détail →
+            </Link>
+          </div>
+          <div className="mt-14">
+            <FeatureBento />
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Pour qui ---------- */}
+      <section id="pour-qui" className="scroll-mt-20 border-t border-line py-24 sm:py-32">
+        <div className="mx-auto grid max-w-6xl gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr]">
+          <SectionHeading eyebrow="Pour qui ?" title="Pour vous, quelle que soit votre activité.">
             Le studio apprend qui vous êtes et écrit comme vous. Une association ne parle pas comme un cabinet de conseil :
             vos publications non plus.
           </SectionHeading>
-          <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FOR_WHO.map((item) => (
-              <li key={item.who} className="sticker-sm flex items-start gap-4 bg-white p-5">
-                <span aria-hidden="true" className={cn("mt-1 size-4 shrink-0 rounded-full border-[1.5px] border-ink", item.tone)} />
-                <div>
-                  <h3 className="font-semibold">{item.who}</h3>
-                  <p className="mt-1 text-sm text-ink-soft">{item.why}</p>
-                </div>
+          <ul className="divide-y divide-line border-y border-line">
+            {AUDIENCES.map((item) => (
+              <li key={item.who} className="group flex items-baseline justify-between gap-6 py-5">
+                <span className="font-medium tracking-tight transition group-hover:text-gold">{item.who}</span>
+                <span className="max-w-xs text-right text-sm text-fg-muted">{item.why}</span>
               </li>
             ))}
           </ul>
         </div>
       </section>
 
-      {/* ---------- Fonctionnalités (aperçu) ---------- */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <SectionHeading number="03" kicker="Dans le studio" title={<>Tout ce qu&apos;il faut, <em>rien de compliqué.</em></>} />
-            <Link href="/fonctionnalites" className="font-semibold underline decoration-tomato decoration-2 underline-offset-4">
-              Voir toutes les fonctionnalités →
-            </Link>
-          </div>
-          <div className="mt-12 grid gap-6 lg:grid-cols-3">
-            <article className="sticker bg-white p-6 lg:col-span-2">
-              <p className="text-sm font-semibold text-ink-soft">Votre fiche</p>
-              <h3 className="mt-1 font-serif text-4xl">Une mémoire de votre activité</h3>
-              <p className="mt-2 text-ink-soft">Ce que vous proposez, à qui, sur quel ton, avec quels mots : la base de tout ce qui sera écrit.</p>
-              <div className="mt-6 grid gap-3 sm:grid-cols-3" aria-hidden="true">
-                {[
-                  ["Ton", "Chaleureux"],
-                  ["Public", "Familles du quartier"],
-                  ["À éviter", "« pas cher »"],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-xl border-[1.5px] border-ink bg-cream p-3">
-                    <p className="text-xs text-ink-soft">{label}</p>
-                    <p className="font-semibold">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </article>
-            <article className="sticker bg-tomato p-6">
-              <p className="text-sm font-semibold">Visuels</p>
-              <h3 className="mt-1 font-serif text-4xl">À vos couleurs</h3>
-              <p className="mt-2">Modèles prêts à l&apos;emploi avec votre logo, en carré, portrait, vertical ou paysage.</p>
-            </article>
-            <article className="sticker bg-lilac p-6">
-              <p className="text-sm font-semibold">Campagnes</p>
-              <h3 className="mt-1 font-serif text-4xl">Un mois prévu d&apos;avance</h3>
-              <p className="mt-2 text-ink-soft">Un assistant vous pose les bonnes questions, propose un plan, puis écrit toutes les publications.</p>
-            </article>
-            <article className="sticker bg-white p-6 lg:col-span-2">
-              <p className="text-sm font-semibold text-ink-soft">Calendrier</p>
-              <h3 className="mt-1 font-serif text-4xl">Tout ce qui part, d&apos;un coup d&apos;œil</h3>
-              <div className="mt-5 grid grid-cols-7 gap-1.5 text-center text-xs" aria-hidden="true">
-                {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day, index) => (
-                  <div key={day} className="rounded-lg border border-ink/15 bg-cream p-1.5">
-                    <p className="text-ink-soft">{day}</p>
-                    {index % 2 === 0 ? <span className="mt-1.5 block h-2 rounded-full bg-tomato" /> : null}
-                    {index === 3 || index === 4 ? <span className="mt-1 block h-2 rounded-full bg-sky" /> : null}
-                    {index === 1 ? <span className="mt-1.5 block h-2 rounded-full bg-mint" /> : null}
-                  </div>
-                ))}
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
       {/* ---------- Réseaux ---------- */}
-      <section id="reseaux" className="scroll-mt-28 bg-ink py-20 text-cream sm:py-28">
+      <section id="reseaux" className="scroll-mt-20 border-t border-line py-24 sm:py-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionHeading tone="light" number="04" kicker="Réseaux" title={<>Huit réseaux, <em>un seul endroit.</em></>}>
-            Un réseau n&apos;est annoncé « disponible » qu&apos;après une publication réussie sur un vrai compte. Voici où nous
-            en sommes, sans arrondi.
+          <SectionHeading eyebrow="Réseaux" title="Huit réseaux, un seul endroit.">
+            Un réseau n&apos;est annoncé disponible qu&apos;après une publication réussie sur un vrai compte. Voici où nous en
+            sommes, sans arrondi.
           </SectionHeading>
-          <ul className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
             {SOCIAL_NETWORK_IDS.map((id) => {
               const network = SOCIAL_NETWORKS[id];
               const status = STATUS[network.integrationStatus];
               return (
-                <li key={id} className="flex items-center justify-between gap-3 rounded-2xl border border-cream/15 p-5">
-                  <div>
-                    <p className="font-serif text-3xl leading-none">{network.label}</p>
-                    <p className="mt-1.5 text-xs text-cream/55">{network.allowsTextOnly ? "Texte et images" : "Image obligatoire"}</p>
+                <li key={id} className="flex flex-col justify-between gap-6 bg-deep p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-lg font-medium tracking-tight">{network.label}</p>
+                    <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-xs", status.className)}>{status.label}</span>
                   </div>
-                  <span className={cn("shrink-0 rounded-full border-[1.5px] border-ink px-2.5 py-0.5 text-xs font-semibold text-ink", status.className)}>
-                    {status.label}
-                  </span>
+                  <p className="font-mono text-[11px] text-fg-dim">
+                    {network.allowsTextOnly ? "Texte et images" : "Image obligatoire"} · {network.maxTextLength.toLocaleString("fr-FR")} car.
+                  </p>
                 </li>
               );
             })}
@@ -299,17 +238,15 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Engagements ---------- */}
-      <section className="py-20 sm:py-28">
+      <section className="border-t border-line py-24 sm:py-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionHeading number="05" kicker="Nos engagements" title={<>Publier en votre nom, <em>ça se mérite.</em></>} />
-          <ul className="mt-12 grid gap-6 md:grid-cols-2">
-            {PROMISES.map((item, index) => (
-              <li key={item.title} className="flex gap-5 border-t-[1.5px] border-ink pt-6">
-                <span className="font-serif text-5xl leading-none text-tomato italic">{index + 1}</span>
-                <div>
-                  <h3 className="text-xl font-semibold">{item.title}</h3>
-                  <p className="mt-2 text-ink-soft">{item.text}</p>
-                </div>
+          <SectionHeading eyebrow="Nos engagements" title="Publier en votre nom, ça se mérite." />
+          <ul className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            {PROMISES.map((item) => (
+              <li key={item.title}>
+                <span className="grid size-10 place-items-center rounded-xl border border-line-strong bg-white/[0.03] text-gold">{item.icon}</span>
+                <h3 className="mt-5 font-medium tracking-tight">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-fg-muted">{item.text}</p>
               </li>
             ))}
           </ul>
@@ -317,34 +254,36 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Tarifs ---------- */}
-      <section className="bg-cream-2 py-20 sm:py-28">
+      <section className="border-t border-line py-24 sm:py-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <SectionHeading number="06" kicker="Tarifs" title={<>Commencez gratuitement, <em>changez quand vous voulez.</em></>} />
-            <Link href="/tarifs" className="font-semibold underline decoration-tomato decoration-2 underline-offset-4">
-              Tarifs et crédits en détail →
-            </Link>
-          </div>
-          <div className="mt-12">
+          <SectionHeading eyebrow="Tarifs" title="Gratuit pour commencer. Simple ensuite." align="center">
+            Changez d&apos;offre quand vous voulez, depuis votre espace.
+          </SectionHeading>
+          <div className="mt-14">
             <PlanCards plans={plans} />
           </div>
+          <p className="mt-8 text-center text-sm">
+            <Link href="/tarifs" className="text-fg-muted transition hover:text-fg">
+              Tout savoir sur les crédits et le paiement →
+            </Link>
+          </p>
         </div>
       </section>
 
       {/* ---------- Questions ---------- */}
-      <section id="questions" className="scroll-mt-28 py-20 sm:py-28">
-        <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.6fr]">
-          <SectionHeading number="07" kicker="Questions fréquentes" title={<>Vous vous <em>demandez peut-être…</em></>} />
-          <div className="space-y-3">
+      <section id="questions" className="scroll-mt-20 border-t border-line py-24 sm:py-32">
+        <div className="mx-auto grid max-w-6xl gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.5fr]">
+          <SectionHeading eyebrow="Questions fréquentes" title="Vous vous demandez peut-être…" />
+          <div className="divide-y divide-line border-y border-line">
             {FAQ.map((item) => (
-              <details key={item.q} className="group sticker-sm bg-white px-5 py-4 open:bg-butter">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
+              <details key={item.q} className="group py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 font-medium tracking-tight">
                   {item.q}
-                  <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full border-[1.5px] border-ink bg-white transition group-open:rotate-45">
+                  <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full border border-line-strong text-fg-muted transition group-open:rotate-45 group-open:text-solar">
                     +
                   </span>
                 </summary>
-                <p className="mt-3 text-ink-soft">{item.a}</p>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-fg-muted">{item.a}</p>
               </details>
             ))}
           </div>
@@ -352,17 +291,18 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Appel final ---------- */}
-      <section className="px-4 pb-20 sm:px-6">
-        <div className="sticker mx-auto flex max-w-6xl flex-col items-start gap-8 bg-tomato p-8 sm:p-12 md:flex-row md:items-center md:justify-between">
-          <h2 className="font-serif text-[clamp(2.6rem,6vw,4.5rem)] leading-[0.95]">
-            Votre prochaine publication <em>peut partir demain matin.</em>
-          </h2>
-          <Link
-            href="/inscription"
-            className="shrink-0 rounded-full border-[1.5px] border-ink bg-ink px-7 py-3.5 font-semibold text-cream transition hover:bg-white hover:text-ink"
-          >
-            Créer mon compte gratuit
-          </Link>
+      <section className="px-4 pb-24 sm:px-6">
+        <div className="glass relative mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-20 text-center sm:px-12">
+          <div aria-hidden="true" className="halo pointer-events-none absolute inset-0" />
+          <div className="relative">
+            <h2 className="mx-auto max-w-2xl text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
+              Votre prochaine publication peut partir <span className="text-sun">demain matin.</span>
+            </h2>
+            <p className="mx-auto mt-5 max-w-md text-fg-muted">Créez votre compte, présentez votre activité, et laissez le studio s&apos;occuper du reste.</p>
+            <div className="mt-9 flex justify-center">
+              <PrimaryButton href="/inscription">Créer mon compte gratuit</PrimaryButton>
+            </div>
+          </div>
         </div>
       </section>
     </>

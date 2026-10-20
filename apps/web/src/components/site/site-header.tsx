@@ -1,65 +1,74 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/cn";
 
 const NAV = [
   { href: "/#comment", label: "Comment ça marche" },
   { href: "/fonctionnalites", label: "Fonctionnalités" },
-  { href: "/#pour-qui", label: "Pour qui ?" },
+  { href: "/#reseaux", label: "Réseaux" },
   { href: "/tarifs", label: "Tarifs" },
   { href: "/#questions", label: "Questions" },
 ];
 
-export function SiteLogo({ tone = "dark" }: { tone?: "dark" | "light" }) {
-  const ink = tone === "dark" ? "#17140f" : "#faf7f2";
+export function SiteLogo() {
   return (
-    <span className="inline-flex items-center gap-2">
-      {/* Bulle de publication avec un éclat : « ça se publie tout seul ». */}
-      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden="true">
-        <path d="M5 6h22a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H14l-6 5v-5H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" fill="#ec5a34" stroke={ink} strokeWidth="1.5" />
-        <path d="M16 9.5l1.3 3.2 3.2 1.3-3.2 1.3L16 18.5l-1.3-3.2-3.2-1.3 3.2-1.3z" fill={tone === "dark" ? "#faf7f2" : "#17140f"} />
+    <span className="inline-flex items-center gap-2.5">
+      <svg viewBox="0 0 28 28" className="size-7 shrink-0" aria-hidden="true">
+        <defs>
+          <linearGradient id="logo-sun" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#ffc56b" />
+            <stop offset="0.55" stopColor="#ff7a45" />
+            <stop offset="1" stopColor="#ff4f6d" />
+          </linearGradient>
+        </defs>
+        <rect x="1" y="1" width="26" height="26" rx="8" fill="url(#logo-sun)" />
+        <path d="M8 18.5c2.2-5.8 4.4-8.7 6.6-8.7 1.9 0 2.4 2.6 3.7 2.6.9 0 1.6-.7 1.7-1.9" fill="none" stroke="#07080b" strokeWidth="2.2" strokeLinecap="round" />
+        <circle cx="20" cy="18.5" r="1.6" fill="#07080b" />
       </svg>
-      <span className={`text-lg leading-none font-semibold tracking-tight ${tone === "dark" ? "text-ink" : "text-cream"}`}>
-        Studio Marketing <span className="font-serif text-xl italic">IA</span>
-      </span>
+      <span className="text-[15px] font-semibold tracking-tight text-fg">Studio Marketing IA</span>
     </span>
   );
 }
 
 export function SiteHeader() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 8);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-ink/10 bg-cream/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <header className={cn("sticky top-0 z-40 transition-colors duration-300", scrolled ? "border-b border-line bg-void/75 backdrop-blur-xl" : "border-b border-transparent")}>
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/" aria-label="Studio Marketing IA, accueil">
           <SiteLogo />
         </Link>
-        <nav aria-label="Navigation principale" className="hidden items-center gap-6 text-sm lg:flex">
+        <nav aria-label="Navigation principale" className="hidden items-center gap-7 text-sm lg:flex">
           {NAV.map((item) => (
-            <Link key={item.href} href={item.href} className="text-ink-soft transition hover:text-ink">
+            <Link key={item.href} href={item.href} className="text-fg-muted transition hover:text-fg">
               {item.label}
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
-          <Link href="/connexion" className="hidden rounded-full px-4 py-2 text-sm text-ink-soft hover:text-ink sm:inline-block">
+        <div className="flex items-center gap-1.5">
+          <Link href="/connexion" className="rounded-full px-3.5 py-2 text-sm text-fg-muted transition hover:text-fg">
             Se connecter
           </Link>
-          <Link
-            href="/inscription"
-            className="rounded-full border-[1.5px] border-ink bg-tomato px-4 py-2 text-sm font-semibold text-ink shadow-[2px_2px_0_#17140f] transition hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0_#17140f]"
-          >
-            <span className="sm:hidden">Créer un compte</span>
-            <span className="hidden sm:inline">Créer mon compte gratuit</span>
+          <Link href="/inscription" className="hidden rounded-full bg-fg px-4 py-2 text-sm font-medium text-void transition hover:bg-white sm:inline-block">
+            Créer un compte
           </Link>
         </div>
       </div>
-      <nav aria-label="Navigation mobile" className="flex gap-5 overflow-x-auto border-t border-ink/5 px-4 py-2 text-sm lg:hidden">
+      <nav aria-label="Navigation mobile" className="flex gap-5 overflow-x-auto px-4 pb-3 text-sm lg:hidden">
         {NAV.map((item) => (
-          <Link key={item.href} href={item.href} className="shrink-0 text-ink-soft hover:text-ink">
+          <Link key={item.href} href={item.href} className="shrink-0 text-fg-muted hover:text-fg">
             {item.label}
           </Link>
         ))}
-        <Link href="/connexion" className="shrink-0 text-ink-soft hover:text-ink sm:hidden">
-          Se connecter
-        </Link>
       </nav>
     </header>
   );

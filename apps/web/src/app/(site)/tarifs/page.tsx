@@ -45,50 +45,57 @@ export default async function PricingPage() {
   const plans = await getPublicPlans();
   return (
     <>
-      <section className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 sm:pt-24">
-        <SectionHeading kicker="Tarifs" title={<>Simple, <em>et sans surprise.</em></>}>
-          Commencez gratuitement, sans carte bancaire. Les prix affichés viennent directement de notre système de
-          paiement : ce que vous lisez ici est ce que vous paierez.
-        </SectionHeading>
-      </section>
-
-      <section className="pb-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <PlanCards plans={plans} />
+      <section className="relative overflow-x-clip">
+        <div aria-hidden="true" className="halo pointer-events-none absolute inset-x-0 -top-16 h-[30rem]" />
+        <div aria-hidden="true" className="grid-fade pointer-events-none absolute inset-x-0 -top-16 h-[30rem]" />
+        <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-20 sm:px-6 sm:pt-24">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="font-mono text-xs tracking-[0.14em] text-solar uppercase">Tarifs</p>
+            <h1 className="mt-4 text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.03] font-semibold tracking-[-0.045em] text-balance">
+              Simple, <span className="text-sun">et sans surprise.</span>
+            </h1>
+            <p className="mt-6 text-lg leading-relaxed text-fg-muted">
+              Commencez gratuitement, sans carte bancaire. Les prix affichés viennent directement de notre système de
+              paiement : ce que vous lisez ici est ce que vous paierez.
+            </p>
+          </div>
+          <div className="mt-14">
+            <PlanCards plans={plans} />
+          </div>
         </div>
       </section>
 
-      <section className="bg-cream-2 py-20 sm:py-28">
-        <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.4fr]">
-          <SectionHeading kicker="Crédits IA" title={<>Ce qui consomme, <em>et ce qui est gratuit.</em></>}>
+      <section className="border-t border-line py-24 sm:py-28">
+        <div className="mx-auto grid max-w-6xl gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr]">
+          <SectionHeading eyebrow="Crédits IA" title="Ce qui consomme, et ce qui est gratuit.">
             Seule l&apos;intelligence artificielle consomme des crédits. Chaque mouvement est noté dans un historique que vous
             pouvez consulter.
           </SectionHeading>
           <div className="space-y-8">
-            <div className="sticker overflow-hidden bg-white">
-              <table className="w-full border-collapse text-left">
+            <div className="glass overflow-hidden rounded-2xl">
+              <table className="w-full border-collapse text-left text-sm">
                 <caption className="sr-only">Coût en crédits de chaque opération</caption>
                 <thead>
-                  <tr className="border-b-[1.5px] border-ink bg-butter text-sm">
-                    <th scope="col" className="px-5 py-3 font-semibold">Ce que fait l&apos;IA</th>
-                    <th scope="col" className="px-5 py-3 text-right font-semibold">Crédits</th>
+                  <tr className="border-b border-line text-fg-muted">
+                    <th scope="col" className="px-5 py-3.5 font-medium">Ce que fait l&apos;IA</th>
+                    <th scope="col" className="px-5 py-3.5 text-right font-medium">Crédits</th>
                   </tr>
                 </thead>
                 <tbody>
                   {COSTS.map((row) => (
-                    <tr key={row.label} className="border-b border-ink/10 last:border-0">
+                    <tr key={row.label} className="border-b border-line last:border-0">
                       <td className="px-5 py-4">{row.label}</td>
-                      <td className="px-5 py-4 text-right font-serif text-4xl leading-none">{row.cost}</td>
+                      <td className="px-5 py-4 text-right font-mono text-lg text-gold">{row.cost}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <div>
-              <p className="font-semibold">Gratuit, sans limite de crédits :</p>
+              <p className="text-sm font-medium">Gratuit, sans limite de crédits</p>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {FREE.map((item) => (
-                  <li key={item} className="rounded-full border-[1.5px] border-ink bg-mint px-3 py-1 text-sm">
+                  <li key={item} className="rounded-full border border-line-strong px-3 py-1.5 text-sm text-fg-muted">
                     {item}
                   </li>
                 ))}
@@ -98,33 +105,34 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.6fr]">
-          <SectionHeading kicker="Paiement et abonnement" title={<>Bon <em>à savoir.</em></>} />
-          <div className="space-y-3">
+      <section className="border-t border-line py-24 sm:py-28">
+        <div className="mx-auto grid max-w-6xl gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.5fr]">
+          <SectionHeading eyebrow="Paiement et abonnement" title="Bon à savoir." />
+          <div className="divide-y divide-line border-y border-line">
             {QUESTIONS.map((item) => (
-              <details key={item.q} className="group sticker-sm bg-white px-5 py-4 open:bg-butter">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
+              <details key={item.q} className="group py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 font-medium tracking-tight">
                   {item.q}
-                  <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full border-[1.5px] border-ink bg-white transition group-open:rotate-45">
+                  <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-full border border-line-strong text-fg-muted transition group-open:rotate-45 group-open:text-solar">
                     +
                   </span>
                 </summary>
-                <p className="mt-3 text-ink-soft">{item.a}</p>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-fg-muted">{item.a}</p>
               </details>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="px-4 pb-20 sm:px-6">
-        <div className="sticker mx-auto flex max-w-6xl flex-col items-start gap-6 bg-tomato p-8 md:flex-row md:items-center md:justify-between">
-          <p className="font-serif text-4xl leading-none">
-            Gratuit pour commencer, <em>vraiment.</em>
-          </p>
-          <Link href="/inscription" className="rounded-full border-[1.5px] border-ink bg-ink px-6 py-3 font-semibold text-cream hover:bg-white hover:text-ink">
-            Créer mon compte gratuit
-          </Link>
+      <section className="px-4 pb-24 sm:px-6">
+        <div className="glass relative mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-16 text-center">
+          <div aria-hidden="true" className="halo pointer-events-none absolute inset-0" />
+          <div className="relative">
+            <h2 className="text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">Gratuit pour commencer, vraiment.</h2>
+            <Link href="/inscription" className="mt-8 inline-block rounded-full bg-fg px-6 py-3 text-sm font-medium text-void hover:bg-white">
+              Créer mon compte gratuit
+            </Link>
+          </div>
         </div>
       </section>
     </>
