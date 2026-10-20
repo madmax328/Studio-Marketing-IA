@@ -25,6 +25,8 @@ fn main() {
             "allow-local-ai-generate"
         ]
     });
+    // Le dossier ne contient que ce fichier généré (ignoré par git) : il peut manquer sur un dépôt fraîchement cloné.
+    fs::create_dir_all("capabilities").expect("création du dossier des capacités");
     fs::write(
         "capabilities/site-distant.json",
         serde_json::to_string_pretty(&capability).expect("capacité") + "\n",
