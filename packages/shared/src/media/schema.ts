@@ -73,3 +73,27 @@ export const imageGenerationRequestSchema = z.object({
   style: z.enum(IMAGE_STYLES).default("photo"),
 });
 export type ImageGenerationRequest = z.infer<typeof imageGenerationRequestSchema>;
+
+// ---------- Vidéos ----------
+
+/** Les vidéos sont montées dans le navigateur (H.264 dans un MP4), puis vérifiées par le serveur. */
+export const ACCEPTED_VIDEO_TYPES = ["video/mp4"] as const;
+export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
+/** Durée maximale d'une vidéo créée dans le studio (secondes). */
+export const MAX_VIDEO_SECONDS = 60;
+export const MAX_VIDEO_SLIDES = 8;
+export const VIDEO_SLIDE_SECONDS = { min: 2, max: 6, default: 3 } as const;
+
+export const VIDEO_TRANSITIONS = ["fondu", "glissement", "coupe"] as const;
+export type VideoTransition = (typeof VIDEO_TRANSITIONS)[number];
+export const VIDEO_TRANSITION_LABELS: Record<VideoTransition, string> = {
+  fondu: "Fondu",
+  glissement: "Glissement",
+  coupe: "Coupe franche",
+};
+
+/** Formats proposés pour les vidéos (mêmes dimensions que les visuels). Le vertical convient aux Reels et Shorts. */
+export const VIDEO_FORMAT_IDS: readonly ImageFormatId[] = ["story", "portrait", "square", "landscape"];
+
+/** Nature d'un média joint à une publication. */
+export type MediaKindId = "image" | "video";

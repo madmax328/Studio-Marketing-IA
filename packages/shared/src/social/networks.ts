@@ -139,6 +139,12 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
   },
 };
 
+/**
+ * Réseaux sur lesquels le studio sait publier une vidéo (connecteur écrit). Les autres réseaux qui acceptent la
+ * vidéo (LinkedIn, TikTok, YouTube) suivront avec leurs connecteurs.
+ */
+export const STUDIO_VIDEO_NETWORKS: readonly SocialNetworkId[] = ["facebook", "instagram", "threads"];
+
 export function getSocialNetwork(id: SocialNetworkId): SocialNetworkDefinition {
   return SOCIAL_NETWORKS[id];
 }

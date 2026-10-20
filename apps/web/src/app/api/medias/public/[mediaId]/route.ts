@@ -22,7 +22,7 @@ export async function GET(request: Request, context: RouteContext<"/api/medias/p
   const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
 
   // Certains réseaux (Instagram) n'acceptent que le JPEG : conversion à la demande.
-  if (url.searchParams.get("format") === "jpeg" && media.mimeType !== "image/jpeg") {
+  if (url.searchParams.get("format") === "jpeg" && media.kind !== "video" && media.mimeType !== "image/jpeg") {
     const bytes = await getMediaStorage().readBuffer(media.storageKey);
     if (!bytes) return new Response("Introuvable.", { status: 404 });
     return new Response(new Uint8Array(await toJpeg(bytes)), { headers: { ...headers, "Content-Type": "image/jpeg" } });
@@ -30,5 +30,8 @@ export async function GET(request: Request, context: RouteContext<"/api/medias/p
 
   const file = await getMediaStorage().read(media.storageKey);
   if (!file) return new Response("Introuvable.", { status: 404 });
-  return new Response(file.stream, { headers: { ...headers, "Content-Type": media.mimeType } });
+  // La taille annoncée aide les réseaux qui téléchargent les vidéos.
+  return new Response(file.stream, {
+    headers: { ...headers, "Content-Type": media.mimeType, ...(file.size ? { "Content-Length": String(file.size) } : {}) },
+  });
 }

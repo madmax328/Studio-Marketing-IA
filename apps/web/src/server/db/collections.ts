@@ -76,8 +76,10 @@ export interface PostDoc {
   /** Campagne d'origine et créneau du plan, si la publication vient d'une campagne. */
   campaignId?: ObjectId | null;
   slotId?: string | null;
-  /** Médias joints (images), dans l'ordre d'affichage. Absent sur les anciennes publications. */
+  /** Médias joints, dans l'ordre d'affichage. Absent sur les anciennes publications. */
   mediaIds?: ObjectId[];
+  /** Nature des médias joints : des images, ou une seule vidéo (null ou absent : aucun média). */
+  mediaKind?: "image" | "video" | null;
   /** Date prévue en UTC. */
   scheduledAt: Date | null;
   /** Fuseau de l'utilisateur au moment de la programmation, pour l'affichage et les changements d'heure. */
@@ -244,17 +246,20 @@ export interface MediaAssetDoc {
   workspaceId: ObjectId;
   brandId: ObjectId | null;
   createdByUserId: string;
-  kind: "image";
+  kind: "image" | "video";
   /** Origine : envoyé par l'utilisateur ou créé avec un gabarit. */
   source: "upload" | "template" | "ai";
   name: string;
   /** Type réel détecté côté serveur (pas celui annoncé par le navigateur). */
-  mimeType: "image/jpeg" | "image/png" | "image/webp";
+  mimeType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4";
   size: number;
   width: number;
   height: number;
   /** Chemin dans le stockage objet ; toujours préfixé par ws/<workspaceId>/. */
   storageKey: string;
+  /** Vidéos : durée et image d'aperçu (JPEG). */
+  durationSeconds?: number;
+  posterStorageKey?: string | null;
   status: "ready";
   createdAt: Date;
   updatedAt: Date;

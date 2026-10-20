@@ -10,7 +10,9 @@ import { runMigrations } from "@/server/db/migrations";
 import type { MediaStorage } from "@/server/media/storage";
 import { deleteUserData } from "@/server/services/account";
 import { createBrand } from "@/server/services/brands";
-import { createTemplateMedia, deleteMedia, registerUpload, setBrandLogo, uploadKeyFor } from "@/server/services/media";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { createTemplateMedia, deleteMedia, registerUpload, registerVideo, setBrandLogo, uploadKeyFor } from "@/server/services/media";
 import { createDraft, setPostMedia } from "@/server/services/posts";
 import { ensurePersonalWorkspace, getWorkspaceAccess, type WorkspaceAccess } from "@/server/services/workspaces";
 
@@ -65,6 +67,23 @@ describe.skipIf(!uri)("médiathèque (MongoDB réel)", () => {
   afterAll(async () => {
     await db?.dropDatabase();
     await client?.close();
+  });
+
+  it("refuse une vidéo que les réseaux n'acceptent pas (VP9) et efface les fichiers envoyés", async () => {
+    const videoKey = uploadKeyFor(alice, "video.mp4");
+    const posterKey = uploadKeyFor(alice, "apercu.jpg");
+    await storage.put(videoKey, readFileSync(join(__dirname, "../../media/__tests__/fixtures/vp9-360x640-2s.mp4")), "video/mp4");
+    await storage.put(posterKey, await sharp({ create: { width: 36, height: 64, channels: 3, background: "#000" } }).jpeg().toBuffer(), "image/jpeg");
+    await expect(registerVideo(db, alice, "alice", storage, { storageKey: videoKey, posterKey, name: "test" })).rejects.toMatchObject({
+      code: "invalid_input",
+      message: expect.stringContaining("H.264"),
+    });
+    expect(files.has(videoKey)).toBe(false);
+    expect(files.has(posterKey)).toBe(false);
+    // Un fichier hors de l'espace est refusé avant toute lecture.
+    await expect(
+      registerVideo(db, alice, "alice", storage, { storageKey: uploadKeyFor(bob, "video.mp4"), posterKey, name: "x" }),
+    ).rejects.toMatchObject({ code: "forbidden" });
   });
 
   async function uploadPng(access: WorkspaceAccess, width = 800, height = 600) {

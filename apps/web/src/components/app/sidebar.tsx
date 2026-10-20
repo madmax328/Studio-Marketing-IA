@@ -36,7 +36,7 @@ const GROUPS: { title: string; items: { href: string; label: string; icon: NavIc
 ];
 
 /** Modules de la V1 pas encore livrés : affichés comme tels, sans lien factice. */
-const UPCOMING = ["Vidéos"];
+const UPCOMING: string[] = [];
 
 function NavLink({ href, label, icon, active, badge }: { href: string; label: string; icon: NavIconName; active: boolean; badge?: number }) {
   return (

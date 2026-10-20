@@ -24,7 +24,7 @@ export default async function BrandPage({ params, searchParams }: PageProps<"/ma
   });
 
   const { _id, workspaceId, createdByUserId, schemaVersion, createdAt, updatedAt, logoMediaId, ...input } = brand;
-  const images = await listMedia(getDb(), access, 1);
+  const images = await listMedia(getDb(), access, 1, "image");
   const missing = missingRecommendedFields(input);
 
   return (

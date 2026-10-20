@@ -6,6 +6,7 @@ import {
   postScheduleSchema,
   SOCIAL_NETWORK_IDS,
   SOCIAL_NETWORKS,
+  STUDIO_VIDEO_NETWORKS,
   zonedToUtc,
   type PostStatus,
   type SocialNetworkId,
@@ -170,22 +171,30 @@ export async function setPostMedia(db: Db, access: WorkspaceAccess, postId: stri
   const post = await getPost(db, access, postId);
   assertEditable(post);
   const network = SOCIAL_NETWORKS[post.network];
-  if (ids.length > 0 && !network.publishableMedia.includes("image")) {
-    throw new UserFacingError(`${network.label} n'accepte pas d'images.`, "invalid_input");
-  }
-  if (ids.length > 1 && !network.publishableMedia.includes("carousel")) {
-    throw new UserFacingError(`${network.label} n'accepte qu'une image par publication.`, "invalid_input");
-  }
 
   const objectIds = [...new Set(ids)].filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   const found = await collections(db)
-    .mediaAssets.find({ _id: { $in: objectIds }, workspaceId: access.workspace._id }, { projection: { _id: 1 } })
+    .mediaAssets.find({ _id: { $in: objectIds }, workspaceId: access.workspace._id }, { projection: { _id: 1, kind: 1 } })
     .toArray();
   if (found.length !== objectIds.length) throw new UserFacingError("Média introuvable.", "not_found");
 
+  const videos = found.filter((media) => media.kind === "video").length;
+  if (videos > 0) {
+    if (found.length > 1) throw new UserFacingError("Une vidéo se publie seule : retirez les autres médias.", "invalid_input");
+    if (!network.publishableMedia.includes("video")) throw new UserFacingError(`${network.label} n'accepte pas de vidéo.`, "invalid_input");
+  } else {
+    if (found.length > 0 && !network.publishableMedia.includes("image")) {
+      throw new UserFacingError(`${network.label} n'accepte pas d'images.`, "invalid_input");
+    }
+    if (found.length > 1 && !network.publishableMedia.includes("carousel")) {
+      throw new UserFacingError(`${network.label} n'accepte qu'une image par publication.`, "invalid_input");
+    }
+  }
+  const mediaKind = found.length === 0 ? null : videos > 0 ? "video" : "image";
+
   const updated = await collections(db).posts.findOneAndUpdate(
     { _id: post._id, workspaceId: access.workspace._id, status: { $in: [...EDITABLE_POST_STATUSES] } },
-    { $set: { mediaIds: objectIds, updatedAt: new Date() } },
+    { $set: { mediaIds: objectIds, mediaKind, updatedAt: new Date() } },
     { returnDocument: "after" },
   );
   if (!updated) throw new UserFacingError("Cette publication ne peut plus être modifiée.", "conflict");
@@ -199,7 +208,7 @@ export const MIN_SCHEDULE_DELAY_MS = 5 * 60_000;
  * Problèmes qui empêchent de programmer une publication (liste vide = programmable).
  * Les connexions aux réseaux sont vérifiées au moment de l'envoi, pas ici.
  */
-export function schedulingProblems(post: Pick<PostDoc, "network" | "text" | "mediaIds">): string[] {
+export function schedulingProblems(post: Pick<PostDoc, "network" | "text" | "mediaIds" | "mediaKind">): string[] {
   const network = SOCIAL_NETWORKS[post.network];
   const problems: string[] = [];
   const length = checkTextLength(post.network, post.text);
@@ -208,9 +217,12 @@ export function schedulingProblems(post: Pick<PostDoc, "network" | "text" | "med
   if (media.length === 0 && !network.allowsTextOnly) {
     problems.push(
       network.publishableMedia.includes("image")
-        ? `${network.label} exige une image : ajoutez-en une à la publication.`
-        : `${network.label} exige une vidéo : la création de vidéos arrive dans une prochaine étape.`,
+        ? `${network.label} exige une image ou une vidéo : ajoutez-en une à la publication.`
+        : `${network.label} exige une vidéo : créez-en une dans la médiathèque.`,
     );
+  }
+  if (post.mediaKind === "video" && media.length > 0 && !STUDIO_VIDEO_NETWORKS.includes(post.network)) {
+    problems.push(`La publication de vidéos sur ${network.label} arrive bientôt : choisissez une image pour ce réseau.`);
   }
   return problems;
 }

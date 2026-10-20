@@ -22,10 +22,12 @@ export async function deleteUserData(
 
   if (ownedIds.length > 0) {
     // Fichiers d'abord : si le stockage échoue, le compte n'est pas supprimé et l'opération peut être relancée.
-    const media = await c.mediaAssets.find({ workspaceId: { $in: ownedIds } }, { projection: { storageKey: 1 } }).toArray();
+    const media = await c.mediaAssets
+      .find({ workspaceId: { $in: ownedIds } }, { projection: { storageKey: 1, posterStorageKey: 1 } })
+      .toArray();
     if (media.length > 0 && storage.isConfigured()) {
       for (let i = 0; i < media.length; i += 100) {
-        await storage.remove(media.slice(i, i + 100).map((m) => m.storageKey));
+        await storage.remove(media.slice(i, i + 100).flatMap((m) => [m.storageKey, ...(m.posterStorageKey ? [m.posterStorageKey] : [])]));
       }
     }
     await c.mediaAssets.deleteMany({ workspaceId: { $in: ownedIds } });

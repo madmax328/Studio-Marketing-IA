@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { ObjectId, type Db } from "mongodb";
-import { MAX_UPLOAD_BYTES, templateRenderSchema, TEMPLATE_LABELS } from "@smia/shared";
+import { MAX_UPLOAD_BYTES, MAX_VIDEO_BYTES, templateRenderSchema, TEMPLATE_LABELS } from "@smia/shared";
 import { collections, type MediaAssetDoc } from "@/server/db/collections";
 import { inspectImage, toEmbeddableDataUrl, toJpeg } from "@/server/media/images";
+import { inspectVideo, videoProblems } from "@/server/media/video";
 import { workspaceStoragePrefix, type MediaStorage } from "@/server/media/storage";
 import { renderTemplatePng } from "@/server/media/templates";
 import { recordAudit } from "@/server/services/audit";
@@ -31,9 +32,13 @@ export function uploadKeyFor(access: WorkspaceAccess, fileName: string): string 
   return `${workspaceStoragePrefix(access.workspace._id.toHexString())}uploads/${randomUUID()}-${safe || "image"}`;
 }
 
-export async function listMedia(db: Db, access: WorkspaceAccess, page = 1) {
+export async function listMedia(db: Db, access: WorkspaceAccess, page = 1, kind?: MediaAssetDoc["kind"]) {
   assertPermission(access, "content:read");
-  const filter = { workspaceId: access.workspace._id };
+  // Les anciens médias n'ont pas toujours eu de champ « kind » : ce sont des images.
+  const filter = {
+    workspaceId: access.workspace._id,
+    ...(kind === "video" ? { kind: "video" as const } : kind === "image" ? { kind: { $ne: "video" as const } } : {}),
+  };
   const current = Math.max(1, Math.floor(page));
   const { mediaAssets } = collections(db);
   const [items, total] = await Promise.all([
@@ -113,6 +118,73 @@ export async function registerUpload(
   return media;
 }
 
+/**
+ * Enregistre une vidéo montée dans le navigateur et son image d'aperçu, envoyées directement au stockage.
+ * La vidéo n'est acceptée qu'après lecture de son conteneur : MP4, H.264, 60 s au plus. En cas de refus,
+ * les fichiers sont effacés du stockage.
+ */
+export async function registerVideo(
+  db: Db,
+  access: WorkspaceAccess,
+  userId: string,
+  storage: MediaStorage,
+  input: { storageKey: unknown; posterKey: unknown; name: unknown; brandId?: unknown },
+): Promise<MediaAssetDoc> {
+  assertPermission(access, "content:write");
+  assertStorage(storage);
+  const prefix = `${workspaceStoragePrefix(access.workspace._id.toHexString())}uploads/`;
+  const storageKey = typeof input.storageKey === "string" ? input.storageKey : "";
+  const posterKey = typeof input.posterKey === "string" ? input.posterKey : "";
+  for (const key of [storageKey, posterKey]) {
+    if (!key.startsWith(prefix) || key.includes("..")) throw new UserFacingError("Fichier invalide.", "forbidden");
+  }
+  if (!storageKey.endsWith(".mp4")) throw new UserFacingError("Fichier invalide.", "invalid_input");
+
+  const existing = await collections(db).mediaAssets.findOne({ storageKey, workspaceId: access.workspace._id });
+  if (existing) return existing;
+
+  const reject = async (message: string): Promise<never> => {
+    await storage.remove([storageKey, posterKey]);
+    throw new UserFacingError(message, "invalid_input");
+  };
+  const stat = await storage.stat(storageKey);
+  if (!stat) throw new UserFacingError("La vidéo envoyée est introuvable. Réessayez.", "not_found");
+  if (stat.size > MAX_VIDEO_BYTES) return reject("Vidéo trop volumineuse.");
+  const bytes = await storage.readBuffer(storageKey);
+  const info = bytes ? await inspectVideo(bytes) : null;
+  const problems = videoProblems(info);
+  if (!bytes || !info || problems.length > 0) return reject(problems.join(" ") || "Vidéo illisible.");
+
+  const poster = await storage.readBuffer(posterKey);
+  const posterInfo = poster ? await inspectImage(poster) : null;
+  if (!poster || !posterInfo || poster.length > MAX_UPLOAD_BYTES) return reject("L'image d'aperçu de la vidéo est invalide.");
+
+  const brandId = typeof input.brandId === "string" && input.brandId ? (await getBrand(db, access, input.brandId))._id : null;
+  const now = new Date();
+  const media: MediaAssetDoc = {
+    _id: new ObjectId(),
+    workspaceId: access.workspace._id,
+    brandId,
+    createdByUserId: userId,
+    kind: "video",
+    source: "template",
+    name: (typeof input.name === "string" ? input.name : "Vidéo").slice(0, 120),
+    mimeType: "video/mp4",
+    size: bytes.length,
+    width: info.width,
+    height: info.height,
+    durationSeconds: Math.round(info.durationSeconds * 10) / 10,
+    storageKey,
+    posterStorageKey: posterKey,
+    status: "ready",
+    createdAt: now,
+    updatedAt: now,
+  };
+  await collections(db).mediaAssets.insertOne(media);
+  await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "media.video_created", targetId: media._id.toHexString() });
+  return media;
+}
+
 /** Prépare les données d'un gabarit (marque, logo, photo de fond) et produit l'image JPEG. */
 export async function renderTemplate(db: Db, access: WorkspaceAccess, storage: MediaStorage, input: unknown) {
   assertPermission(access, "content:read");
@@ -128,6 +200,7 @@ export async function renderTemplate(db: Db, access: WorkspaceAccess, storage: M
     if (!data.backgroundMediaId) throw new UserFacingError("Choisissez une photo pour ce gabarit.", "invalid_input");
     assertStorage(storage);
     const background = await getMedia(db, access, data.backgroundMediaId);
+    if (background.kind === "video") throw new UserFacingError("Choisissez une image, pas une vidéo.", "invalid_input");
     const bytes = await storage.readBuffer(background.storageKey);
     if (!bytes) throw new UserFacingError("La photo choisie est introuvable.", "not_found");
     backgroundDataUrl = await toEmbeddableDataUrl(bytes, 2160, false);
@@ -208,7 +281,7 @@ export async function deleteMedia(
   await c.posts.updateMany({ workspaceId: access.workspace._id, mediaIds: media._id }, { $pull: { mediaIds: media._id } });
   await c.brands.updateMany({ workspaceId: access.workspace._id, logoMediaId: media._id }, { $set: { logoMediaId: null } });
   await c.mediaAssets.deleteOne({ _id: media._id, workspaceId: access.workspace._id });
-  if (storage.isConfigured()) await storage.remove([media.storageKey]);
+  if (storage.isConfigured()) await storage.remove([media.storageKey, ...(media.posterStorageKey ? [media.posterStorageKey] : [])]);
   await recordAudit(db, { workspaceId: access.workspace._id, actorUserId: userId, action: "media.deleted", targetId: mediaId });
 }
 
@@ -216,7 +289,9 @@ export async function deleteMedia(
 export async function setBrandLogo(db: Db, access: WorkspaceAccess, brandId: string, mediaId: string | null): Promise<void> {
   assertPermission(access, "brand:write");
   const brand = await getBrand(db, access, brandId);
-  const logoMediaId = mediaId ? (await getMedia(db, access, mediaId))._id : null;
+  const logo = mediaId ? await getMedia(db, access, mediaId) : null;
+  if (logo?.kind === "video") throw new UserFacingError("Le logo doit être une image.", "invalid_input");
+  const logoMediaId = logo?._id ?? null;
   await collections(db).brands.updateOne(
     { _id: brand._id, workspaceId: access.workspace._id },
     { $set: { logoMediaId, updatedAt: new Date() } },

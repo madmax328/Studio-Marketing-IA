@@ -17,7 +17,7 @@ export default async function CreateVisualPage() {
   const access = await requireWorkspace();
   const db = getDb();
   const brands = await listBrands(db, access);
-  const media = await listMedia(db, access, 1);
+  const media = await listMedia(db, access, 1, "image");
 
   return (
     <div className="space-y-6">

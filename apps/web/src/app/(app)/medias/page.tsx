@@ -23,7 +23,7 @@ export const metadata: Metadata = { title: "Médiathèque" };
 export const maxDuration = 120;
 
 export default async function MediaPage({ searchParams }: PageProps<"/medias">) {
-  const { page, cree } = await searchParams;
+  const { page, cree, video } = await searchParams;
   const access = await requireWorkspace();
   const configured = getMediaStorage().isConfigured();
   const result = await listMedia(getDb(), access, Number(page) || 1);
@@ -43,6 +43,9 @@ export default async function MediaPage({ searchParams }: PageProps<"/medias">) 
         {configured && canWrite ? (
           <div className="flex flex-wrap items-start gap-2">
             <MediaUploader access={getServerEnv().MEDIA_BLOB_ACCESS} />
+            <Link href="/medias/video" className={buttonStyles("secondary")}>
+              Créer une vidéo
+            </Link>
             <Link href="/medias/creer" className={buttonStyles("primary")}>
               Créer un visuel
             </Link>
@@ -52,6 +55,7 @@ export default async function MediaPage({ searchParams }: PageProps<"/medias">) 
 
       {!configured ? <Alert>Le stockage des médias n&apos;est pas encore activé sur cette installation.</Alert> : null}
       {cree ? <Alert tone="success">Le visuel a été ajouté à la médiathèque.</Alert> : null}
+      {video ? <Alert tone="success">La vidéo a été ajoutée à la médiathèque. Joignez-la à une publication pour la programmer.</Alert> : null}
 
       {showAiImages ? (
         brands.length === 0 ? null : hasAiConsent(access, imageProvider) ? (
@@ -81,19 +85,36 @@ export default async function MediaPage({ searchParams }: PageProps<"/medias">) 
           {result.items.map((media) => (
             <li key={media._id.toHexString()}>
               <Card className="space-y-2 p-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/medias/${media._id.toHexString()}/fichier`}
-                  alt={media.name}
-                  loading="lazy"
-                  className="aspect-square w-full rounded-lg bg-background object-contain"
-                />
+                {media.kind === "video" ? (
+                  <video
+                    src={`/api/medias/${media._id.toHexString()}/fichier`}
+                    poster={`/api/medias/${media._id.toHexString()}/fichier?apercu=1`}
+                    controls
+                    preload="none"
+                    className="aspect-square w-full rounded-lg bg-background object-contain"
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/api/medias/${media._id.toHexString()}/fichier`}
+                    alt={media.name}
+                    loading="lazy"
+                    className="aspect-square w-full rounded-lg bg-background object-contain"
+                  />
+                )}
                 <p className="truncate text-xs" title={media.name}>
                   {media.name}
                 </p>
                 <div className="flex items-center justify-between text-xs text-muted">
                   <span>
-                    {media.width}×{media.height} · {media.source === "template" ? "Visuel" : media.source === "ai" ? "Image IA" : "Envoyée"}
+                    {media.width}×{media.height} ·{" "}
+                    {media.kind === "video"
+                      ? `Vidéo ${media.durationSeconds ?? "?"} s`
+                      : media.source === "template"
+                        ? "Visuel"
+                        : media.source === "ai"
+                          ? "Image IA"
+                          : "Envoyée"}
                   </span>
                   {canWrite ? <DeleteMediaButton mediaId={media._id.toHexString()} /> : null}
                 </div>

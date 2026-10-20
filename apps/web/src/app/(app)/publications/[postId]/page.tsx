@@ -31,9 +31,14 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
   const provider = getTextProvider();
   const attached = (post.mediaIds ?? []).map((id) => id.toHexString());
   // Les images jointes restent proposées même si elles ne sont plus dans la première page de la médiathèque.
+  const allowVideo = network.publishableMedia.includes("video");
   const choices = [
-    ...attached.filter((id) => !images.items.some((item) => item._id.toHexString() === id)).map((id) => ({ id, name: "Image jointe" })),
-    ...images.items.map((item) => ({ id: item._id.toHexString(), name: item.name })),
+    ...attached
+      .filter((id) => !images.items.some((item) => item._id.toHexString() === id))
+      .map((id) => ({ id, name: "Média joint", video: post.mediaKind === "video" })),
+    ...images.items
+      .filter((item) => allowVideo || item.kind !== "video")
+      .map((item) => ({ id: item._id.toHexString(), name: item.name, video: item.kind === "video" })),
   ];
   const editable = EDITABLE_POST_STATUSES.includes(post.status) && roleHasPermission(access.role, "content:write");
   const accounts = (await listSocialAccounts(getDb(), access)).filter((account) => account.network === post.network);
@@ -104,8 +109,8 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
       {post.rationale ? <Alert>{post.rationale}</Alert> : null}
       {!network.allowsTextOnly && attached.length === 0 ? (
         <Alert tone="error">
-          {network.label} exige {network.publishableMedia.includes("image") ? "une image" : "une vidéo"} pour publier.
-          {network.publishableMedia.includes("image") ? " Choisissez-en une ci-dessous." : " Les vidéos arrivent dans une prochaine étape."}
+          {network.label} exige {network.publishableMedia.includes("image") ? "une image ou une vidéo" : "une vidéo"} pour publier. Choisissez-en
+          une ci-dessous, ou créez-la dans la médiathèque.
         </Alert>
       ) : null}
       <Card>
@@ -113,7 +118,7 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
       </Card>
       {network.publishableMedia.includes("image") ? (
         <Card className="space-y-3">
-          <h2 className="font-semibold">Images</h2>
+          <h2 className="font-semibold">{allowVideo ? "Images ou vidéo" : "Images"}</h2>
           <PostMediaPicker
             postId={postId}
             initial={attached}

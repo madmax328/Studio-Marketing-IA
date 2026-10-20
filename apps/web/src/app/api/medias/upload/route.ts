@@ -1,12 +1,12 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { ACCEPTED_IMAGE_TYPES, MAX_UPLOAD_BYTES, roleHasPermission } from "@smia/shared";
+import { ACCEPTED_IMAGE_TYPES, ACCEPTED_VIDEO_TYPES, MAX_UPLOAD_BYTES, MAX_VIDEO_BYTES, roleHasPermission } from "@smia/shared";
 import { getServerEnv } from "@/server/env";
 import { workspaceStoragePrefix } from "@/server/media/storage";
 import { getWorkspaceForApi } from "@/server/session";
 
 /**
  * Délivre au navigateur un jeton d'envoi limité à un seul fichier :
- * emplacement dans l'espace de l'utilisateur, types d'image acceptés, 15 Mo maximum.
+ * emplacement dans l'espace de l'utilisateur, types d'image acceptés (15 Mo), ou vidéo MP4 (80 Mo) si le nom finit par .mp4.
  * Le fichier n'apparaît dans la médiathèque qu'après vérification par registerUpload.
  */
 export async function POST(request: Request): Promise<Response> {
@@ -25,9 +25,10 @@ export async function POST(request: Request): Promise<Response> {
         if (!access || !roleHasPermission(access.role, "content:write")) throw new Error("Non autorisé.");
         const prefix = `${workspaceStoragePrefix(access.workspace._id.toHexString())}uploads/`;
         if (!pathname.startsWith(prefix) || pathname.includes("..")) throw new Error("Emplacement non autorisé.");
+        const video = pathname.endsWith(".mp4");
         return {
-          allowedContentTypes: [...ACCEPTED_IMAGE_TYPES],
-          maximumSizeInBytes: MAX_UPLOAD_BYTES,
+          allowedContentTypes: video ? [...ACCEPTED_VIDEO_TYPES] : [...ACCEPTED_IMAGE_TYPES],
+          maximumSizeInBytes: video ? MAX_VIDEO_BYTES : MAX_UPLOAD_BYTES,
           addRandomSuffix: false,
           allowOverwrite: false,
         };

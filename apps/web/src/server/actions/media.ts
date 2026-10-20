@@ -5,7 +5,7 @@ import { getImageProvider } from "@/server/ai";
 import { getDb } from "@/server/db/client";
 import { getMediaStorage } from "@/server/media/storage";
 import { UserFacingError } from "@/server/services/errors";
-import { createTemplateMedia, deleteMedia, registerUpload, setBrandLogo, uploadKeyFor } from "@/server/services/media";
+import { createTemplateMedia, deleteMedia, registerUpload, registerVideo, setBrandLogo, uploadKeyFor } from "@/server/services/media";
 import { generateAiImage } from "@/server/services/image-generation";
 import { setPostMedia } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
@@ -38,6 +38,22 @@ export async function createTemplateMediaAction(input: unknown): Promise<ActionR
   const access = await requireWorkspace();
   try {
     const media = await createTemplateMedia(getDb(), access, access.userId, getMediaStorage(), input);
+    revalidatePath("/medias");
+    return { ok: true, data: { mediaId: media._id.toHexString() } };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function registerVideoAction(input: {
+  storageKey: string;
+  posterKey: string;
+  name: string;
+  brandId?: string;
+}): Promise<ActionResult<{ mediaId: string }>> {
+  const access = await requireWorkspace();
+  try {
+    const media = await registerVideo(getDb(), access, access.userId, getMediaStorage(), input);
     revalidatePath("/medias");
     return { ok: true, data: { mediaId: media._id.toHexString() } };
   } catch (error) {

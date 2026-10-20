@@ -8,7 +8,7 @@ import { Alert } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { setPostMediaAction } from "@/server/actions/media";
 
-/** Choix des images d'une publication parmi la médiathèque, dans l'ordre de sélection. */
+/** Choix des médias d'une publication : des images (dans l'ordre de sélection) ou une seule vidéo. */
 export function PostMediaPicker({
   postId,
   initial,
@@ -18,7 +18,7 @@ export function PostMediaPicker({
 }: {
   postId: string;
   initial: string[];
-  images: { id: string; name: string }[];
+  images: { id: string; name: string; video?: boolean }[];
   editable: boolean;
   max: number;
 }) {
@@ -28,18 +28,24 @@ export function PostMediaPicker({
   const [pending, setPending] = useState(false);
   const changed = selected.join() !== initial.join();
 
+  const isVideo = (id: string) => images.some((image) => image.id === id && image.video);
+
   function toggle(id: string) {
     setMessage(null);
-    setSelected((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : current.length < max ? [...current, id] : current,
-    );
+    setSelected((current) => {
+      if (current.includes(id)) return current.filter((item) => item !== id);
+      // Une vidéo se publie seule ; choisir une image remplace une vidéo déjà choisie.
+      if (isVideo(id)) return [id];
+      const images = current.filter((item) => !isVideo(item));
+      return images.length < max ? [...images, id] : images;
+    });
   }
 
   async function save() {
     setPending(true);
     const result = await setPostMediaAction(postId, selected);
     setPending(false);
-    setMessage(result.ok ? { tone: "success", text: "Images enregistrées." } : { tone: "error", text: result.error });
+    setMessage(result.ok ? { tone: "success", text: "Médias enregistrés." } : { tone: "error", text: result.error });
     if (result.ok) router.refresh();
   }
 
@@ -73,7 +79,15 @@ export function PostMediaPicker({
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/api/medias/${image.id}/fichier`} alt={image.name} loading="lazy" className="aspect-square w-full bg-background object-cover" />
+                <img
+                  src={`/api/medias/${image.id}/fichier${image.video ? "?apercu=1" : ""}`}
+                  alt={image.name}
+                  loading="lazy"
+                  className="aspect-square w-full bg-background object-cover"
+                />
+                {image.video ? (
+                  <span className="absolute bottom-1 left-1 rounded-full bg-black/70 px-2 text-[10px] text-white">▶ Vidéo</span>
+                ) : null}
                 {position >= 0 ? (
                   <span className="absolute top-1 right-1 rounded-full bg-primary px-2 text-xs text-primary-foreground">{position + 1}</span>
                 ) : null}
