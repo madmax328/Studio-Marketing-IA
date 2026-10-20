@@ -62,6 +62,20 @@ export function SignUpForm() {
         minLength={10}
         hint="Au moins 10 caractères."
       />
+      <label className="flex items-start gap-2.5 text-sm text-muted">
+        <input type="checkbox" name="terms" required className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]" />
+        <span>
+          J&apos;accepte les{" "}
+          <Link href="/conditions" target="_blank" className="text-primary hover:underline">
+            conditions générales
+          </Link>{" "}
+          et la{" "}
+          <Link href="/confidentialite" target="_blank" className="text-primary hover:underline">
+            politique de confidentialité
+          </Link>
+          .
+        </span>
+      </label>
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Création…" : "Créer mon compte"}
       </Button>

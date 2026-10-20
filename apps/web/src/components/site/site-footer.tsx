@@ -19,6 +19,15 @@ const COLUMNS = [
     ],
   },
   {
+    title: "Légal",
+    links: [
+      { href: "/mentions-legales", label: "Mentions légales" },
+      { href: "/conditions", label: "Conditions générales" },
+      { href: "/confidentialite", label: "Confidentialité" },
+      { href: "/suppression-des-donnees", label: "Suppression des données" },
+    ],
+  },
+  {
     title: "Compte",
     links: [
       { href: "/inscription", label: "Créer un compte" },
@@ -30,7 +39,7 @@ const COLUMNS = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-line">
-      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 md:grid-cols-[1.6fr_repeat(3,1fr)]">
+      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 md:grid-cols-[1.4fr_repeat(4,1fr)]">
         <div className="space-y-4">
           <SiteLogo />
           <p className="max-w-xs text-sm leading-relaxed text-fg-muted">
@@ -55,7 +64,7 @@ export function SiteFooter() {
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-fg-dim sm:flex-row sm:justify-between sm:px-6">
           <span>© {new Date().getFullYear()} Studio Marketing IA</span>
-          <span>Mentions légales, confidentialité et conditions d&apos;utilisation : en préparation</span>
+          <span>Aucun cookie publicitaire, aucune donnée revendue.</span>
         </div>
       </div>
     </footer>

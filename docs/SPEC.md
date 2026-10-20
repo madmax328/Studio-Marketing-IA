@@ -46,6 +46,10 @@ pages d'accès restylées. Thème « pilote automatique » : signalétique d'aé
 
 ### À ne pas oublier
 
+- **Compléter les informations légales** dans `apps/web/src/lib/legal.ts` dès l'immatriculation (raison sociale,
+  forme, SIRET, RCS, TVA, adresse, directeur de la publication, e-mail de contact) et **désigner un médiateur de la
+  consommation** (obligatoire pour vendre aux particuliers). Faire relire les textes par un professionnel du droit.
+
 - **Brancher un fournisseur d'images IA** (OpenAI gpt-image recommandé ; Google ou fal.ai possibles) derrière une
   interface `ImageGenerationProvider`. L'IA produit uniquement l'image de fond ; texte, logo et couleurs restent
   incrustés par les gabarits. Décision reportée par le porteur du projet le 14/10/2026.
