@@ -1,5 +1,7 @@
 # Check-list avant l'ouverture commerciale
 
+> Liste complète et à jour (V1 à V3) : `docs/A_FAIRE.md`.
+
 L'état de l'installation se vérifie à tout moment (PowerShell) :
 
 ```powershell
