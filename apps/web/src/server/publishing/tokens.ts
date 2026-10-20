@@ -1,12 +1,15 @@
 import type { Db } from "mongodb";
-import { collections, type SocialAccountDoc } from "@/server/db/collections";
+import { collections, type OAuthProviderId, type SocialAccountDoc } from "@/server/db/collections";
 import { decryptSecret, encryptSecret } from "@/server/security/crypto";
+import { OAuthExchangeError, type RefreshedToken } from "@/server/social/oauth";
 import type { Notifier } from "./dispatcher";
 
 /** Alerte envoyée quand une autorisation expire dans moins de 7 jours. */
 export const EXPIRY_WARNING_DAYS = 7;
 /** Les jetons Threads sont renouvelés automatiquement 10 jours avant leur expiration. */
 export const THREADS_REFRESH_DAYS = 10;
+/** Jetons courts (TikTok, Google, Pinterest, X) : renouvelés dans le quart d'heure qui précède leur expiration. */
+export const SHORT_TOKEN_REFRESH_MINUTES = 15;
 
 export interface ExpiryNotifier {
   accountExpiring(account: SocialAccountDoc): Promise<void>;
@@ -18,6 +21,8 @@ export interface TokenMaintenanceDeps {
   notifier: Pick<Notifier, "accountExpired"> & ExpiryNotifier;
   /** Renouvellement d'un jeton Threads ; lève une erreur si Threads refuse. */
   refreshThreads?: (token: string, now: Date) => Promise<{ accessToken: string; tokenExpiresAt: Date | null }>;
+  /** Renouvellement par jeton de renouvellement, par fournisseur. */
+  refreshers?: Partial<Record<OAuthProviderId, (refreshToken: string, now: Date) => Promise<RefreshedToken>>>;
   now?: Date;
 }
 
@@ -68,10 +73,63 @@ export async function maintainSocialTokens(deps: TokenMaintenanceDeps): Promise<
     }
   }
 
+  const refreshable = Object.keys(deps.refreshers ?? {}) as OAuthProviderId[];
+  if (refreshable.length > 0 && deps.encryptionKey) {
+    const key = deps.encryptionKey;
+    const due = await c.socialAccounts
+      .find({
+        provider: { $in: refreshable },
+        status: "connected",
+        refreshToken: { $ne: null },
+        tokenExpiresAt: { $ne: null, $lte: new Date(now.getTime() + SHORT_TOKEN_REFRESH_MINUTES * 60_000) },
+      })
+      .limit(30)
+      .toArray();
+    for (const account of due) {
+      const refresh = deps.refreshers?.[account.provider as OAuthProviderId];
+      if (!refresh || !account.refreshToken) continue;
+      try {
+        const refreshed = await refresh(decryptSecret(account.refreshToken, key), now);
+        await c.socialAccounts.updateOne(
+          { _id: account._id, status: "connected" },
+          {
+            $set: {
+              accessToken: encryptSecret(refreshed.accessToken, key),
+              // X remplace le jeton de renouvellement à chaque usage : l'ancien ne fonctionne plus.
+              ...(refreshed.refreshToken ? { refreshToken: encryptSecret(refreshed.refreshToken, key) } : {}),
+              tokenExpiresAt: refreshed.tokenExpiresAt,
+              lastCheckedAt: now,
+              lastError: null,
+              updatedAt: now,
+            },
+          },
+        );
+        summary.refreshed += 1;
+      } catch (error) {
+        if (error instanceof OAuthExchangeError && !error.temporary) {
+          // Autorisation retirée par l'utilisateur ou jeton de renouvellement expiré : il faut reconnecter.
+          const result = await c.socialAccounts.updateOne(
+            { _id: account._id, status: "connected" },
+            { $set: { status: "expired", lastError: "Autorisation expirée ou retirée.", updatedAt: now } },
+          );
+          if (result.modifiedCount === 1) {
+            await deps.notifier.accountExpired(account);
+            summary.expired += 1;
+          }
+        } else {
+          console.error("Renouvellement du jeton impossible", account.provider, error instanceof Error ? error.message : "erreur inconnue");
+          await c.socialAccounts.updateOne({ _id: account._id }, { $set: { lastCheckedAt: now, updatedAt: now } });
+        }
+      }
+    }
+  }
+
+  // Les comptes à jeton de renouvellement ne sont pas concernés : leur jeton d'accès court est renouvelé ci-dessus.
   const expiring = await c.socialAccounts
     .find({
       provider: { $ne: "simulation" },
       status: "connected",
+      refreshToken: null,
       tokenExpiresAt: { $gt: now, $lte: new Date(now.getTime() + EXPIRY_WARNING_DAYS * DAY) },
       $or: [{ expiryWarnedAt: { $exists: false } }, { expiryWarnedAt: null }],
     })
@@ -89,7 +147,7 @@ export async function maintainSocialTokens(deps: TokenMaintenanceDeps): Promise<
   }
 
   const expired = await c.socialAccounts
-    .find({ provider: { $ne: "simulation" }, status: "connected", tokenExpiresAt: { $lte: now } })
+    .find({ provider: { $ne: "simulation" }, status: "connected", refreshToken: null, tokenExpiresAt: { $lte: now } })
     .limit(50)
     .toArray();
   for (const account of expired) {

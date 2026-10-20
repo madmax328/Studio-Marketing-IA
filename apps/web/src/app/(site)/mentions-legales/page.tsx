@@ -38,7 +38,7 @@ export default function LegalNoticePage() {
       <h2>Marques des réseaux sociaux</h2>
       <p>
         Facebook, Instagram et Threads sont des marques de Meta Platforms, Inc. LinkedIn est une marque de LinkedIn
-        Corporation. TikTok, YouTube, Pinterest et X appartiennent à leurs propriétaires respectifs. {LEGAL.serviceName}{" "}
+        Corporation. YouTube et Google Business Profile sont des marques de Google LLC. TikTok, Pinterest et X appartiennent à leurs propriétaires respectifs. {LEGAL.serviceName}{" "}
         n&apos;est ni affilié à ces sociétés ni approuvé par elles.
       </p>
 

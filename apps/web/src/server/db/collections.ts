@@ -180,7 +180,7 @@ export interface SocialAccountDoc {
 }
 
 /** Fournisseurs de connexion OAuth (Threads a ses propres identifiants, distincts de Facebook Login). */
-export type OAuthProviderId = "meta" | "threads" | "linkedin";
+export type OAuthProviderId = "meta" | "threads" | "linkedin" | "tiktok" | "youtube" | "pinterest" | "x" | "google_business";
 
 /** Compte proposé après l'autorisation, en attente du choix de l'utilisateur. Jeton chiffré. */
 export interface PendingSocialAccount {
@@ -191,6 +191,8 @@ export interface PendingSocialAccount {
   displayName: string;
   scopes: string[];
   accessToken: EncryptedValue;
+  /** Jeton de renouvellement (réseaux à jetons courts : TikTok, Google, Pinterest, X). */
+  refreshToken?: EncryptedValue | null;
   tokenExpiresAt: Date | null;
 }
 

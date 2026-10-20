@@ -10,6 +10,15 @@ export interface OAuthCandidate {
   displayName: string;
   scopes: string[];
   accessToken: string;
+  /** Jeton de renouvellement, pour les réseaux dont le jeton d'accès dure peu (en clair : à chiffrer aussitôt). */
+  refreshToken?: string | null;
+  tokenExpiresAt: Date | null;
+}
+
+/** Jeton renouvelé. Un nouveau jeton de renouvellement remplace l'ancien quand le réseau en fournit un (X). */
+export interface RefreshedToken {
+  accessToken: string;
+  refreshToken?: string | null;
   tokenExpiresAt: Date | null;
 }
 
@@ -17,13 +26,21 @@ export interface OAuthProvider {
   id: OAuthProviderId;
   label: string;
   networks: readonly SocialNetworkId[];
-  authorizeUrl(params: { state: string; redirectUri: string }): string;
-  exchange(params: { code: string; redirectUri: string; now: Date }): Promise<OAuthCandidate[]>;
+  /** Le réseau exige PKCE (code_challenge S256). */
+  pkce?: boolean;
+  authorizeUrl(params: { state: string; redirectUri: string; codeChallenge?: string | null }): string;
+  exchange(params: { code: string; redirectUri: string; now: Date; codeVerifier?: string | null }): Promise<OAuthCandidate[]>;
+  /** Renouvelle le jeton d'accès à partir du jeton de renouvellement. */
+  refresh?(refreshToken: string, now: Date): Promise<RefreshedToken>;
 }
 
 /** Échec de l'échange d'autorisation ; le message peut être affiché. */
 export class OAuthExchangeError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    /** Panne passagère (réseau injoignable, surcharge) plutôt que refus : on pourra réessayer. */
+    readonly temporary = false,
+  ) {
     super(message);
     this.name = "OAuthExchangeError";
   }
@@ -35,16 +52,20 @@ export const NETWORK_OAUTH_PROVIDER: Record<SocialNetworkId, OAuthProviderId | n
   instagram: "meta",
   threads: "threads",
   linkedin: "linkedin",
-  tiktok: null,
-  youtube: null,
-  x: null,
-  pinterest: null,
+  tiktok: "tiktok",
+  youtube: "youtube",
+  x: "x",
+  pinterest: "pinterest",
+  google_business: "google_business",
 };
+
+/** Fournisseurs à jeton d'accès court, renouvelé automatiquement par le planificateur. */
+export const REFRESHABLE_PROVIDERS: readonly OAuthProviderId[] = ["tiktok", "youtube", "pinterest", "x", "google_business"];
 
 /** Durée laissée pour autoriser l'application sur la page du réseau. */
 export const OAUTH_STATE_TTL_SECONDS = 10 * 60;
 
-export const OAUTH_PROVIDER_IDS: readonly OAuthProviderId[] = ["meta", "threads", "linkedin"];
+export const OAUTH_PROVIDER_IDS: readonly OAuthProviderId[] = ["meta", "threads", "linkedin", "tiktok", "youtube", "pinterest", "x", "google_business"];
 
 export function isOAuthProviderId(value: string): value is OAuthProviderId {
   return (OAUTH_PROVIDER_IDS as readonly string[]).includes(value);
@@ -64,27 +85,29 @@ export const META_SCOPES = [
 export const THREADS_SCOPES = ["threads_basic", "threads_content_publish", "threads_manage_insights"] as const;
 export const LINKEDIN_SCOPES = ["openid", "profile", "w_member_social"] as const;
 
-async function call(label: string, fetchImpl: FetchLike, url: string, init: RequestInit = {}): Promise<ApiResponse> {
+export async function call(label: string, fetchImpl: FetchLike, url: string, init: RequestInit = {}): Promise<ApiResponse> {
   let response: ApiResponse;
   try {
     response = await callApi(fetchImpl, url, init);
   } catch (error) {
-    if (error instanceof NetworkFailure) throw new OAuthExchangeError(`${label} n'a pas répondu. Réessayez dans un instant.`);
+    if (error instanceof NetworkFailure) throw new OAuthExchangeError(`${label} n'a pas répondu. Réessayez dans un instant.`, true);
     throw error;
   }
-  if (response.status >= 400 || (isRecord(response.body) && isRecord(response.body.error))) {
+  // TikTok renvoie toujours un objet `error`, avec le code « ok » en cas de succès.
+  const error = isRecord(response.body) && isRecord(response.body.error) ? response.body.error : null;
+  if (response.status >= 400 || (error && stringField(error, "code") !== "ok")) {
     const detail = apiErrorMessage(response.body);
-    throw new OAuthExchangeError(`${label} a refusé la connexion${detail ? ` (${detail})` : ""}.`);
+    throw new OAuthExchangeError(`${label} a refusé la connexion${detail ? ` (${detail})` : ""}.`, response.status === 429 || response.status >= 500);
   }
   return response;
 }
 
-const expiresIn = (body: unknown, now: Date): Date | null => {
+export const expiresIn = (body: unknown, now: Date): Date | null => {
   const seconds = numberField(body, "expires_in");
   return seconds && seconds > 0 ? new Date(now.getTime() + seconds * 1000) : null;
 };
 
-function requireToken(label: string, body: unknown): string {
+export function requireToken(label: string, body: unknown): string {
   const token = stringField(body, "access_token");
   if (!token) throw new OAuthExchangeError(`${label} n'a pas renvoyé de jeton d'accès.`);
   return token;

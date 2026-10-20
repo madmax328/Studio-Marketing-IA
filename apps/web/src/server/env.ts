@@ -51,6 +51,15 @@ const serverEnvSchema = z.object({
   /** Application LinkedIn (produits « Sign In with LinkedIn using OpenID Connect » et « Share on LinkedIn »). */
   LINKEDIN_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().optional()),
   LINKEDIN_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  TIKTOK_CLIENT_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  TIKTOK_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  /** Un seul client OAuth Google pour YouTube et Google Business Profile. */
+  GOOGLE_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+  GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  PINTEREST_APP_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+  PINTEREST_APP_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  X_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+  X_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
   LINKEDIN_API_VERSION: z.preprocess(emptyToUndefined, z.string().regex(/^\d{6}$/).default("202609")),
   /** Adresses e-mail autorisées à valider les avis (séparées par des virgules). */
   ADMIN_EMAILS: z.preprocess(emptyToUndefined, z.string().default("")),

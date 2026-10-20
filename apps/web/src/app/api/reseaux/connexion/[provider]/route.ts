@@ -24,14 +24,15 @@ export async function GET(_request: Request, context: RouteContext<"/api/reseaux
   if (!oauth) return back("indisponible");
 
   let state: string;
+  let codeChallenge: string | null;
   try {
-    state = await startOAuthConnection(getDb(), access, access.userId, provider);
+    ({ state, codeChallenge } = await startOAuthConnection(getDb(), access, access.userId, provider, new Date(), { pkce: oauth.pkce }));
   } catch (error) {
     if (error instanceof UserFacingError) return back(error.code === "limit_reached" ? "limite" : "interdit");
     throw error;
   }
 
-  const response = NextResponse.redirect(oauth.authorizeUrl({ state, redirectUri: oauthRedirectUri(env.APP_URL, provider) }), 303);
+  const response = NextResponse.redirect(oauth.authorizeUrl({ state, codeChallenge, redirectUri: oauthRedirectUri(env.APP_URL, provider) }), 303);
   response.cookies.set(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
     secure: env.NODE_ENV === "production",

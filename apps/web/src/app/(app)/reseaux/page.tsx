@@ -8,7 +8,7 @@ import { getServerEnv } from "@/server/env";
 import { listSocialAccounts } from "@/server/services/social-accounts";
 import { requireWorkspace } from "@/server/session";
 import { getOAuthProvider } from "@/server/social";
-import { NETWORK_OAUTH_PROVIDER } from "@/server/social/oauth";
+import { NETWORK_OAUTH_PROVIDER, REFRESHABLE_PROVIDERS } from "@/server/social/oauth";
 
 export const metadata: Metadata = { title: "Réseaux sociaux" };
 
@@ -32,6 +32,12 @@ const CONNECTION_MESSAGES: Record<string, { tone: "success" | "error" | "info"; 
   indisponible: { tone: "error", text: "La connexion à ce réseau n'est pas encore activée sur cette installation." },
   limite: { tone: "error", text: "Votre offre ne permet pas de connecter un compte de plus. Déconnectez un compte ou passez à une offre supérieure." },
   interdit: { tone: "error", text: "Votre rôle ne permet pas de connecter des comptes." },
+  "aucune-chaine": { tone: "error", text: "Aucune chaîne YouTube n'est liée à ce compte Google. Créez d'abord votre chaîne sur YouTube, puis recommencez." },
+  "aucun-etablissement": {
+    tone: "error",
+    text: "Aucun établissement n'est géré par ce compte Google. Vérifiez votre fiche Google Business Profile, puis recommencez.",
+  },
+  "aucun-tableau": { tone: "error", text: "Aucun tableau Pinterest trouvé. Créez d'abord un tableau sur Pinterest pour y publier, puis recommencez." },
   "aucune-page": {
     tone: "error",
     text: "Aucune Page Facebook n'a été partagée. Recommencez en cochant au moins une Page (et le compte Instagram qui lui est lié).",
@@ -114,7 +120,11 @@ export default async function NetworksPage({ searchParams }: PageProps<"/reseaux
                         </div>
                         <p className={account.status === "connected" ? "text-xs text-success" : "text-xs text-danger"}>
                           {ACCOUNT_STATUS[account.status] ?? account.status}
-                          {account.tokenExpiresAt ? ` · expire le ${dateTime(account.tokenExpiresAt)}` : ""}
+                          {REFRESHABLE_PROVIDERS.includes(account.provider as (typeof REFRESHABLE_PROVIDERS)[number])
+                            ? " · autorisation renouvelée automatiquement"
+                            : account.tokenExpiresAt
+                              ? ` · expire le ${dateTime(account.tokenExpiresAt)}`
+                              : ""}
                           {account.lastCheckedAt ? ` · vérifié le ${dateTime(account.lastCheckedAt)}` : ""}
                         </p>
                         {account.scopes.length > 0 ? (
@@ -144,7 +154,7 @@ export default async function NetworksPage({ searchParams }: PageProps<"/reseaux
                   {connectUrl && canConnect ? (
                     // Lien classique (pas de navigation côté client) : la route redirige vers le site du réseau.
                     <a href={connectUrl} className={buttonStyles("secondary")}>
-                      {provider === "meta" ? "Connecter Facebook / Instagram" : `Connecter ${network.label}`}
+                      {provider === "meta" ? "Connecter Facebook / Instagram" : provider === "pinterest" ? "Connecter Pinterest (choix des tableaux)" : `Connecter ${network.label}`}
                     </a>
                   ) : (
                     <button

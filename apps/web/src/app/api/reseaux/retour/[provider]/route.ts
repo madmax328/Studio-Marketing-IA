@@ -44,13 +44,19 @@ export async function GET(request: Request, context: RouteContext<"/api/reseaux/
       userId: session.user.id,
       provider,
       encryptionKey,
-      exchange: () => oauth.exchange({ code, redirectUri: oauthRedirectUri(env.APP_URL, provider), now: new Date() }),
+      exchange: (codeVerifier) => oauth.exchange({ code, codeVerifier, redirectUri: oauthRedirectUri(env.APP_URL, provider), now: new Date() }),
     });
   } catch (error) {
     if (error instanceof OAuthExchangeError) {
       // Message du réseau, sans jeton ni secret.
       console.error("Connexion refusée par le réseau", provider, error.message);
-      return back(error.message.startsWith("Aucune Page") ? "aucune-page" : "echec");
+      const codes: [string, string][] = [
+        ["Aucune Page", "aucune-page"],
+        ["Aucune chaîne", "aucune-chaine"],
+        ["Aucun établissement", "aucun-etablissement"],
+        ["Aucun tableau", "aucun-tableau"],
+      ];
+      return back(codes.find(([prefix]) => error.message.startsWith(prefix))?.[1] ?? "echec");
     }
     if (error instanceof UserFacingError) return back(error.code === "forbidden" ? "interdit" : "expiree");
     throw error;

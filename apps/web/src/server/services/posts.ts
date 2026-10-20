@@ -222,8 +222,18 @@ export function schedulingProblems(post: Pick<PostDoc, "network" | "text" | "med
         : `${network.label} exige une vidéo : créez-en une dans la médiathèque.`,
     );
   }
-  if (post.mediaKind === "video" && media.length > 0 && !STUDIO_VIDEO_NETWORKS.includes(post.network)) {
-    problems.push(`La publication de vidéos sur ${network.label} arrive bientôt : choisissez une image pour ce réseau.`);
+  if (post.mediaKind === "video" && media.length > 0) {
+    if (!network.publishableMedia.includes("video")) {
+      problems.push(`${network.label} n'accepte pas les vidéos : choisissez une image pour ce réseau.`);
+    } else if (!STUDIO_VIDEO_NETWORKS.includes(post.network)) {
+      problems.push(`La publication de vidéos sur ${network.label} arrive bientôt : choisissez une image pour ce réseau.`);
+    }
+  }
+  if (post.mediaKind !== "video" && media.length > 0) {
+    if (network.maxImages === 0) problems.push(`${network.label} publie uniquement des vidéos : créez-en une dans la médiathèque.`);
+    else if (media.length > network.maxImages) {
+      problems.push(`${network.label} accepte au plus ${network.maxImages} image${network.maxImages > 1 ? "s" : ""} par publication.`);
+    }
   }
   return problems;
 }

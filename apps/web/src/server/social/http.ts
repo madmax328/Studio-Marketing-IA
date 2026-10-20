@@ -72,7 +72,8 @@ export function numberField(value: unknown, key: string): number | null {
 /** Message court et sans données sensibles, extrait d'une réponse d'erreur (pour l'affichage). */
 export function apiErrorMessage(body: unknown): string | null {
   const nested = isRecord(body) && isRecord(body.error) ? body.error : body;
-  const message = stringField(nested, "error_user_msg") ?? stringField(nested, "message") ?? stringField(body, "error_description");
+  const message =
+    stringField(nested, "error_user_msg") ?? stringField(nested, "message") ?? stringField(body, "error_description") ?? stringField(body, "detail");
   return message ? message.slice(0, 300) : null;
 }
 

@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { ObjectId, type Db } from "mongodb";
 import { SOCIAL_NETWORKS, type SocialNetworkId } from "@smia/shared";
 import { collections, type OAuthProviderId, type OAuthStateDoc, type PendingSocialAccount } from "@/server/db/collections";
@@ -26,8 +26,23 @@ function limitMessage(limit: number): string {
   return `Votre offre permet ${limit} compte${limit > 1 ? "s" : ""} connecté${limit > 1 ? "s" : ""} (hors comptes de test). Déconnectez un compte ou passez à une offre supérieure.`;
 }
 
-/** Ouvre une demande de connexion et retourne l'état OAuth à transmettre au réseau. */
-export async function startOAuthConnection(db: Db, access: WorkspaceAccess, userId: string, provider: OAuthProviderId, now = new Date()): Promise<string> {
+/** Défi PKCE (S256) dérivé du vérificateur gardé côté serveur. */
+export function pkceChallenge(verifier: string): string {
+  return createHash("sha256").update(verifier).digest("base64url");
+}
+
+/**
+ * Ouvre une demande de connexion et retourne l'état OAuth à transmettre au réseau,
+ * avec le défi PKCE si le réseau l'exige (le vérificateur ne quitte jamais le serveur).
+ */
+export async function startOAuthConnection(
+  db: Db,
+  access: WorkspaceAccess,
+  userId: string,
+  provider: OAuthProviderId,
+  now = new Date(),
+  options: { pkce?: boolean } = {},
+): Promise<{ state: string; codeChallenge: string | null }> {
   assertPermission(access, "social:connect");
   const { limits } = await getEffectivePlan(db, access.workspace);
   const existing = await realAccounts(db, access.workspace._id);
@@ -40,12 +55,12 @@ export async function startOAuthConnection(db: Db, access: WorkspaceAccess, user
     workspaceId: access.workspace._id,
     userId,
     provider,
-    codeVerifier: null,
+    codeVerifier: options.pkce ? randomBytes(48).toString("base64url") : null,
     expiresAt: new Date(now.getTime() + OAUTH_STATE_TTL_SECONDS * 1000),
     createdAt: now,
   };
   await collections(db).oauthStates.insertOne(state);
-  return state._id;
+  return { state: state._id, codeChallenge: state.codeVerifier ? pkceChallenge(state.codeVerifier) : null };
 }
 
 /**
@@ -59,7 +74,7 @@ export async function receiveOAuthCallback(
     userId: string;
     provider: OAuthProviderId;
     encryptionKey: string;
-    exchange: () => Promise<OAuthCandidate[]>;
+    exchange: (codeVerifier: string | null) => Promise<OAuthCandidate[]>;
     now?: Date;
   },
 ): Promise<void> {
@@ -79,7 +94,7 @@ export async function receiveOAuthCallback(
 
   const seen = new Set<string>();
   const candidates: PendingSocialAccount[] = [];
-  for (const candidate of await params.exchange()) {
+  for (const candidate of await params.exchange(state.codeVerifier)) {
     const key = accountKey(candidate.network, candidate.externalAccountId);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -90,6 +105,7 @@ export async function receiveOAuthCallback(
       displayName: candidate.displayName.slice(0, 120),
       scopes: candidate.scopes.slice(0, 30),
       accessToken: encryptSecret(candidate.accessToken, params.encryptionKey),
+      refreshToken: candidate.refreshToken ? encryptSecret(candidate.refreshToken, params.encryptionKey) : null,
       tokenExpiresAt: candidate.tokenExpiresAt,
     });
   }
@@ -181,7 +197,7 @@ export async function confirmOAuthConnection(
           status: "connected",
           scopes: candidate.scopes,
           accessToken: candidate.accessToken,
-          refreshToken: null,
+          refreshToken: candidate.refreshToken ?? null,
           tokenExpiresAt: candidate.tokenExpiresAt,
           expiryWarnedAt: null,
           lastCheckedAt: now,

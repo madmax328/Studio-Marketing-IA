@@ -1,4 +1,4 @@
-# Guide : brancher Facebook, Instagram, Threads et LinkedIn
+# Guide : brancher vos réseaux sociaux
 
 Ce guide se suit dans l'ordre. Les écrans des réseaux changent souvent : si un libellé diffère, cherchez l'équivalent
 le plus proche. Remplacez partout `https://VOTRE-DOMAINE` par l'adresse de votre site (par exemple
@@ -25,6 +25,11 @@ adresses dans chaque application).
 | Désinstallation Threads | `https://VOTRE-DOMAINE/api/reseaux/threads/desinstallation` |
 | Suppression des données Threads | `https://VOTRE-DOMAINE/api/reseaux/threads/suppression` |
 | Retour LinkedIn | `https://VOTRE-DOMAINE/api/reseaux/retour/linkedin` |
+| Retour TikTok | `https://VOTRE-DOMAINE/api/reseaux/retour/tiktok` |
+| Retour YouTube | `https://VOTRE-DOMAINE/api/reseaux/retour/youtube` |
+| Retour Google Business Profile | `https://VOTRE-DOMAINE/api/reseaux/retour/google_business` |
+| Retour Pinterest | `https://VOTRE-DOMAINE/api/reseaux/retour/pinterest` |
+| Retour X | `https://VOTRE-DOMAINE/api/reseaux/retour/x` |
 
 ## 1. Meta : Facebook et Instagram
 
@@ -95,11 +100,75 @@ LinkedIn ne transmet pas les statistiques des profils personnels aux application
 apparaissent « non mesurées ». La publication sur les **pages entreprise** demande un accès supplémentaire
 (Community Management API), à solliciter plus tard.
 
-## 4. En cas de problème
+## 4. TikTok
+
+**Ce qu'il vous faut** : un compte TikTok (de préférence professionnel) et un compte développeur.
+
+1. **developers.tiktok.com** → Manage apps → **Connect an app** : nom, icône, catégorie, description, adresses de
+   conditions et de confidentialité.
+2. Ajoutez les produits **Login Kit** et **Content Posting API** ; dans Content Posting API, activez **Direct Post**.
+3. Login Kit → « Redirect URI » = « Retour TikTok ».
+4. Scopes demandés : `user.info.basic`, `user.info.profile`, `video.publish`, `video.upload`, `video.list`.
+5. **URL properties → Verify** : vérifiez votre domaine (fichier ou enregistrement DNS fourni par TikTok). C'est
+   obligatoire pour publier des **photos** (TikTok vient les chercher sur votre site).
+6. Copiez le **Client key** et le **Client secret** dans Vercel : `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`. Redéployez.
+7. Essai avec votre propre compte : tant que l'application n'a pas passé **l'audit TikTok**, les vidéos publiées sont
+   **privées** (visibles par vous seul). C'est normal.
+8. Demande d'audit (« Submit for review ») : TikTok demande une vidéo de démonstration du parcours. Prévenez-moi avant :
+   leurs règles d'interface (choix de la visibilité par l'utilisateur, aperçu, mention de la musique) peuvent demander
+   des ajustements de l'écran de programmation.
+
+## 5. Google : YouTube et Google Business Profile
+
+Un seul « client OAuth » Google sert aux deux.
+
+1. **console.cloud.google.com** → créez un projet (« Studio Marketing IA »).
+2. **API et services → Bibliothèque** : activez **YouTube Data API v3**. Pour Google Business Profile, activez aussi
+   **My Business Account Management API**, **My Business Business Information API** et **Google My Business API**
+   (ces trois-là n'apparaissent qu'après l'accord de Google, étape 7).
+3. **Écran de consentement OAuth** : type « Externe », nom, logo, adresses de confidentialité et de conditions, domaine
+   autorisé = votre domaine. Ajoutez les scopes `youtube.upload`, `youtube.readonly` et `business.manage`.
+   En mode « Test », ajoutez votre adresse Gmail comme utilisateur de test.
+4. **Identifiants → Créer → ID client OAuth** → « Application Web » ; « URI de redirection autorisés » = « Retour
+   YouTube » **et** « Retour Google Business Profile ».
+5. Copiez l'ID client et le code secret dans Vercel : `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Redéployez.
+6. **YouTube** : essai avec votre chaîne. Tant que le projet n'a pas passé **l'audit YouTube** (formulaire « YouTube
+   API Services – Audit and Quota Extension »), les vidéos envoyées sont **privées**, et le quota gratuit permet
+   environ 6 envois de vidéo par jour pour toute l'application.
+7. **Google Business Profile** : l'accès aux API est sur demande (formulaire « GBP API access request », réservé aux
+   fiches vérifiées depuis plus de 60 jours). Une fois l'accès accordé : essai avec votre fiche.
+8. Publication de l'application (« Publier l'application » sur l'écran de consentement) : Google vérifie les scopes
+   sensibles (`youtube.upload`, `business.manage`) ; comptez quelques semaines.
+
+## 6. Pinterest
+
+1. **developers.pinterest.com** → **My apps → Connect app** : nom, description, adresse du site, confidentialité.
+2. « Redirect URIs » = « Retour Pinterest ».
+3. Copiez l'**App ID** et l'**App secret key** dans Vercel : `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`. Redéployez.
+4. Essai : Réseaux sociaux → « Connecter Pinterest », puis choisissez le ou les **tableaux** où publier (chaque tableau
+   compte comme un compte connecté dans la limite de l'offre).
+5. L'accès « Trial » ne publie que des épingles visibles par vous ; demandez ensuite l'accès **Standard** (vidéo de
+   démonstration demandée).
+
+## 7. X (Twitter)
+
+**Attention au coût** : l'API X est payante (formule à l'usage ou abonnement). Vérifiez le tarif avant d'activer.
+
+1. **developer.x.com** → créez un projet et une application.
+2. **User authentication settings** : OAuth 2.0, type « Web App, Automated App or Bot », permissions « Read and
+   write », « Callback URI » = « Retour X », « Website URL » = votre site.
+3. Copiez le **Client ID** et le **Client Secret** (OAuth 2.0) dans Vercel : `X_CLIENT_ID`, `X_CLIENT_SECRET`. Redéployez.
+4. Essai : texte seul, puis une image, puis une vidéo.
+5. Les statistiques sont lues une dizaine de fois par publication pendant 30 jours : avec la formule à l'usage, ces
+   lectures sont facturées par X.
+
+## 8. En cas de problème
 
 - « Connexion réelle bientôt disponible » reste affiché : les variables ne sont pas toutes renseignées dans Vercel,
   ou le site n'a pas été redéployé.
 - « La demande de connexion a expiré » : recommencez en moins de 10 minutes, dans le même navigateur.
 - « Aucune Page Facebook n'a été partagée » : à l'étape de choix sur Facebook, cochez la Page (et le compte Instagram).
 - Une publication Instagram refusée : le format de l'image doit être carré, portrait 4:5 ou paysage (pas 9:16).
+- TikTok : « n'accepte que les comptes privés » → l'application n'a pas encore passé l'audit (voir section 4).
+- YouTube : « quota journalier » → les envois reprennent automatiquement le lendemain.
 - Envoyez-moi le message d'erreur exact affiché dans la publication ou dans les alertes : je saurai où chercher.

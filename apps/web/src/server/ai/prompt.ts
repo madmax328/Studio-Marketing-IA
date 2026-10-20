@@ -18,6 +18,8 @@ const NETWORK_GUIDELINES: Record<SocialNetworkId, string> = {
   x: "Message très court et percutant, 0 à 2 hashtags. Le total (texte + hashtags) doit rester sous la limite.",
   pinterest: "Description inspirante et descriptive, mots-clés naturels, 2 à 5 hashtags.",
   threads: "Ton spontané et conversationnel, court, 0 à 3 hashtags.",
+  google_business:
+    "Actualité pour la fiche Google de l'établissement : informatif et local, 2 à 4 phrases, aucun hashtag, aucun numéro de téléphone (refusé par Google).",
 };
 
 /**

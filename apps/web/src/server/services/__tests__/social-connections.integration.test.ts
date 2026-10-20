@@ -9,11 +9,12 @@ import { collections, type SocialAccountDoc } from "@/server/db/collections";
 import { runMigrations } from "@/server/db/migrations";
 import { maintainSocialTokens } from "@/server/publishing/tokens";
 import { decryptSecret, encryptSecret } from "@/server/security/crypto";
-import type { OAuthCandidate } from "@/server/social/oauth";
+import { OAuthExchangeError, type OAuthCandidate } from "@/server/social/oauth";
 import { connectSimulationAccount } from "@/server/services/social-accounts";
 import {
   confirmOAuthConnection,
   getPendingConnection,
+  pkceChallenge,
   receiveOAuthCallback,
   startOAuthConnection,
 } from "@/server/services/social-connections";
@@ -40,7 +41,7 @@ describe.skipIf(!uri)("connexion des comptes sociaux (MongoDB réel)", () => {
   let bob: WorkspaceAccess;
 
   async function connect(access: WorkspaceAccess, userId: string, candidates: OAuthCandidate[], keys?: string[]) {
-    const stateId = await startOAuthConnection(db, access, userId, "meta");
+    const { state: stateId } = await startOAuthConnection(db, access, userId, "meta");
     await receiveOAuthCallback(db, { stateId, userId, provider: "meta", encryptionKey: key, exchange: async () => candidates });
     return {
       stateId,
@@ -86,7 +87,7 @@ describe.skipIf(!uri)("connexion des comptes sociaux (MongoDB réel)", () => {
   });
 
   it("l'état est lié à l'utilisateur et à l'espace", async () => {
-    const stateId = await startOAuthConnection(db, alice, "alice", "meta");
+    const { state: stateId } = await startOAuthConnection(db, alice, "alice", "meta");
     await expect(
       receiveOAuthCallback(db, { stateId, userId: "bob", provider: "meta", encryptionKey: key, exchange: async () => [page("X")] }),
     ).rejects.toMatchObject({ code: "conflict" });
@@ -106,7 +107,7 @@ describe.skipIf(!uri)("connexion des comptes sociaux (MongoDB réel)", () => {
   });
 
   it("demande expirée → refusée", async () => {
-    const stateId = await startOAuthConnection(db, alice, "alice", "meta", new Date(Date.now() - 3600_000));
+    const { state: stateId } = await startOAuthConnection(db, alice, "alice", "meta", new Date(Date.now() - 3600_000));
     await expect(
       receiveOAuthCallback(db, { stateId, userId: "alice", provider: "meta", encryptionKey: key, exchange: async () => [page("X")] }),
     ).rejects.toMatchObject({ code: "conflict" });
@@ -212,9 +213,70 @@ describe.skipIf(!uri)("connexion des comptes sociaux (MongoDB réel)", () => {
     expect(notifier.accountExpired).toHaveBeenCalledTimes(1);
   });
 
+  it("PKCE : le défi part au réseau, le vérificateur reste au serveur et sert à l'échange ; jeton de renouvellement chiffré", async () => {
+    const { state, codeChallenge } = await startOAuthConnection(db, alice, "alice", "x", new Date(), { pkce: true });
+    const stored = await collections(db).oauthStates.findOne({ _id: state });
+    expect(stored?.codeVerifier).toBeTruthy();
+    expect(codeChallenge).toBe(pkceChallenge(stored?.codeVerifier ?? ""));
+    const exchange = vi.fn(async (verifier: string | null) => {
+      expect(verifier).toBe(stored?.codeVerifier);
+      return [{ ...page("X1", "x"), refreshToken: "renouvellement-X1" }];
+    });
+    await receiveOAuthCallback(db, { stateId: state, userId: "alice", provider: "x", encryptionKey: key, exchange });
+    expect(JSON.stringify(await collections(db).oauthStates.findOne({ _id: state }))).not.toContain("renouvellement-X1");
+    await confirmOAuthConnection(db, alice, "alice", state, ["x:X1"]);
+    const account = await collections(db).socialAccounts.findOne({ externalAccountId: "X1" });
+    expect(decryptSecret(account?.refreshToken as NonNullable<SocialAccountDoc["refreshToken"]>, key)).toBe("renouvellement-X1");
+  });
+
+  it("jetons courts : renouvelés avant expiration, jamais signalés « bientôt expirés » ; accès retiré → à reconnecter", async () => {
+    const now = new Date("2031-03-01T10:00:00Z");
+    const base = {
+      workspaceId: alice.workspace._id,
+      displayName: "Compte",
+      status: "connected" as const,
+      scopes: [],
+      lastCheckedAt: null,
+      lastError: null,
+      connectedByUserId: "alice",
+      createdAt: now,
+      updatedAt: now,
+    };
+    const short = (id: string, provider: "tiktok" | "x", minutes: number) => ({
+      ...base,
+      _id: new ObjectId(),
+      network: provider,
+      provider,
+      externalAccountId: id,
+      accessToken: encryptSecret(`acces-${id}`, key),
+      refreshToken: encryptSecret(`renouv-${id}`, key),
+      tokenExpiresAt: new Date(now.getTime() + minutes * 60_000),
+    });
+    await collections(db).socialAccounts.insertMany([short("tt", "tiktok", 5), short("xx", "x", 10), short("retire", "tiktok", -30), short("tard", "tiktok", 600)]);
+
+    const notifier = { accountExpired: vi.fn(async () => {}), accountExpiring: vi.fn(async () => {}) };
+    const tiktok = vi.fn(async (refreshToken: string) => {
+      if (refreshToken === "renouv-retire") throw new OAuthExchangeError("TikTok a refusé la connexion.");
+      return { accessToken: `${refreshToken}-neuf`, tokenExpiresAt: new Date(now.getTime() + 24 * 3600_000) };
+    });
+    const x = vi.fn(async () => ({ accessToken: "acces-x-neuf", refreshToken: "renouv-x-neuf", tokenExpiresAt: new Date(now.getTime() + 2 * 3600_000) }));
+    const summary = await maintainSocialTokens({ db, encryptionKey: key, notifier, refreshers: { tiktok, x }, now });
+
+    expect(summary).toEqual({ refreshed: 2, warned: 0, expired: 1 });
+    expect(tiktok).not.toHaveBeenCalledWith("renouv-tard", now);
+    const tt = await collections(db).socialAccounts.findOne({ externalAccountId: "tt" });
+    expect(decryptSecret(tt?.accessToken as NonNullable<SocialAccountDoc["accessToken"]>, key)).toBe("renouv-tt-neuf");
+    // TikTok n'a pas fourni de nouveau jeton de renouvellement : l'ancien est gardé.
+    expect(decryptSecret(tt?.refreshToken as NonNullable<SocialAccountDoc["refreshToken"]>, key)).toBe("renouv-tt");
+    const xx = await collections(db).socialAccounts.findOne({ externalAccountId: "xx" });
+    expect(decryptSecret(xx?.refreshToken as NonNullable<SocialAccountDoc["refreshToken"]>, key)).toBe("renouv-x-neuf");
+    expect((await collections(db).socialAccounts.findOne({ externalAccountId: "retire" }))?.status).toBe("expired");
+    expect(notifier.accountExpired).toHaveBeenCalledTimes(1);
+  });
+
   it("rappels Threads : la désinstallation efface les jetons, la suppression efface les comptes", async () => {
     const threads = (id: string): OAuthCandidate => ({ ...page(id, "threads"), scopes: [] });
-    const stateId = await startOAuthConnection(db, alice, "alice", "threads");
+    const { state: stateId } = await startOAuthConnection(db, alice, "alice", "threads");
     await receiveOAuthCallback(db, { stateId, userId: "alice", provider: "threads", encryptionKey: key, exchange: async () => [threads("TH1")] });
     await confirmOAuthConnection(db, alice, "alice", stateId, ["threads:TH1"]);
 

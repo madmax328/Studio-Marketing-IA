@@ -22,12 +22,14 @@ il faut les lancer **maintenant**, en parallèle du développement.
 1. **Meta (Facebook, Instagram, Threads)** : une seule application, trois réseaux, la plus grosse audience.
 2. **LinkedIn** : le profil personnel est accessible tout de suite.
 3. **TikTok et YouTube** : lancer les audits tôt, ils sont longs.
-4. **Pinterest**.
-5. **X** : décider selon le coût de l'API.
+4. **Google Business Profile** : demande d'accès aux API (fiche vérifiée depuis 60 jours).
+5. **Pinterest**.
+6. **X** : décider selon le coût de l'API.
 
 ## Ce dont l'application aura besoin pour chaque réseau
 
-- Une URL de redirection OAuth : `https://<domaine>/api/reseaux/retour/<fournisseur>` (`meta`, `threads`, `linkedin`).
+- Une URL de redirection OAuth : `https://<domaine>/api/reseaux/retour/<fournisseur>` (`meta`, `threads`, `linkedin`, `tiktok`, `youtube`,
+  `google_business`, `pinterest`, `x`).
 - Une politique de confidentialité et des conditions d'utilisation publiques (exigées par Meta, TikTok, Google).
 - Une vidéo de démonstration du parcours (exigée lors des App Review).
 
@@ -47,6 +49,20 @@ il faut les lancer **maintenant**, en parallèle du développement.
 - **Threads** : conteneur texte, image ou carrousel → attente → `threads_publish`.
 - **LinkedIn** : envoi des images (`initializeUpload` + PUT) puis `POST /rest/posts`. Le texte est converti au format
   « little text » (caractères réservés échappés, mots-dièse conservés).
+- **Vidéo** : Facebook (`/videos` avec lien signé), Instagram (Reels), Threads, LinkedIn (Videos API, envoi en parties),
+  TikTok (envoi par morceaux, publication directe), YouTube (envoi « resumable »), Pinterest (`/media` puis épingle
+  `video_id`), X (envoi par morceaux puis traitement). Un traitement long chez le réseau est repris au passage suivant
+  (`publishing.resume`) sans renvoyer le fichier.
+- **TikTok** : niveau de visibilité lu dans `creator_info` (public si permis, privé avant l'audit) ; photos récupérées
+  par TikTok via le lien signé (domaine à vérifier chez TikTok).
+- **Pinterest** : chaque tableau choisi est un « compte » ; épingle image, multi-images (2 à 5) ou vidéo.
+- **Google Business Profile** : « Nouveauté » (`localPosts`) avec une photo facultative.
+- **Jetons courts** (TikTok 24 h, Google 1 h, Pinterest 30 j, X 2 h) : renouvelés automatiquement par le planificateur
+  dans le quart d'heure qui précède l'expiration ; X remplace le jeton de renouvellement à chaque fois. Un refus
+  définitif (accès retiré) marque le compte « à reconnecter » et prévient l'utilisateur. X utilise PKCE (vérificateur
+  gardé côté serveur dans l'état OAuth).
+- **Statistiques** : Facebook, Instagram, Threads, YouTube, TikTok (vidéos publiques), Pinterest, X. Pas de chiffres
+  par publication pour LinkedIn (profils) ni Google Business Profile.
 - **Résultat incertain** (coupure ou erreur serveur au moment de publier) : pas de nouvel essai automatique, pour ne
   jamais publier deux fois.
 
@@ -54,5 +70,5 @@ il faut les lancer **maintenant**, en parallèle du développement.
 
 1. Créer l'application du réseau, déclarer l'adresse de retour, renseigner les variables dans Vercel.
 2. En mode développement de l'application, se connecter avec un compte qui a un rôle sur l'application.
-3. Publier un texte, une image, puis plusieurs images ; vérifier sur le réseau et le lien « Voir sur … ».
+3. Publier un texte, une image, plusieurs images, puis une vidéo (selon ce que le réseau accepte) ; vérifier sur le réseau et le lien « Voir sur … ».
 4. Seulement ensuite, passer `integrationStatus` à `"available"` dans `packages/shared/src/social/networks.ts`.

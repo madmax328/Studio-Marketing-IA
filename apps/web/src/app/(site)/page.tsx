@@ -76,7 +76,7 @@ function networksAnswer(): string {
   const list = (labels: string[]) => (labels.length > 1 ? `${labels.slice(0, -1).join(", ")} et ${labels.at(-1)}` : (labels[0] ?? ""));
   const parts = [
     byStatus("available").length > 0 ? `Disponibles : ${list(byStatus("available"))}.` : "",
-    byStatus("in_development").length > 0 ? `En test sur de vrais comptes : ${list(byStatus("in_development"))}.` : "",
+    byStatus("in_development").length > 0 ? `Connecteur écrit, en attente d'un premier essai sur un vrai compte : ${list(byStatus("in_development"))}.` : "",
     byStatus("planned").length > 0 ? `Bientôt : ${list(byStatus("planned"))}.` : "",
   ];
   return `${parts.filter(Boolean).join(" ")} Un réseau n'est annoncé disponible qu'après une publication réussie sur un vrai compte.`;
@@ -215,11 +215,11 @@ export default async function HomePage() {
       {/* ---------- Réseaux ---------- */}
       <section id="reseaux" className="scroll-mt-20 border-t border-line py-24 sm:py-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionHeading eyebrow="Réseaux" title="Huit réseaux, un seul endroit.">
+          <SectionHeading eyebrow="Réseaux" title="Neuf réseaux, un seul endroit.">
             Un réseau n&apos;est annoncé disponible qu&apos;après une publication réussie sur un vrai compte. Voici où nous en
             sommes, sans arrondi.
           </SectionHeading>
-          <ul className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
             {SOCIAL_NETWORK_IDS.map((id) => {
               const network = SOCIAL_NETWORKS[id];
               const status = STATUS[network.integrationStatus];
@@ -230,7 +230,13 @@ export default async function HomePage() {
                     <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-xs", status.className)}>{status.label}</span>
                   </div>
                   <p className="font-mono text-[11px] text-fg-dim">
-                    {network.allowsTextOnly ? "Texte et images" : "Image obligatoire"} · {network.maxTextLength.toLocaleString("fr-FR")} car.
+                    {network.allowsTextOnly
+                      ? network.publishableMedia.includes("video")
+                        ? "Texte, images, vidéo"
+                        : "Texte et image"
+                      : network.maxImages === 0
+                        ? "Vidéo obligatoire"
+                        : "Image ou vidéo obligatoire"} · {network.maxTextLength.toLocaleString("fr-FR")} car.
                   </p>
                 </li>
               );

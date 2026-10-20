@@ -17,6 +17,7 @@ export const SOCIAL_NETWORK_IDS = [
   "x",
   "pinterest",
   "threads",
+  "google_business",
 ] as const;
 
 export type SocialNetworkId = (typeof SOCIAL_NETWORK_IDS)[number];
@@ -36,6 +37,8 @@ export interface SocialNetworkDefinition {
   label: string;
   /** Formats de publication que l'API officielle permet de publier. */
   publishableMedia: readonly MediaKind[];
+  /** Nombre maximal d'images dans une publication (0 : vidéo uniquement). */
+  maxImages: number;
   /** Une publication sans média (texte seul) est-elle acceptée ? */
   allowsTextOnly: boolean;
   /** Longueur maximale du texte principal (légende, description…). */
@@ -50,6 +53,7 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
     id: "facebook",
     label: "Facebook",
     publishableMedia: ["text", "image", "carousel", "video"],
+    maxImages: 10,
     allowsTextOnly: true,
     maxTextLength: 63206,
     approvalRequirements: [
@@ -62,6 +66,7 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
     id: "instagram",
     label: "Instagram",
     publishableMedia: ["image", "carousel", "video"],
+    maxImages: 10,
     allowsTextOnly: false,
     maxTextLength: 2200,
     approvalRequirements: [
@@ -74,6 +79,7 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
     id: "linkedin",
     label: "LinkedIn",
     publishableMedia: ["text", "image", "video"],
+    maxImages: 20,
     allowsTextOnly: true,
     maxTextLength: 3000,
     approvalRequirements: [
@@ -86,18 +92,20 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
     id: "tiktok",
     label: "TikTok",
     publishableMedia: ["image", "video"],
+    maxImages: 35,
     allowsTextOnly: false,
     maxTextLength: 2200,
     approvalRequirements: [
       "Content Posting API",
       "Audit TikTok obligatoire : sans audit, les publications restent privées",
     ],
-    integrationStatus: "planned",
+    integrationStatus: "in_development",
   },
   youtube: {
     id: "youtube",
     label: "YouTube",
     publishableMedia: ["video"],
+    maxImages: 0,
     allowsTextOnly: false,
     maxTextLength: 5000,
     approvalRequirements: [
@@ -105,45 +113,61 @@ export const SOCIAL_NETWORKS: Record<SocialNetworkId, SocialNetworkDefinition> =
       "Audit Google : sans audit, les vidéos envoyées restent privées",
       "Quota journalier limité (un envoi de vidéo consomme une grande partie du quota)",
     ],
-    integrationStatus: "planned",
+    integrationStatus: "in_development",
   },
   x: {
     id: "x",
     label: "X (Twitter)",
     publishableMedia: ["text", "image", "video"],
+    maxImages: 4,
     allowsTextOnly: true,
     maxTextLength: 280,
     approvalRequirements: ["Accès à l'API X payant selon le volume : tarifs à vérifier"],
-    integrationStatus: "planned",
+    integrationStatus: "in_development",
   },
   pinterest: {
     id: "pinterest",
     label: "Pinterest",
     publishableMedia: ["image", "video"],
+    maxImages: 5,
     allowsTextOnly: false,
     maxTextLength: 500,
     approvalRequirements: [
       "Application Pinterest API v5",
       "Passage de l'accès d'essai à l'accès standard (sur validation)",
     ],
-    integrationStatus: "planned",
+    integrationStatus: "in_development",
   },
   threads: {
     id: "threads",
     label: "Threads",
     publishableMedia: ["text", "image", "carousel", "video"],
+    maxImages: 20,
     allowsTextOnly: true,
     maxTextLength: 500,
     approvalRequirements: ["Threads API (Meta) avec validation (App Review) de la publication"],
     integrationStatus: "in_development",
   },
+  google_business: {
+    id: "google_business",
+    label: "Google Business Profile",
+    publishableMedia: ["text", "image"],
+    maxImages: 1,
+    allowsTextOnly: true,
+    maxTextLength: 1500,
+    approvalRequirements: [
+      "Projet Google Cloud avec les API Google Business Profile",
+      "Demande d'accès aux API Business Profile (formulaire Google, réservé aux fiches vérifiées)",
+    ],
+    integrationStatus: "in_development",
+  },
 };
 
 /**
- * Réseaux sur lesquels le studio sait publier une vidéo (connecteur écrit). Les autres réseaux qui acceptent la
- * vidéo (TikTok, YouTube…) suivront avec leurs connecteurs.
+ * Réseaux sur lesquels le studio sait publier une vidéo (connecteur écrit) : tous ceux qui acceptent la vidéo.
+ * Un réseau ajouté plus tard n'y figure qu'une fois son connecteur vidéo écrit.
  */
-export const STUDIO_VIDEO_NETWORKS: readonly SocialNetworkId[] = ["facebook", "instagram", "threads", "linkedin"];
+export const STUDIO_VIDEO_NETWORKS: readonly SocialNetworkId[] = ["facebook", "instagram", "threads", "linkedin", "tiktok", "youtube", "pinterest", "x"];
 
 export function getSocialNetwork(id: SocialNetworkId): SocialNetworkDefinition {
   return SOCIAL_NETWORKS[id];
