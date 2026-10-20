@@ -8,6 +8,13 @@ import type {
   StrategyOutput,
 } from "@smia/shared";
 
+/** Publication réelle de la marque qui a bien marché (boucle d'amélioration). */
+export interface PastPerformance {
+  network: SocialNetworkId;
+  text: string;
+  engagement: number;
+}
+
 export interface TextGenerationInput {
   brand: BrandInput;
   networks: SocialNetworkId[];
@@ -15,6 +22,8 @@ export interface TextGenerationInput {
   brief: string;
   tone: BrandInput["tone"];
   variantsPerNetwork: number;
+  /** Meilleures publications passées de la marque, d'après les chiffres des réseaux. */
+  pastPerformance?: PastPerformance[];
 }
 
 export interface ProviderResult<T> {
@@ -44,6 +53,7 @@ export interface CampaignPostsInput extends CampaignContext {
   summary: string;
   keyMessages: string[];
   slots: { index: number; date: string; theme: string; kind: PostKind; role: string }[];
+  pastPerformance?: PastPerformance[];
 }
 
 /**

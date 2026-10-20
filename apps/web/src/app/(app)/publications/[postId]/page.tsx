@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EDITABLE_POST_STATUSES, POST_STATUS_LABELS, roleHasPermission, SOCIAL_NETWORKS, toZoned } from "@smia/shared";
+import { EDITABLE_POST_STATUSES, METRIC_KEYS, METRIC_LABELS, POST_STATUS_LABELS, roleHasPermission, SOCIAL_NETWORKS, toZoned } from "@smia/shared";
 import { getTextProvider } from "@/server/ai";
 import { hasAiConsent } from "@/server/services/generation";
 import { PostEditor } from "@/components/posts/post-editor";
@@ -73,6 +73,34 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
         </Alert>
       ) : null}
       {post.status === "processing" ? <Alert>Envoi en cours…</Alert> : null}
+      {post.status === "published" && !post.publishing?.simulated ? (
+        <Card className="space-y-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-semibold">Résultats</h2>
+            {post.metrics?.collectedAt ? (
+              <p className="text-xs text-muted">
+                Relevé le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: post.timeZone }).format(post.metrics.collectedAt)}
+              </p>
+            ) : null}
+          </div>
+          {post.metrics?.collectedAt ? (
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {METRIC_KEYS.filter((key) => typeof post.metrics?.values[key] === "number").map((key) => (
+                <div key={key} className="rounded-xl border border-border bg-white/[0.02] p-3">
+                  <dt className="text-xs text-muted">{METRIC_LABELS[key]}</dt>
+                  <dd className="mt-1 text-xl font-semibold">{new Intl.NumberFormat("fr-FR").format(post.metrics?.values[key] ?? 0)}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-sm text-muted">
+              {post.metrics?.unsupported
+                ? (post.metrics.lastError ?? "Ce réseau ne fournit pas de chiffres pour cette publication.")
+                : "Premier relevé environ une heure après la parution, puis mises à jour pendant 30 jours."}
+            </p>
+          )}
+        </Card>
+      ) : null}
       {post.rationale ? <Alert>{post.rationale}</Alert> : null}
       {!network.allowsTextOnly && attached.length === 0 ? (
         <Alert tone="error">

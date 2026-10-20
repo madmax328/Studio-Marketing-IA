@@ -8,6 +8,7 @@ import type {
   CreditOperation,
   PlanId,
   PlanLimits,
+  PostMetrics,
   PostStatus,
   SocialNetworkId,
   WorkspaceRole,
@@ -83,6 +84,8 @@ export interface PostDoc {
   socialAccountId?: ObjectId | null;
   /** Suivi de l'envoi (absent tant que la publication n'a jamais été traitée). */
   publishing?: PostPublishing;
+  /** Derniers chiffres relevés sur le réseau (publications réelles uniquement). */
+  metrics?: PostMetricsState;
   schemaVersion: 1;
   createdAt: Date;
   updatedAt: Date;
@@ -102,6 +105,29 @@ export interface PostPublishing {
   simulated: boolean;
   lastError: string | null;
   lastAttemptAt: Date | null;
+}
+
+export interface PostMetricsState {
+  values: PostMetrics;
+  /** Dernier relevé réussi ; null tant qu'aucun relevé n'a abouti. */
+  collectedAt: Date | null;
+  /** Prochain relevé prévu ; null quand le suivi est terminé. */
+  nextCollectAt: Date | null;
+  /** Le réseau ne fournit pas de chiffres pour ce compte (ou pas encore via notre connecteur). */
+  unsupported: boolean;
+  lastError: string | null;
+  attempts: number;
+}
+
+/** Relevé des chiffres d'une publication à un instant donné (historique). */
+export interface AnalyticsSnapshotDoc {
+  _id: ObjectId;
+  workspaceId: ObjectId;
+  postId: ObjectId;
+  brandId: ObjectId;
+  network: SocialNetworkId;
+  collectedAt: Date;
+  values: PostMetrics;
 }
 
 /** Compte social connecté. Les jetons sont toujours chiffrés (AES-256-GCM). */
@@ -330,6 +356,7 @@ export const COLLECTIONS = {
   creditAccounts: "creditAccounts",
   creditTransactions: "creditTransactions",
   stripeEvents: "stripeEvents",
+  analyticsSnapshots: "analyticsSnapshots",
   migrations: "migrations",
 } as const;
 
@@ -351,6 +378,7 @@ export function collections(db: Db) {
     creditAccounts: db.collection<CreditAccountDoc>(COLLECTIONS.creditAccounts),
     creditTransactions: db.collection<CreditTransactionDoc>(COLLECTIONS.creditTransactions),
     stripeEvents: db.collection<StripeEventDoc>(COLLECTIONS.stripeEvents),
+    analyticsSnapshots: db.collection<AnalyticsSnapshotDoc>(COLLECTIONS.analyticsSnapshots),
     migrations: db.collection<MigrationDoc>(COLLECTIONS.migrations),
   };
 }

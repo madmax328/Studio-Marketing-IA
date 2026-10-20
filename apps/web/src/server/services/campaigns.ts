@@ -15,6 +15,7 @@ import {
 } from "@smia/shared";
 import type { TextGenerationProvider } from "@/server/ai/types";
 import { collections, type CampaignDoc, type PostDoc } from "@/server/db/collections";
+import { bestPerformingPosts } from "@/server/services/analytics";
 import { recordAudit } from "@/server/services/audit";
 import { getBrand } from "@/server/services/brands";
 import { UserFacingError } from "@/server/services/errors";
@@ -236,11 +237,12 @@ export async function generateCampaignBatch(
     userId,
     provider,
     { requestId, kind: "campaign_posts", operation: "campaign_posts", brandId: brand._id, campaignId: campaign._id, request: { slots: batch.map((s) => s.slotId) } },
-    () =>
+    async () =>
       provider.generateCampaignPosts({
         ...campaignContext(campaign, brand),
         summary: campaign.strategy?.summary ?? "",
         keyMessages: campaign.strategy?.keyMessages ?? [],
+        pastPerformance: await bestPerformingPosts(db, access.workspace._id, brand._id),
         slots: batch.map((slot, index) => ({ index, date: slot.date, theme: slot.theme, kind: slot.kind, role: slot.role })),
       }),
   );
@@ -314,10 +316,11 @@ export async function regenerateCampaignPost(
     userId,
     provider,
     { requestId, kind: "campaign_posts", operation: "campaign_post_regeneration", brandId: brand._id, campaignId: campaign._id, request: { regenerate: postId } },
-    () =>
+    async () =>
       provider.generateCampaignPosts({
         ...campaignContext(campaign, brand),
         networks: [post.network],
+        pastPerformance: await bestPerformingPosts(db, access.workspace._id, brand._id),
         summary: campaign.strategy?.summary ?? "",
         keyMessages: campaign.strategy?.keyMessages ?? [],
         slots: [{ index: 0, date: slot.date, theme: slot.theme, kind: slot.kind, role: slot.role }],

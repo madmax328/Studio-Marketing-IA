@@ -9,6 +9,7 @@ import {
 } from "@smia/shared";
 import { TextGenerationError, type ProviderResult, type TextGenerationProvider } from "@/server/ai/types";
 import { collections, type GenerationJobDoc } from "@/server/db/collections";
+import { bestPerformingPosts } from "@/server/services/analytics";
 import { recordAudit } from "@/server/services/audit";
 import { chargeCredits, refundCredits } from "@/server/services/billing";
 import { getBrand } from "@/server/services/brands";
@@ -170,6 +171,7 @@ export async function generateTextPosts(
     provider,
     { requestId, kind: "text", operation: "text_generation", brandId: brand._id, request: details },
     async () => {
+      const pastPerformance = await bestPerformingPosts(db, access.workspace._id, brand._id);
       const result = await provider.generatePosts({
         brand,
         networks: request.networks,
@@ -177,6 +179,7 @@ export async function generateTextPosts(
         brief: request.brief,
         tone: request.tone ?? brand.tone,
         variantsPerNetwork: request.variantsPerNetwork,
+        pastPerformance,
       });
       // On ne garde que les réseaux demandés.
       const posts = result.output.posts.filter((post) => request.networks.includes(post.network));

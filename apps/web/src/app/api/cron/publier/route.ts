@@ -1,5 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
-import { ensureDatabaseReady } from "@/server/db/client";
+import { getMetricsFetchers } from "@/server/analytics";
+import { collectDueMetrics } from "@/server/analytics/collector";
+import { ensureDatabaseReady, getDb } from "@/server/db/client";
 import { getServerEnv } from "@/server/env";
 import { runProductionPublishingCycle } from "@/server/publishing";
 
@@ -22,8 +24,19 @@ async function handler(request: Request): Promise<Response> {
 
   await ensureDatabaseReady();
   // 25 s : sous la limite de durée des planificateurs gratuits (cron-job.org coupe à 30 s) ; le reste part au passage suivant.
-  const summary = await runProductionPublishingCycle(Date.now() + 25_000);
-  return Response.json({ ok: true, ...summary });
+  const deadline = Date.now() + 25_000;
+  const summary = await runProductionPublishingCycle(deadline);
+  // Avec le temps restant : relevé des statistiques. Un échec ici ne doit pas masquer le résultat de l'envoi.
+  let metrics = null;
+  try {
+    metrics = await collectDueMetrics(
+      { db: getDb(), fetchers: getMetricsFetchers(), encryptionKey: getServerEnv().SOCIAL_TOKEN_ENCRYPTION_KEY },
+      { deadline },
+    );
+  } catch (error) {
+    console.error("Relevé des statistiques impossible", error instanceof Error ? error.message : error);
+  }
+  return Response.json({ ok: true, ...summary, metrics });
 }
 
 export { handler as GET, handler as POST };

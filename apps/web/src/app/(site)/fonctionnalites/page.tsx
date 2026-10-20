@@ -77,8 +77,12 @@ const FEATURES: Feature[] = [
   {
     title: "Les résultats",
     pitch: "Savoir ce qui marche, et s'en servir pour la suite.",
-    points: ["Les chiffres réels de chaque publication, tels que les réseaux les donnent.", "Des conseils tirés de vos propres résultats."],
-    soon: true,
+    points: [
+      "Vues, personnes touchées, j'aime, commentaires, partages, enregistrements : uniquement les chiffres que chaque réseau fournit, jamais d'estimation.",
+      "Des conseils tirés de vos propres résultats (réseau, jour, heure, images), donnés seulement quand il y a assez de publications pour être fiables.",
+      "Vos publications qui ont le mieux marché servent d'exemple au studio pour écrire les suivantes.",
+      "LinkedIn ne transmet pas encore ses chiffres au studio : ces publications sont signalées comme non mesurées.",
+    ],
   },
 ];
 

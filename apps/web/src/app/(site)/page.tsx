@@ -171,8 +171,9 @@ export default async function HomePage() {
             ))}
           </ol>
           <p className="mt-6 flex flex-wrap items-center gap-3 text-sm text-fg-muted">
-            <span className="rounded-full border border-dashed border-line-strong px-2.5 py-0.5 font-mono text-[11px] tracking-wide uppercase">Bientôt</span>
-            Les résultats de chaque publication, et des conseils pour faire mieux la fois suivante.
+            <span className="rounded-full border border-line-strong px-2.5 py-0.5 font-mono text-[11px] tracking-wide uppercase">Et ensuite</span>
+            Les chiffres réels de chaque publication remontent dans vos statistiques, et le studio s&apos;inspire de ce qui a le
+            mieux marché pour écrire les suivantes.
           </p>
         </div>
       </section>

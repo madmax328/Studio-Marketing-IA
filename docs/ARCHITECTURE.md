@@ -41,6 +41,9 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Connexion des réseaux | OAuth par fournisseur (`src/server/social/oauth.ts` : Meta, Threads, LinkedIn) ; état à usage unique lié à l'utilisateur, à l'espace et au navigateur ; comptes proposés gardés chiffrés 15 min le temps du choix ; limite de l'offre vérifiée à la validation | Aucun mot de passe demandé ; aucun jeton exposé ; pas de compte connecté sans choix explicite |
 | Connecteurs réels | `src/server/publishing/publishers/*` (Meta, Threads, LinkedIn), `fetch` injectable et testé sans réseau ; erreurs classées (autorisation, temporaire, définitive, incertaine) | Même file d'envoi que la simulation |
 | Entretien des autorisations | À chaque passage du planificateur : jetons Threads renouvelés 10 jours avant expiration, alerte 7 jours avant pour les autres, comptes expirés marqués et signalés | L'utilisateur n'est jamais surpris par une publication bloquée |
+| Statistiques | Relevés par le planificateur (même appel que l'envoi, avec le temps restant) : 1 h après parution, puis toutes les 3 h (2 jours), 12 h (7 jours), 2 jours, arrêt à 30 jours ; publication réservée pendant le relevé ; historique dans `analyticsSnapshots`, dernier état sur la publication (`metrics`) | Aucun chiffre estimé : un indicateur non fourni reste absent ; simulations jamais mesurées |
+| Recommandations | Règles simples sur les résultats réels (réseau, créneau horaire, jour, images) ; au moins 6 publications mesurées, 3 par groupe et un écart de 30 % | Pas de conseil fondé sur le hasard |
+| Boucle d'amélioration | Les 3 publications réelles de la marque ayant le plus d'interactions (6 mois) sont transmises à l'IA comme exemples de style, balisées comme données | Les suivantes s'inspirent de ce qui marche, sans recopier ni reprendre de faits |
 | Offres | Collection `plans` (insérée par la migration 006 puis modifiable sans code) ; prix lus chez Stripe, jamais codés ; offre effective = abonnement actif, sinon gratuite ; dérogations possibles par espace (`limitOverrides`) | Tarifs et limites ajustables sans déploiement |
 | Abonnements | Stripe Checkout + portail client ; webhooks à signature vérifiée, idempotents (`stripeEvents`), état toujours relu chez Stripe (ordre des événements sans importance) ; résiliation automatique avant suppression d'un compte | Aucun prélèvement après suppression |
 | Crédits | Compte par espace et par mois (`creditAccounts`) débité de façon conditionnelle (jamais négatif, même en concurrence) ; journal immuable `creditTransactions` à clé unique ; débit avant l'appel IA, remboursement si échec ; visuels par gabarit et publication gratuits | Coûts cloud maîtrisés, aucune double facturation |
@@ -92,9 +95,9 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | `plans`, `subscriptions` | Offres et abonnement de chaque espace |
 | `creditAccounts`, `creditTransactions` | Solde mensuel et journal immuable des crédits |
 | `stripeEvents` | Événements Stripe déjà traités |
+| `analyticsSnapshots` | Historique des chiffres relevés pour chaque publication |
 
-Collections prévues :
-`subscriptions`, `analyticsSnapshots`, `notifications`.
+Collections prévues : aucune pour l'instant.
 
 ## Particularités de Next.js 16
 

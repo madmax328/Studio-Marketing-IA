@@ -36,7 +36,7 @@ const GROUPS: { title: string; items: { href: string; label: string; icon: NavIc
 ];
 
 /** Modules de la V1 pas encore livrés : affichés comme tels, sans lien factice. */
-const UPCOMING = ["Statistiques", "Vidéos"];
+const UPCOMING = ["Vidéos"];
 
 function NavLink({ href, label, icon, active, badge }: { href: string; label: string; icon: NavIconName; active: boolean; badge?: number }) {
   return (
@@ -93,6 +93,7 @@ export function Sidebar({ userName, workspaceName, unreadAlerts }: { userName: s
         ))}
         <div className="flex gap-1 md:flex-col md:gap-0.5">
           <p className="hidden px-3 pb-1.5 font-mono text-[10px] tracking-[0.14em] text-muted/70 uppercase md:block">Suivi</p>
+          <NavLink href="/statistiques" label="Statistiques" icon="stats" active={isActive("/statistiques")} />
           <NavLink href="/notifications" label="Alertes" icon="alerts" active={isActive("/notifications")} badge={unreadAlerts} />
           {UPCOMING.map((label) => (
             <span key={label} className="hidden items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted/50 md:flex">

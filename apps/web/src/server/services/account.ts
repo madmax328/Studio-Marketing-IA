@@ -31,6 +31,7 @@ export async function deleteUserData(
     await c.mediaAssets.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.brands.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.posts.deleteMany({ workspaceId: { $in: ownedIds } });
+    await c.analyticsSnapshots.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.campaigns.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.notifications.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.socialAccounts.deleteMany({ workspaceId: { $in: ownedIds } });

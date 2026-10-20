@@ -4,6 +4,7 @@ import { POST_STATUS_LABELS, SOCIAL_NETWORKS } from "@smia/shared";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getDb } from "@/server/db/client";
+import { getAnalyticsOverview } from "@/server/services/analytics";
 import { getDashboardData } from "@/server/services/dashboard";
 import { listNotifications } from "@/server/services/notifications";
 import { requireWorkspace } from "@/server/session";
@@ -19,6 +20,7 @@ export default async function DashboardPage() {
   const data = await getDashboardData(getDb(), access);
   const alerts = (await listNotifications(getDb(), access, 5)).filter((n) => !n.readAt);
   const isEmpty = data.brandCount === 0;
+  const results = await getAnalyticsOverview(getDb(), access, { days: 30 });
 
   return (
     <div className="space-y-6">
@@ -103,6 +105,32 @@ export default async function DashboardPage() {
               Ouvrir le calendrier
             </Link>
           </p>
+        </Card>
+
+        <Card className="space-y-3">
+          <h2 className="font-semibold">Résultats des 30 derniers jours</h2>
+          {results.measured === 0 ? (
+            <p className="text-sm text-muted">
+              Les chiffres apparaissent environ une heure après la parution d&apos;une publication sur un réseau connecté.
+            </p>
+          ) : (
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="text-muted">Publications mesurées</dt>
+                <dd className="text-2xl font-semibold">{results.measured}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Interactions en moyenne</dt>
+                <dd className="text-2xl font-semibold">
+                  {results.engagementAverage === null ? "—" : new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(results.engagementAverage)}
+                </dd>
+              </div>
+            </dl>
+          )}
+          {results.recommendations[0] ? <p className="text-sm">{results.recommendations[0].title}.</p> : null}
+          <Link href="/statistiques" className={buttonStyles("secondary")}>
+            Voir les statistiques
+          </Link>
         </Card>
 
         <Card className="space-y-3">

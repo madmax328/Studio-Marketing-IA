@@ -34,7 +34,7 @@ Décrire sa marque → Créer → Publier → Analyser → Améliorer → (boucl
 | 4. Campagnes et calendrier | Assistant de campagne en 9 étapes, stratégie proposée par l'IA et modifiable, rédaction par lots, calendrier (mois, semaine, liste) avec filtres, programmation, fuseaux horaires et changements d'heure | **Fait** |
 | 5a. Moteur de publication | File d'envoi (réservation atomique, reprises avec délai, verrous abandonnés), jetons chiffrés, notifications d'échec (application + e-mail), comptes de test en simulation | **Fait** |
 | 5b. Connecteurs réels | OAuth et publication Meta (Facebook, Instagram, Threads), LinkedIn, puis TikTok, YouTube, Pinterest, X | **En cours** : Facebook, Instagram, Threads et LinkedIn (profil) écrits et testés sans réseau réel, « en test » jusqu'au premier essai sur un vrai compte ; TikTok, YouTube, Pinterest, X à faire |
-| 6. Analyse | Récupération des statistiques disponibles via les API, page de statistiques, premières recommandations | À faire |
+| 6. Analyse | Récupération des statistiques disponibles via les API, page de statistiques, premières recommandations | **Fait** : relevés automatiques (Facebook, Instagram, Threads ; LinkedIn non disponible), page Statistiques, conseils fondés sur les résultats réels, meilleures publications transmises à l'IA comme exemples |
 | 7. Abonnements | Stripe (paiement, portail client, webhooks vérifiés et idempotents), 4 offres configurables en base, crédits mensuels avec journal immuable, remboursement des échecs | **Fait** (prix à créer dans Stripe) |
 
 ### Site public
