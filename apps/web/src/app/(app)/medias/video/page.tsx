@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { roleHasPermission } from "@smia/shared";
+import { CREDIT_COSTS, roleHasPermission } from "@smia/shared";
 import { VideoEditor } from "@/components/media/video-editor";
 import { buttonStyles } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/card";
+import { getSpeechProvider } from "@/server/ai";
 import { getDb } from "@/server/db/client";
 import { getServerEnv } from "@/server/env";
 import { getMediaStorage } from "@/server/media/storage";
 import { listBrands } from "@/server/services/brands";
+import { hasAiConsent } from "@/server/services/generation";
 import { listMedia } from "@/server/services/media";
 import { requireWorkspace } from "@/server/session";
 
@@ -19,6 +21,7 @@ export default async function VideoPage() {
   const db = getDb();
   const brands = await listBrands(db, access);
   const images = await listMedia(db, access, 1, "image");
+  const speech = getSpeechProvider();
 
   return (
     <div className="space-y-6">
@@ -28,7 +31,8 @@ export default async function VideoPage() {
       <header>
         <h1 className="text-3xl font-semibold tracking-[-0.03em]">Créer une vidéo</h1>
         <p className="mt-1 text-sm text-muted">
-          Assemblez vos photos et vos messages en une courte vidéo, idéale pour les Reels et les stories. Le montage se fait
+          Assemblez vos photos et vos messages en une courte vidéo, avec voix off, sous-titres et musique, idéale pour les
+          Reels et les stories. Le montage se fait
           sur votre appareil, en quelques secondes.
         </p>
       </header>
@@ -54,6 +58,14 @@ export default async function VideoPage() {
             callToAction: brand.preferredCallToAction,
           }))}
           images={images.items.map((item) => ({ id: item._id.toHexString(), name: item.name }))}
+          voice={{
+            available: speech.isConfigured(),
+            consented: hasAiConsent(access, speech),
+            canAccept: roleHasPermission(access.role, "workspace:manage"),
+            label: speech.label,
+            dataProcessor: speech.dataProcessor,
+            cost: CREDIT_COSTS.voiceover,
+          }}
         />
       )}
     </div>

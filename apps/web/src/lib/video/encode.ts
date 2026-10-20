@@ -17,14 +17,27 @@ export async function canExportMp4(width: number, height: number): Promise<boole
   }
 }
 
+/** Le navigateur sait-il produire du son AAC (le seul accepté par tous les réseaux) ? */
+export async function canExportAudio(): Promise<boolean> {
+  if (typeof window === "undefined" || !("AudioEncoder" in window)) return false;
+  try {
+    const { canEncodeAudio } = await import("mediabunny");
+    return await canEncodeAudio("aac", { numberOfChannels: 2, sampleRate: 48_000 });
+  } catch {
+    return false;
+  }
+}
+
 export async function encodeProject(
   project: VideoProject,
   onProgress: (ratio: number) => void,
   isCancelled: () => boolean = () => false,
   /** H.264 pour les réseaux ; paramétrable uniquement pour les essais automatiques. */
   codec: "avc" | "vp9" = "avc",
+  /** Bande son déjà mixée (voix off, musique), ou null pour une vidéo muette. */
+  audio: { buffer: AudioBuffer; codec: "aac" | "opus" } | null = null,
 ): Promise<{ video: Blob; poster: Blob } | null> {
-  const { BufferTarget, CanvasSource, Mp4OutputFormat, Output, QUALITY_HIGH } = await import("mediabunny");
+  const { AudioBufferSource, BufferTarget, CanvasSource, Mp4OutputFormat, Output, QUALITY_HIGH } = await import("mediabunny");
   const canvas = document.createElement("canvas");
   canvas.width = project.width;
   canvas.height = project.height;
@@ -34,7 +47,13 @@ export async function encodeProject(
   const output = new Output({ format: new Mp4OutputFormat({ fastStart: "in-memory" }), target: new BufferTarget() });
   const source = new CanvasSource(canvas, { codec, quality: QUALITY_HIGH, keyFrameInterval: 2 });
   output.addVideoTrack(source, { frameRate: VIDEO_FPS });
+  const audioSource = audio ? new AudioBufferSource({ codec: audio.codec, bitrate: 128_000 }) : null;
+  if (audioSource) output.addAudioTrack(audioSource);
   await output.start();
+  if (audioSource && audio) {
+    await audioSource.add(audio.buffer);
+    audioSource.close();
+  }
 
   const duration = projectDuration(project);
   const frames = Math.ceil(duration * VIDEO_FPS);

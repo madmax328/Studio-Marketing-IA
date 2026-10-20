@@ -23,6 +23,8 @@ export const CREDIT_COSTS = {
   campaign_post_regeneration: 1,
   /** Une image créée par IA (plus coûteuse qu'un texte). */
   image_generation: 3,
+  /** Voix off d'une vidéo (toutes ses diapositives). */
+  voiceover: 1,
 } as const;
 
 export type CreditOperation = keyof typeof CREDIT_COSTS;

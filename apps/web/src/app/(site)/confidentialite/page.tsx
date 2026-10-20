@@ -15,10 +15,16 @@ const DATA = [
     duration: "Jusqu'à la suppression du compte",
   },
   {
-    what: "Fiche de votre activité, publications, campagnes, images et visuels",
+    what: "Fiche de votre activité, publications, campagnes, images, visuels et vidéos",
     why: "Fournir le service (rédaction, programmation, publication)",
     basis: "Exécution du contrat",
     duration: "Jusqu'à leur suppression ou celle du compte",
+  },
+  {
+    what: "Voix off des vidéos (fichiers audio créés par IA)",
+    why: "Monter la vidéo dans votre navigateur",
+    basis: "Exécution du contrat",
+    duration: "24 heures, puis effacement automatique",
   },
   {
     what: "Autorisations des réseaux sociaux connectés (jetons d'accès chiffrés), nom et identifiant des comptes",
@@ -94,7 +100,9 @@ export default function PrivacyPage() {
       <p>
         Pour rédiger vos publications, les informations de votre fiche et votre demande sont envoyées à notre fournisseur
         d&apos;intelligence artificielle. Pour créer une image, seuls votre description, le secteur et les couleurs de votre
-        marque sont envoyés au fournisseur d&apos;images. Chaque envoi n&apos;a lieu qu&apos;après votre accord explicite,
+        marque sont envoyés au fournisseur d&apos;images. Pour une voix off, seuls le texte à lire et le ton de votre marque sont envoyés au
+        fournisseur de voix. La musique que vous choisissez pour une vidéo reste sur votre appareil : seule la vidéo terminée
+        est envoyée. Chaque envoi n&apos;a lieu qu&apos;après votre accord explicite,
         donné une fois par espace de travail et par fournisseur. Ne saisissez pas dans le studio de données personnelles de tiers dont vous n&apos;avez pas
         besoin. Nous n&apos;utilisons pas vos contenus pour entraîner des modèles d&apos;IA.
       </p>

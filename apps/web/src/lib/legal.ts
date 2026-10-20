@@ -34,7 +34,7 @@ export const SUBPROCESSORS = [
   { name: "Vercel Inc.", role: "Hébergement de l'application et stockage des fichiers (Vercel Blob)", location: "États-Unis / Union européenne" },
   { name: "MongoDB Inc. (Atlas)", role: "Base de données", location: "Selon la région du serveur choisie" },
   { name: "Anthropic PBC", role: "Rédaction par intelligence artificielle, uniquement après votre accord", location: "États-Unis" },
-  { name: "OpenAI, L.L.C.", role: "Création d'images par intelligence artificielle, uniquement après votre accord", location: "États-Unis" },
+  { name: "OpenAI, L.L.C.", role: "Création d'images et de voix off par intelligence artificielle, uniquement après votre accord", location: "États-Unis" },
   { name: "Stripe Payments Europe Ltd", role: "Paiement et gestion des abonnements", location: "Union européenne / États-Unis" },
   { name: "Hostinger International Ltd / Resend", role: "Envoi des e-mails du service", location: "Union européenne / États-Unis" },
   { name: "Meta, LinkedIn et les autres réseaux connectés", role: "Publication et statistiques, uniquement pour les comptes que vous connectez", location: "Selon le réseau" },

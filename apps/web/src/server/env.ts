@@ -30,6 +30,7 @@ const serverEnvSchema = z.object({
   AI_IMAGE_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["openai"]).default("openai")),
   OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   AI_IMAGE_MODEL: z.preprocess(emptyToUndefined, z.string().default("gpt-image-1")),
+  AI_SPEECH_MODEL: z.preprocess(emptyToUndefined, z.string().default("gpt-4o-mini-tts")),
   AI_IMAGE_QUALITY: z.preprocess(emptyToUndefined, z.enum(["low", "medium", "high"]).default("medium")),
   // Stockage des médias (Vercel Blob). Le jeton est ajouté automatiquement par Vercel à la connexion d'un store.
   BLOB_READ_WRITE_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),

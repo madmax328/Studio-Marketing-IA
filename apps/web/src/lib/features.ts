@@ -5,3 +5,8 @@
 export function imageAiAvailable(): boolean {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
+
+/** La voix off utilise le même fournisseur (OpenAI) que les images. */
+export function voiceAiAvailable(): boolean {
+  return imageAiAvailable();
+}

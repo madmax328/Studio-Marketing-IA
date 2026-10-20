@@ -11,15 +11,21 @@ import {
   VIDEO_SLIDE_SECONDS,
   VIDEO_TRANSITION_LABELS,
   VIDEO_TRANSITIONS,
+  MAX_VOICEOVER_LINE,
+  VOICEOVER_VOICE_LABELS,
+  VOICEOVER_VOICES,
   type ImageFormatId,
   type VideoTransition,
+  type VoiceoverVoice,
 } from "@smia/shared";
+import { AiConsent } from "@/components/studio/ai-consent";
 import { Button } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
-import { canExportMp4, encodeProject } from "@/lib/video/encode";
-import { drawFrame, projectDuration, type VideoProject } from "@/lib/video/render";
-import { prepareUploadAction, registerVideoAction } from "@/server/actions/media";
+import { decodeAudio, renderMix, slideSecondsWithVoice, VOICE_DELAY } from "@/lib/video/audio";
+import { canExportAudio, canExportMp4, encodeProject } from "@/lib/video/encode";
+import { captionChunks, drawFrame, projectDuration, type VideoProject } from "@/lib/video/render";
+import { generateVoiceoverAction, prepareUploadAction, registerVideoAction } from "@/server/actions/media";
 
 export interface EditorBrand {
   id: string;
@@ -34,11 +40,31 @@ export interface EditorImage {
   name: string;
 }
 
+/** État de la voix off pour cet espace (fournisseur configuré, accord donné). */
+export interface EditorVoice {
+  available: boolean;
+  consented: boolean;
+  canAccept: boolean;
+  label: string;
+  dataProcessor: string;
+  cost: number;
+}
+
+const MAX_MUSIC_BYTES = 30 * 1024 * 1024;
+
 interface SlideState {
   key: string;
   imageId: string | null;
   text: string;
+  /** Texte lu par la voix off. */
+  narration: string;
   seconds: number;
+}
+
+/** Voix off créée pour une diapositive, avec le texte qu'elle lit (si le texte change, elle doit être recréée). */
+interface Clip {
+  text: string;
+  buffer: AudioBuffer;
 }
 
 const FORMAT_HINTS: Partial<Record<ImageFormatId, string>> = {
@@ -75,10 +101,21 @@ const newSlide = (imageId: string | null = null, text = ""): SlideState => ({
   key: `s${(slideCounter += 1)}`,
   imageId,
   text,
+  narration: "",
   seconds: VIDEO_SLIDE_SECONDS.default,
 });
 
-export function VideoEditor({ brands, images, access }: { brands: EditorBrand[]; images: EditorImage[]; access: "private" | "public" }) {
+export function VideoEditor({
+  brands,
+  images,
+  access,
+  voice: voiceInfo,
+}: {
+  brands: EditorBrand[];
+  images: EditorImage[];
+  access: "private" | "public";
+  voice: EditorVoice;
+}) {
   const router = useRouter();
   const [brandId, setBrandId] = useState(brands[0]?.id ?? "");
   const brand = brands.find((item) => item.id === brandId) ?? brands[0];
@@ -92,6 +129,29 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
   const [outroSubtitle, setOutroSubtitle] = useState(brand?.callToAction ?? "");
   const [name, setName] = useState("Ma vidéo");
   const [picker, setPicker] = useState<string | null>(null);
+
+  // Son : voix off (créée par IA, sur demande) et musique choisie par l'utilisateur (reste sur l'appareil).
+  const voiceReady = voiceInfo.available && voiceInfo.consented;
+  const [voice, setVoice] = useState<VoiceoverVoice>("coral");
+  const [clips, setClips] = useState<Record<string, Clip>>({});
+  const [captionsOn, setCaptionsOn] = useState(true);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [music, setMusic] = useState<{ name: string; buffer: AudioBuffer } | null>(null);
+  const [musicVolume, setMusicVolume] = useState(0.35);
+  const [musicError, setMusicError] = useState<string | null>(null);
+  const [audioSupported, setAudioSupported] = useState<boolean | null>(null);
+  useEffect(() => {
+    void canExportAudio().then(setAudioSupported);
+  }, []);
+  /** Voix off à jour d'une diapositive (null si absente ou si son texte a changé depuis). */
+  const clipOf = useCallback(
+    (slide: SlideState): Clip | null => {
+      const clip = clips[slide.key];
+      return clip && clip.text === slide.narration.trim() ? clip : null;
+    },
+    [clips],
+  );
 
   const [supported, setSupported] = useState<boolean | null>(null);
   const [phase, setPhase] = useState<"idle" | "encoding" | "uploading">("idle");
@@ -123,17 +183,50 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
       logo: logo ? { image: logo, width: logo.naturalWidth, height: logo.naturalHeight } : null,
       slides: slides.map((slide) => {
         const image = slide.imageId ? loaded[slide.imageId] : undefined;
-        return { image: image ?? null, imageWidth: image?.naturalWidth ?? 1, imageHeight: image?.naturalHeight ?? 1, text: slide.text, seconds: slide.seconds };
+        const clip = clipOf(slide);
+        return {
+          image: image ?? null,
+          imageWidth: image?.naturalWidth ?? 1,
+          imageHeight: image?.naturalHeight ?? 1,
+          text: slide.text,
+          seconds: slideSecondsWithVoice(slide.seconds, clip?.buffer.duration ?? null),
+          captions: clip && captionsOn ? captionChunks(clip.text, VOICE_DELAY, clip.buffer.duration) : [],
+        };
       }),
       outro: outroOn && outroTitle.trim() ? { title: outroTitle, subtitle: outroSubtitle, seconds: 3 } : null,
     };
-  }, [dims, transition, motion, fontFamily, brand, showLogo, loaded, slides, outroOn, outroTitle, outroSubtitle]);
+  }, [dims, transition, motion, fontFamily, brand, showLogo, loaded, slides, clipOf, captionsOn, outroOn, outroTitle, outroSubtitle]);
 
   const duration = projectDuration(project);
   const tooLong = duration > MAX_VIDEO_SECONDS;
 
+  // Bande son mixée (aperçu et export identiques).
+  const voices = useMemo(() => {
+    const placed: { start: number; buffer: AudioBuffer }[] = [];
+    let cursor = 0;
+    slides.forEach((slide, index) => {
+      const clip = clipOf(slide);
+      if (clip) placed.push({ start: cursor + VOICE_DELAY, buffer: clip.buffer });
+      cursor += project.slides[index]?.seconds ?? slide.seconds;
+    });
+    return placed;
+  }, [slides, clipOf, project.slides]);
+  const [soundtrack, setSoundtrack] = useState<AudioBuffer | null>(null);
+  useEffect(() => {
+    let alive = true;
+    renderMix({ duration, voices, music: music ? { buffer: music.buffer, volume: musicVolume } : null })
+      .then((buffer) => alive && setSoundtrack(buffer))
+      .catch(() => alive && setSoundtrack(null));
+    return () => {
+      alive = false;
+    };
+  }, [duration, voices, music, musicVolume]);
+  const hasSound = voices.length > 0 || music !== null;
+  const staleVoices = slides.filter((slide) => slide.narration.trim() && !clipOf(slide)).length;
+
   // ---------- Aperçu ----------
   const canvas = useRef<HTMLCanvasElement>(null);
+  const audioContext = useRef<AudioContext | null>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0.8);
   const draw = useCallback(
@@ -150,6 +243,16 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
     }
     let frame = 0;
     const start = performance.now() - time * 1000;
+    let sound: AudioBufferSourceNode | null = null;
+    if (soundtrack && time < soundtrack.duration) {
+      audioContext.current ??= new AudioContext();
+      const context = audioContext.current;
+      void context.resume();
+      sound = context.createBufferSource();
+      sound.buffer = soundtrack;
+      sound.connect(context.destination);
+      sound.start(0, time);
+    }
     const loop = (now: number) => {
       const t = (now - start) / 1000;
       if (t >= duration) {
@@ -162,10 +265,60 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
       frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
-    // L'aperçu redémarre quand le projet change.
+    return () => {
+      cancelAnimationFrame(frame);
+      sound?.stop();
+    };
+    // L'aperçu redémarre quand le projet ou le son change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, draw, duration]);
+  }, [playing, draw, duration, soundtrack]);
+
+  async function createVoiceover() {
+    if (!brand) return;
+    const targets = slides.map((slide, index) => ({ key: slide.key, slide: index, text: slide.narration.trim() })).filter((item) => item.text);
+    if (targets.length === 0) {
+      setVoiceError("Écrivez d'abord le texte à lire sur au moins une diapositive.");
+      return;
+    }
+    setVoiceBusy(true);
+    setVoiceError(null);
+    setPlaying(false);
+    try {
+      const result = await generateVoiceoverAction({
+        requestId: crypto.randomUUID(),
+        brandId: brand.id,
+        voice,
+        lines: targets.map(({ slide, text }) => ({ slide, text })),
+      });
+      if (!result.ok) throw new Error(result.error);
+      const decoded = await Promise.all(
+        targets.map(async (target) => {
+          const response = await fetch(`/api/medias/voix/${result.data.jobId}/${target.slide}`);
+          if (!response.ok) throw new Error("La voix off n'a pas pu être chargée. Réessayez.");
+          return [target.key, { text: target.text, buffer: await decodeAudio(await response.arrayBuffer()) }] as const;
+        }),
+      );
+      setClips(Object.fromEntries(decoded));
+    } catch (exception) {
+      setVoiceError(exception instanceof Error && exception.message ? exception.message : "La voix off n'a pas pu être créée. Réessayez.");
+    } finally {
+      setVoiceBusy(false);
+    }
+  }
+
+  async function chooseMusic(file: File | undefined) {
+    setMusicError(null);
+    if (!file) return;
+    if (file.size > MAX_MUSIC_BYTES) {
+      setMusicError("Fichier trop lourd (30 Mo au plus).");
+      return;
+    }
+    try {
+      setMusic({ name: file.name, buffer: await decodeAudio(await file.arrayBuffer()) });
+    } catch {
+      setMusicError("Ce fichier audio n'est pas lisible. Essayez un MP3 ou un M4A.");
+    }
+  }
 
   const update = (key: string, patch: Partial<SlideState>) => setSlides((current) => current.map((slide) => (slide.key === key ? { ...slide, ...patch } : slide)));
   const move = (index: number, delta: number) =>
@@ -179,6 +332,10 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
   async function exportVideo() {
     setError(null);
     if (!brand) return;
+    if (hasSound && !soundtrack) {
+      setError("Le son est en cours de préparation. Réessayez dans un instant.");
+      return;
+    }
     if (slides.some((slide) => slide.imageId && !loaded[slide.imageId])) {
       setError("Les images sont encore en cours de chargement. Réessayez dans un instant.");
       return;
@@ -188,7 +345,7 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
     setPhase("encoding");
     setProgress(0);
     try {
-      const result = await encodeProject(project, setProgress, () => cancelled.current);
+      const result = await encodeProject(project, setProgress, () => cancelled.current, "avc", soundtrack ? { buffer: soundtrack, codec: "aac" } : null);
       if (!result) {
         setPhase("idle");
         return;
@@ -323,8 +480,27 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
                       value={slide.text}
                       onChange={(event) => update(slide.key, { text: event.target.value })}
                     />
+                    {voiceReady ? (
+                      <div>
+                        <textarea
+                          className={control}
+                          rows={2}
+                          maxLength={MAX_VOICEOVER_LINE}
+                          placeholder="Voix off : texte lu à voix haute (facultatif)"
+                          value={slide.narration}
+                          onChange={(event) => update(slide.key, { narration: event.target.value })}
+                        />
+                        {slide.narration.trim() ? (
+                          <p className={cn("mt-1 text-xs", clipOf(slide) ? "text-success" : "text-muted")}>
+                            {clipOf(slide)
+                              ? `Voix prête · ${clipOf(slide)?.buffer.duration.toFixed(1)} s`
+                              : "Voix à créer (bouton « Créer la voix off » ci-dessous)"}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                      <label className="flex items-center gap-1.5">
+                      <label className="flex items-center gap-1.5" title="Allongée automatiquement si la voix off est plus longue">
                         Durée
                         <select
                           className="rounded-lg border border-border bg-black/30 px-2 py-1 text-foreground"
@@ -401,6 +577,86 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
           {images.length === 0 ? <p className="text-xs text-muted">Ajoutez des photos à la médiathèque pour les utiliser en fond.</p> : null}
         </Card>
 
+        <Card className="space-y-5">
+          <h2 className="font-semibold">Son</h2>
+          <section className="space-y-3">
+            <h3 className="text-sm font-medium">Voix off</h3>
+            {!voiceInfo.available ? (
+              <p className="text-sm text-muted">La voix off arrive bientôt sur cette installation.</p>
+            ) : !voiceInfo.consented ? (
+              <AiConsent kind="voice" providerLabel={voiceInfo.label} dataProcessor={voiceInfo.dataProcessor} canAccept={voiceInfo.canAccept} />
+            ) : (
+              <>
+                <p className="text-sm text-muted">
+                  Écrivez le texte à lire sous chaque diapositive : une voix de synthèse le lit, et la diapositive s&apos;allonge si besoin.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="space-y-1.5 text-sm font-medium">
+                    <span className="block">Voix</span>
+                    <select className={control} value={voice} onChange={(event) => setVoice(event.target.value as VoiceoverVoice)}>
+                      {VOICEOVER_VOICES.map((id) => (
+                        <option key={id} value={id}>
+                          {VOICEOVER_VOICE_LABELS[id]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2.5 self-end pb-2.5 text-sm">
+                    <input type="checkbox" checked={captionsOn} onChange={(event) => setCaptionsOn(event.target.checked)} className="size-4 accent-[var(--primary)]" />
+                    Sous-titres de la voix off
+                  </label>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button variant="secondary" disabled={voiceBusy || busy} onClick={() => void createVoiceover()}>
+                    {voiceBusy ? "Création de la voix…" : `Créer la voix off (${voiceInfo.cost} crédit${voiceInfo.cost > 1 ? "s" : ""})`}
+                  </Button>
+                  {staleVoices > 0 && Object.keys(clips).length > 0 ? (
+                    <p className="text-xs text-warning">Texte modifié : recréez la voix off pour l&apos;entendre.</p>
+                  ) : null}
+                </div>
+                {voiceError ? <Alert tone="error">{voiceError}</Alert> : null}
+                <p className="text-xs text-muted">Voix générée par intelligence artificielle : indiquez-le dans le texte de votre publication.</p>
+              </>
+            )}
+          </section>
+          <section className="space-y-3 border-t border-border pt-4">
+            <h3 className="text-sm font-medium">Musique de fond</h3>
+            {music ? (
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <span className="min-w-0 truncate font-medium">{music.name}</span>
+                <label className="flex items-center gap-2 text-xs text-muted">
+                  Volume
+                  <input
+                    type="range"
+                    min={0.05}
+                    max={1}
+                    step={0.05}
+                    value={musicVolume}
+                    onChange={(event) => setMusicVolume(Number(event.target.value))}
+                    className="accent-[var(--primary)]"
+                  />
+                </label>
+                <button type="button" className="text-xs text-danger hover:underline" onClick={() => setMusic(null)}>
+                  Retirer
+                </button>
+              </div>
+            ) : (
+              <input
+                type="file"
+                accept="audio/*"
+                onChange={(event) => void chooseMusic(event.target.files?.[0])}
+                className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-sm file:text-foreground"
+              />
+            )}
+            {musicError ? <Alert tone="error">{musicError}</Alert> : null}
+            <p className="text-xs text-muted">
+              Le fichier reste sur votre appareil : seule la vidéo terminée est envoyée. Elle est jouée en boucle et baissée
+              automatiquement sous la voix off. Utilisez uniquement une musique dont vous avez les droits (libre de droits ou
+              sous licence) : les réseaux retirent ou rendent muettes les vidéos qui ne les respectent pas.
+            </p>
+          </section>
+        </Card>
+
         <Card className="space-y-3">
           <label className="flex items-center gap-2.5 text-sm font-medium">
             <input type="checkbox" checked={outroOn} onChange={(event) => setOutroOn(event.target.checked)} className="size-4 accent-[var(--primary)]" />
@@ -428,7 +684,12 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
               {time.toFixed(1)} / {duration.toFixed(1)} s{tooLong ? ` · ${MAX_VIDEO_SECONDS} s maximum` : ""}
             </p>
           </div>
-          <p className="text-xs text-muted">Vidéo sans son pour l&apos;instant. La musique et la voix off arrivent ensuite.</p>
+          {!hasSound ? <p className="text-xs text-muted">Vidéo muette : ajoutez une voix off ou une musique dans « Son ».</p> : null}
+          {hasSound && audioSupported === false ? (
+            <Alert tone="error">
+              Ce navigateur ne sait pas ajouter le son à la vidéo. Utilisez Chrome ou Edge sur Windows ou Mac, ou Safari.
+            </Alert>
+          ) : null}
           {error ? <Alert tone="error">{error}</Alert> : null}
           {busy ? (
             <div className="space-y-2">
@@ -445,7 +706,7 @@ export function VideoEditor({ brands, images, access }: { brands: EditorBrand[];
               ) : null}
             </div>
           ) : (
-            <Button className="w-full" disabled={!supported || tooLong || !brand || !name.trim()} onClick={() => void exportVideo()}>
+            <Button className="w-full" disabled={!supported || tooLong || !brand || !name.trim() || (hasSound && !audioSupported) || voiceBusy} onClick={() => void exportVideo()}>
               Créer la vidéo
             </Button>
           )}

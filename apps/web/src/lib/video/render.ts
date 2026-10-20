@@ -11,6 +11,14 @@ export interface VideoSlide {
   imageHeight: number;
   text: string;
   seconds: number;
+  /** Sous-titres de la voix off, en secondes depuis le début de la diapositive. */
+  captions: Caption[];
+}
+
+export interface Caption {
+  text: string;
+  start: number;
+  end: number;
 }
 
 export interface VideoProject {
@@ -27,6 +35,37 @@ export interface VideoProject {
 }
 
 export const TRANSITION_SECONDS = 0.5;
+const CAPTION_CHARS = 42;
+
+/**
+ * Découpe le texte lu en sous-titres courts (une ou deux lignes), répartis sur la durée de la voix
+ * au prorata de leur longueur : la parole suit à peu près le nombre de caractères.
+ */
+export function captionChunks(text: string, start: number, seconds: number): Caption[] {
+  const chunks: string[] = [];
+  for (const sentence of text.trim().split(/(?<=[.!?…;:])\s+/)) {
+    let line = "";
+    for (const word of sentence.split(/\s+/).filter(Boolean)) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (candidate.length <= CAPTION_CHARS || !line) line = candidate;
+      else {
+        chunks.push(line);
+        line = word;
+      }
+    }
+    if (line) chunks.push(line);
+  }
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  if (total === 0 || seconds <= 0) return [];
+  const captions: Caption[] = [];
+  let cursor = start;
+  for (const chunk of chunks) {
+    const length = (seconds * chunk.length) / total;
+    captions.push({ text: chunk, start: cursor, end: cursor + length });
+    cursor += length;
+  }
+  return captions;
+}
 
 /** Durée totale (secondes). Les transitions se chevauchent avec la fin de la diapositive précédente. */
 export function projectDuration(project: VideoProject): number {
@@ -96,7 +135,9 @@ function drawSlide(ctx: Ctx, project: VideoProject, slide: VideoSlide, local: nu
     const lines = wrapText(ctx, slide.text, w - margin * 2);
     const lineHeight = size * 1.15;
     const block = lines.length * lineHeight;
-    const baseY = slide.image ? h - margin - block + size * 0.85 : (h - block) / 2 + size * 0.85;
+    // Avec des sous-titres, le texte remonte pour leur laisser le bas de l'image.
+    const bottom = slide.captions.length > 0 ? unit * 0.24 : 0;
+    const baseY = slide.image ? h - margin - bottom - block + size * 0.85 : (h - block) / 2 - bottom / 2 + size * 0.85;
     ctx.globalAlpha = base * appear;
     ctx.fillStyle = "#ffffff";
     ctx.shadowColor = "rgba(0,0,0,0.35)";
@@ -107,7 +148,32 @@ function drawSlide(ctx: Ctx, project: VideoProject, slide: VideoSlide, local: nu
     ctx.shadowBlur = 0;
     ctx.globalAlpha = base;
   }
+  drawCaption(ctx, project, slide, local);
   drawLogo(ctx, project, false);
+}
+
+function drawCaption(ctx: Ctx, project: VideoProject, slide: VideoSlide, local: number) {
+  const caption = slide.captions.find((item) => local >= item.start && local < item.end);
+  if (!caption) return;
+  const { width: w, height: h } = project;
+  const unit = Math.min(w, h);
+  const size = Math.round(unit * 0.046);
+  ctx.font = `700 ${size}px ${project.fontFamily}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  const lines = wrapText(ctx, caption.text, w * 0.8).slice(0, 2);
+  const lineHeight = size * 1.25;
+  const padX = size * 0.6;
+  const padY = size * 0.35;
+  const boxW = Math.max(...lines.map((line) => ctx.measureText(line).width)) + padX * 2;
+  const boxH = lines.length * lineHeight + padY * 2;
+  const y = h - unit * 0.08 - boxH;
+  ctx.fillStyle = "rgba(0,0,0,0.62)";
+  ctx.beginPath();
+  ctx.roundRect((w - boxW) / 2, y, boxW, boxH, size * 0.35);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  lines.forEach((line, index) => ctx.fillText(line, w / 2, y + padY + size + index * lineHeight));
 }
 
 function drawLogo(ctx: Ctx, project: VideoProject, large: boolean) {

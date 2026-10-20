@@ -3,7 +3,9 @@ import { getMetricsFetchers } from "@/server/analytics";
 import { collectDueMetrics } from "@/server/analytics/collector";
 import { ensureDatabaseReady, getDb } from "@/server/db/client";
 import { getServerEnv } from "@/server/env";
+import { getMediaStorage } from "@/server/media/storage";
 import { runProductionPublishingCycle } from "@/server/publishing";
+import { purgeOldVoiceovers } from "@/server/services/voiceover";
 
 export const maxDuration = 60;
 
@@ -36,7 +38,14 @@ async function handler(request: Request): Promise<Response> {
   } catch (error) {
     console.error("Relevé des statistiques impossible", error instanceof Error ? error.message : error);
   }
-  return Response.json({ ok: true, ...summary, metrics });
+  // Fichiers de voix off temporaires (montage terminé depuis plus d'un jour).
+  let voiceoversPurged = 0;
+  try {
+    if (getMediaStorage().isConfigured()) voiceoversPurged = await purgeOldVoiceovers(getDb(), getMediaStorage());
+  } catch (error) {
+    console.error("Nettoyage des voix off impossible", error instanceof Error ? error.message : error);
+  }
+  return Response.json({ ok: true, ...summary, metrics, voiceoversPurged });
 }
 
 export { handler as GET, handler as POST };

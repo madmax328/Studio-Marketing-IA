@@ -2,7 +2,8 @@ import "server-only";
 import { getServerEnv } from "@/server/env";
 import { anthropicTextProvider } from "./anthropic";
 import { createOpenAiImageProvider } from "./openai-image";
-import type { ImageGenerationProvider, TextGenerationProvider } from "./types";
+import { createOpenAiSpeechProvider } from "./openai-speech";
+import type { ImageGenerationProvider, SpeechGenerationProvider, TextGenerationProvider } from "./types";
 
 const TEXT_PROVIDERS: Record<string, TextGenerationProvider> = {
   anthropic: anthropicTextProvider,
@@ -26,4 +27,11 @@ export function getImageProvider(): ImageGenerationProvider {
   return provider;
 }
 
-export type { ImageGenerationProvider, TextGenerationProvider } from "./types";
+const speechProvider = createOpenAiSpeechProvider();
+
+/** Fournisseur de voix off (inactif tant que la clé OpenAI n'est pas renseignée). */
+export function getSpeechProvider(): SpeechGenerationProvider {
+  return speechProvider;
+}
+
+export type { ImageGenerationProvider, SpeechGenerationProvider, TextGenerationProvider } from "./types";

@@ -30,6 +30,14 @@ export async function deleteUserData(
         await storage.remove(media.slice(i, i + 100).flatMap((m) => [m.storageKey, ...(m.posterStorageKey ? [m.posterStorageKey] : [])]));
       }
     }
+    // Voix off temporaires encore présentes (effacées sinon par le planificateur).
+    const voiceovers = await c.generationJobs
+      .find({ workspaceId: { $in: ownedIds }, kind: "voiceover", "result.clips.0": { $exists: true } }, { projection: { result: 1 } })
+      .toArray();
+    const voiceKeys = voiceovers.flatMap((job) => ((job.result as { clips?: { storageKey: string }[] } | null)?.clips ?? []).map((clip) => clip.storageKey));
+    if (voiceKeys.length > 0 && storage.isConfigured()) {
+      for (let i = 0; i < voiceKeys.length; i += 100) await storage.remove(voiceKeys.slice(i, i + 100));
+    }
     await c.mediaAssets.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.brands.deleteMany({ workspaceId: { $in: ownedIds } });
     await c.posts.deleteMany({ workspaceId: { $in: ownedIds } });

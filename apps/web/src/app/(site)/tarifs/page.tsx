@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CREDIT_COSTS } from "@smia/shared";
 import { PlanCards } from "@/components/site/plan-cards";
-import { imageAiAvailable } from "@/lib/features";
+import { imageAiAvailable, voiceAiAvailable } from "@/lib/features";
 import { SectionHeading } from "@/components/site/section-heading";
 import { getPublicPlans } from "@/server/services/public-plans";
 
@@ -20,6 +20,7 @@ const COSTS: { label: string; cost: number }[] = [
   { label: "Écrire un lot de publications de campagne", cost: CREDIT_COSTS.campaign_posts },
   { label: "Réécrire une publication de campagne", cost: CREDIT_COSTS.campaign_post_regeneration },
   ...(imageAiAvailable() ? [{ label: "Créer une image par IA", cost: CREDIT_COSTS.image_generation }] : []),
+  ...(voiceAiAvailable() ? [{ label: "Ajouter une voix off à une vidéo", cost: CREDIT_COSTS.voiceover }] : []),
 ];
 
 const FREE = ["Créer un visuel avec un modèle", "Programmer et publier", "Modifier un texte vous-même", "Un essai de l'IA qui échoue (remboursé)"];

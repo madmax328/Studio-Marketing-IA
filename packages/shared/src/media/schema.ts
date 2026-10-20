@@ -97,3 +97,35 @@ export const VIDEO_FORMAT_IDS: readonly ImageFormatId[] = ["story", "portrait", 
 
 /** Nature d'un média joint à une publication. */
 export type MediaKindId = "image" | "video";
+
+// ---------- Voix off ----------
+
+/** Voix proposées pour la voix off (identifiants du fournisseur ; libellés descriptifs). */
+export const VOICEOVER_VOICES = ["coral", "nova", "sage", "ash", "onyx"] as const;
+export type VoiceoverVoice = (typeof VOICEOVER_VOICES)[number];
+export const VOICEOVER_VOICE_LABELS: Record<VoiceoverVoice, string> = {
+  coral: "Claire et chaleureuse",
+  nova: "Vive et souriante",
+  sage: "Posée",
+  ash: "Grave et assurée",
+  onyx: "Très grave",
+};
+/** Texte lu sur une diapositive : environ 20 secondes de parole au plus. */
+export const MAX_VOICEOVER_LINE = 300;
+
+/** Demande de voix off pour une vidéo du studio (validée côté serveur). */
+export const voiceoverRequestSchema = z.object({
+  requestId: z.uuid("Demande invalide."),
+  brandId: z.string().regex(/^[a-f0-9]{24}$/, "Marque invalide."),
+  voice: z.enum(VOICEOVER_VOICES).default("coral"),
+  lines: z
+    .array(
+      z.object({
+        slide: z.number().int().min(0).max(MAX_VIDEO_SLIDES - 1),
+        text: z.string().trim().min(1, "Texte de voix off vide.").max(MAX_VOICEOVER_LINE, `Voix off trop longue (${MAX_VOICEOVER_LINE} caractères au plus par diapositive).`),
+      }),
+    )
+    .min(1, "Écrivez le texte à lire sur au moins une diapositive.")
+    .max(MAX_VIDEO_SLIDES),
+});
+export type VoiceoverRequest = z.infer<typeof voiceoverRequestSchema>;

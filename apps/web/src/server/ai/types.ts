@@ -81,6 +81,19 @@ export interface ImageGenerationProvider extends AiProviderInfo {
   generateImage(input: ImageGenerationInput): Promise<ProviderResult<Buffer>>;
 }
 
+/** Lecture d'un texte à voix haute (voix off). */
+export interface SpeechGenerationInput {
+  text: string;
+  voice: string;
+  /** Consignes de diction (langue, ton). */
+  instructions: string;
+}
+
+/** Fournisseur de voix de synthèse : renvoie un fichier audio MP3. */
+export interface SpeechGenerationProvider extends AiProviderInfo {
+  generateSpeech(input: SpeechGenerationInput): Promise<ProviderResult<Buffer>>;
+}
+
 /**
  * Interface commune à tous les fournisseurs de génération de texte (cloud ou local).
  * Ajouter un fournisseur = implémenter cette interface et l'enregistrer dans ./index.ts.
