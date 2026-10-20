@@ -26,6 +26,11 @@ const serverEnvSchema = z.object({
   ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   AI_TEXT_MODEL: z.preprocess(emptyToUndefined, z.string().default("claude-opus-5-5")),
   AI_TEXT_EFFORT: z.preprocess(emptyToUndefined, z.enum(["low", "medium", "high"]).default("medium")),
+  // Création d'images par IA (désactivée tant qu'aucune clé n'est renseignée).
+  AI_IMAGE_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["openai"]).default("openai")),
+  OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  AI_IMAGE_MODEL: z.preprocess(emptyToUndefined, z.string().default("gpt-image-1")),
+  AI_IMAGE_QUALITY: z.preprocess(emptyToUndefined, z.enum(["low", "medium", "high"]).default("medium")),
   // Stockage des médias (Vercel Blob). Le jeton est ajouté automatiquement par Vercel à la connexion d'un store.
   BLOB_READ_WRITE_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
   MEDIA_BLOB_ACCESS: z.preprocess(emptyToUndefined, z.enum(["private", "public"]).default("private")),

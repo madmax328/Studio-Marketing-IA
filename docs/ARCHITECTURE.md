@@ -41,6 +41,7 @@ leur étape commencera, pour ne pas maintenir de code vide.
 | Connexion des réseaux | OAuth par fournisseur (`src/server/social/oauth.ts` : Meta, Threads, LinkedIn) ; état à usage unique lié à l'utilisateur, à l'espace et au navigateur ; comptes proposés gardés chiffrés 15 min le temps du choix ; limite de l'offre vérifiée à la validation | Aucun mot de passe demandé ; aucun jeton exposé ; pas de compte connecté sans choix explicite |
 | Connecteurs réels | `src/server/publishing/publishers/*` (Meta, Threads, LinkedIn), `fetch` injectable et testé sans réseau ; erreurs classées (autorisation, temporaire, définitive, incertaine) | Même file d'envoi que la simulation |
 | Entretien des autorisations | À chaque passage du planificateur : jetons Threads renouvelés 10 jours avant expiration, alerte 7 jours avant pour les autres, comptes expirés marqués et signalés | L'utilisateur n'est jamais surpris par une publication bloquée |
+| Images par IA | Interface `ImageGenerationProvider`, premier fournisseur OpenAI (API Images, appel HTTP direct) ; même garde-fous que le texte (accord par fournisseur, crédits débités puis remboursés si échec, une exécution par demande) ; image sans texte recadrée au format choisi et rangée dans la médiathèque | Le texte et le logo restent exacts car ajoutés par les modèles de visuels |
 | Statistiques | Relevés par le planificateur (même appel que l'envoi, avec le temps restant) : 1 h après parution, puis toutes les 3 h (2 jours), 12 h (7 jours), 2 jours, arrêt à 30 jours ; publication réservée pendant le relevé ; historique dans `analyticsSnapshots`, dernier état sur la publication (`metrics`) | Aucun chiffre estimé : un indicateur non fourni reste absent ; simulations jamais mesurées |
 | Recommandations | Règles simples sur les résultats réels (réseau, créneau horaire, jour, images) ; au moins 6 publications mesurées, 3 par groupe et un écart de 30 % | Pas de conseil fondé sur le hasard |
 | Boucle d'amélioration | Les 3 publications réelles de la marque ayant le plus d'interactions (6 mois) sont transmises à l'IA comme exemples de style, balisées comme données | Les suivantes s'inspirent de ce qui marche, sans recopier ni reprendre de faits |
@@ -53,8 +54,6 @@ leur étape commencera, pour ne pas maintenir de code vide.
 
 | Sujet | Recommandation | Étape |
 |---|---|---|
-| Génération d'images par IA | Interface `ImageGenerationProvider` à ajouter ; fournisseur à choisir (coût, qualité, conditions commerciales) | 3 bis |
-| Fournisseur IA image | Interface `ImageGenerationProvider` ; logo et texte incrustés par gabarit, jamais générés par le modèle | 3 |
 | Workers vidéo (V2) | Service hors Vercel (Railway, Fly.io…) ou service de rendu externe | V2 |
 
 ## Règles de sécurité appliquées

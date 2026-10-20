@@ -87,8 +87,9 @@ export default function PrivacyPage() {
       <h2>Intelligence artificielle</h2>
       <p>
         Pour rédiger vos publications, les informations de votre fiche et votre demande sont envoyées à notre fournisseur
-        d&apos;intelligence artificielle. Cet envoi n&apos;a lieu qu&apos;après votre accord explicite, donné une fois par
-        espace de travail. Ne saisissez pas dans le studio de données personnelles de tiers dont vous n&apos;avez pas
+        d&apos;intelligence artificielle. Pour créer une image, seuls votre description, le secteur et les couleurs de votre
+        marque sont envoyés au fournisseur d&apos;images. Chaque envoi n&apos;a lieu qu&apos;après votre accord explicite,
+        donné une fois par espace de travail et par fournisseur. Ne saisissez pas dans le studio de données personnelles de tiers dont vous n&apos;avez pas
         besoin. Nous n&apos;utilisons pas vos contenus pour entraîner des modèles d&apos;IA.
       </p>
 

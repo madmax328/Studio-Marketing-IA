@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getImageProvider } from "@/server/ai";
 import { getDb } from "@/server/db/client";
 import { getMediaStorage } from "@/server/media/storage";
 import { UserFacingError } from "@/server/services/errors";
 import { createTemplateMedia, deleteMedia, registerUpload, setBrandLogo, uploadKeyFor } from "@/server/services/media";
+import { generateAiImage } from "@/server/services/image-generation";
 import { setPostMedia } from "@/server/services/posts";
 import { requireWorkspace } from "@/server/session";
 import type { ActionResult } from "@/server/actions/studio";
@@ -38,6 +40,18 @@ export async function createTemplateMediaAction(input: unknown): Promise<ActionR
     const media = await createTemplateMedia(getDb(), access, access.userId, getMediaStorage(), input);
     revalidatePath("/medias");
     return { ok: true, data: { mediaId: media._id.toHexString() } };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function generateAiImageAction(input: unknown): Promise<ActionResult<{ mediaId: string }>> {
+  const access = await requireWorkspace();
+  try {
+    const result = await generateAiImage(getDb(), access, access.userId, input, getImageProvider(), getMediaStorage());
+    revalidatePath("/medias");
+    revalidatePath("/abonnement");
+    return { ok: true, data: result };
   } catch (error) {
     return failure(error);
   }

@@ -10,10 +10,12 @@ export function AiConsent({
   providerLabel,
   dataProcessor,
   canAccept,
+  kind = "text",
 }: {
   providerLabel: string;
   dataProcessor: string;
   canAccept: boolean;
+  kind?: "text" | "image";
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -22,11 +24,13 @@ export function AiConsent({
     <Card className="space-y-3">
       <h2 className="text-lg font-semibold">Avant de commencer</h2>
       <p className="text-sm">
-        Pour rédiger vos publications, les informations de votre marque et votre demande sont envoyées à{" "}
+        {kind === "image"
+          ? "Pour créer vos images, votre description et le secteur de votre marque sont envoyés à "
+          : "Pour rédiger vos publications, les informations de votre marque et votre demande sont envoyées à "}
         <strong>{providerLabel}</strong>, un service d&apos;intelligence artificielle opéré par {dataProcessor}.
       </p>
       <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
-        <li>Seules les informations nécessaires à la rédaction sont envoyées.</li>
+        <li>Seules les informations nécessaires sont envoyées.</li>
         <li>Nous n&apos;utilisons pas vos contenus pour entraîner des modèles d&apos;IA.</li>
         <li>Vous pouvez supprimer vos données à tout moment depuis les paramètres.</li>
       </ul>
@@ -36,7 +40,7 @@ export function AiConsent({
           disabled={pending}
           onClick={async () => {
             setPending(true);
-            const result = await acceptAiConsentAction();
+            const result = await acceptAiConsentAction(kind);
             setPending(false);
             if (!result.ok) setError(result.error);
           }}

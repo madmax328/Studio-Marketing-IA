@@ -7,7 +7,7 @@ import {
   type GeneratedPost,
   type GenerationOutput,
 } from "@smia/shared";
-import { TextGenerationError, type ProviderResult, type TextGenerationProvider } from "@/server/ai/types";
+import { TextGenerationError, type AiProviderInfo, type ProviderResult, type TextGenerationProvider } from "@/server/ai/types";
 import { collections, type GenerationJobDoc } from "@/server/db/collections";
 import { bestPerformingPosts } from "@/server/services/analytics";
 import { recordAudit } from "@/server/services/audit";
@@ -32,11 +32,12 @@ export interface GenerationView {
 }
 
 /** Enregistre l'accord de l'espace pour envoyer les données de marque au fournisseur d'IA. */
-export async function acceptAiConsent(db: Db, access: WorkspaceAccess, userId: string, provider: TextGenerationProvider) {
+export async function acceptAiConsent(db: Db, access: WorkspaceAccess, userId: string, provider: AiProviderInfo) {
   assertPermission(access, "workspace:manage");
+  const now = new Date();
   await collections(db).workspaces.updateOne(
     { _id: access.workspace._id },
-    { $set: { aiConsent: { provider: provider.id, acceptedAt: new Date(), acceptedByUserId: userId }, updatedAt: new Date() } },
+    { $set: { [`aiConsents.${provider.id}`]: { acceptedAt: now, acceptedByUserId: userId }, updatedAt: now } },
   );
   await recordAudit(db, {
     workspaceId: access.workspace._id,
@@ -46,8 +47,9 @@ export async function acceptAiConsent(db: Db, access: WorkspaceAccess, userId: s
   });
 }
 
-export function hasAiConsent(access: WorkspaceAccess, provider: TextGenerationProvider): boolean {
-  return access.workspace.aiConsent?.provider === provider.id;
+export function hasAiConsent(access: WorkspaceAccess, provider: AiProviderInfo): boolean {
+  // `aiConsent` : ancien format (un seul fournisseur), toujours reconnu.
+  return access.workspace.aiConsent?.provider === provider.id || Boolean(access.workspace.aiConsents?.[provider.id]);
 }
 
 /**
@@ -60,7 +62,7 @@ export async function runAiJob<T>(
   db: Db,
   access: WorkspaceAccess,
   userId: string,
-  provider: TextGenerationProvider,
+  provider: AiProviderInfo,
   params: {
     requestId: string;
     kind: GenerationJobDoc["kind"];
@@ -73,10 +75,10 @@ export async function runAiJob<T>(
 ): Promise<{ jobId: ObjectId; output: T }> {
   assertPermission(access, "content:write");
   if (!provider.isConfigured()) {
-    throw new UserFacingError("La génération de texte n'est pas encore disponible.", "unavailable");
+    throw new UserFacingError("Ce service d'IA n'est pas encore disponible.", "unavailable");
   }
   if (!hasAiConsent(access, provider)) {
-    throw new UserFacingError("Vous devez d'abord accepter l'envoi des informations de votre marque à l'IA.", "consent_required");
+    throw new UserFacingError(`Vous devez d'abord accepter l'envoi de vos informations à ${provider.label}.`, "consent_required");
   }
   const { generationJobs } = collections(db);
 

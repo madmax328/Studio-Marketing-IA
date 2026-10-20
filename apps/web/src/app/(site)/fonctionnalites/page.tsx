@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND_TONE_LABELS, CAMPAIGN_OBJECTIVES, IMAGE_FORMAT_IDS, IMAGE_FORMATS, TEMPLATE_IDS, TEMPLATE_LABELS } from "@smia/shared";
 import { FeatureBento } from "@/components/site/feature-bento";
+import { imageAiAvailable } from "@/lib/features";
 
 export const metadata: Metadata = {
   title: "Fonctionnalités",
@@ -43,7 +44,9 @@ const FEATURES: Feature[] = [
       `${TEMPLATE_IDS.length} modèles : ${TEMPLATE_IDS.map((id) => TEMPLATE_LABELS[id].label.toLowerCase()).join(", ")}.`,
       `${IMAGE_FORMAT_IDS.length} formats : ${IMAGE_FORMAT_IDS.map((id) => IMAGE_FORMATS[id].label.toLowerCase()).join(", ")}.`,
       "Votre logo et vos couleurs ajoutés automatiquement ; vos propres photos rangées dans votre médiathèque.",
-      "Création d'images par IA : prévue, en complément des modèles.",
+      imageAiAvailable()
+        ? "Création d'images par IA à partir d'une simple description, sans texte incrusté : votre titre et votre logo sont ajoutés ensuite par les modèles."
+        : "Création d'images par IA : prévue, en complément des modèles.",
     ],
   },
   {

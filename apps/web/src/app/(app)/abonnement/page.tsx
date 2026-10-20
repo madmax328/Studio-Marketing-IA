@@ -26,6 +26,7 @@ const OPERATION_LABELS: Record<string, string> = {
   campaign_strategy: "Stratégie de campagne",
   campaign_posts: "Rédaction de campagne",
   campaign_post_regeneration: "Régénération d'une publication",
+  image_generation: "Création d'une image par IA",
 };
 
 export default async function BillingPage({ searchParams }: PageProps<"/abonnement">) {

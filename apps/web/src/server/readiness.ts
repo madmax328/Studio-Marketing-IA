@@ -1,6 +1,6 @@
 import "server-only";
 import { SOCIAL_NETWORK_IDS, SOCIAL_NETWORKS } from "@smia/shared";
-import { getTextProvider } from "@/server/ai";
+import { getImageProvider, getTextProvider } from "@/server/ai";
 import { isStripeConfigured, priceIdsByPlan } from "@/server/billing/stripe";
 import { ensureDatabaseReady, getDb } from "@/server/db/client";
 import { collections } from "@/server/db/collections";
@@ -46,6 +46,7 @@ export async function readinessReport(): Promise<{ ready: boolean; checks: Readi
   add({ id: "email-from", label: "Expéditeur des e-mails", ok: !env.EMAIL_FROM.includes("example.com"), blocking: true, detail: env.EMAIL_FROM.includes("example.com") ? "EMAIL_FROM utilise encore l'adresse d'exemple." : "Expéditeur personnalisé." });
 
   add({ id: "ai", label: "IA de rédaction", ok: getTextProvider().isConfigured(), blocking: true, detail: getTextProvider().isConfigured() ? "Fournisseur configuré." : "Ajoutez ANTHROPIC_API_KEY." });
+  add({ id: "images-ai", label: "Images par IA", ok: getImageProvider().isConfigured(), blocking: false, detail: getImageProvider().isConfigured() ? "Fournisseur d'images configuré." : "Facultatif : ajoutez OPENAI_API_KEY pour proposer la création d'images." });
   add({ id: "storage", label: "Stockage des images", ok: getMediaStorage().isConfigured(), blocking: true, detail: getMediaStorage().isConfigured() ? "Vercel Blob connecté." : "Connectez un store Vercel Blob au projet." });
   add({ id: "cron", label: "Envoi automatique", ok: Boolean(env.CRON_SECRET), blocking: true, detail: env.CRON_SECRET ? "CRON_SECRET défini (vérifiez que la tâche cron-job.org tourne chaque minute)." : "Ajoutez CRON_SECRET et la tâche planifiée." });
   add({ id: "encryption", label: "Chiffrement des jetons", ok: Boolean(env.SOCIAL_TOKEN_ENCRYPTION_KEY), blocking: true, detail: env.SOCIAL_TOKEN_ENCRYPTION_KEY ? "Clé définie." : "Ajoutez SOCIAL_TOKEN_ENCRYPTION_KEY (sans elle, aucun réseau réel ne peut être connecté)." });

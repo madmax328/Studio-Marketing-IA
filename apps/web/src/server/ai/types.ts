@@ -56,11 +56,8 @@ export interface CampaignPostsInput extends CampaignContext {
   pastPerformance?: PastPerformance[];
 }
 
-/**
- * Interface commune à tous les fournisseurs de génération de texte (cloud ou local).
- * Ajouter un fournisseur = implémenter cette interface et l'enregistrer dans ./index.ts.
- */
-export interface TextGenerationProvider {
+/** Ce que tout fournisseur d'IA expose (accord RGPD, disponibilité). */
+export interface AiProviderInfo {
   id: string;
   /** Nom affiché à l'utilisateur, notamment pour l'informer de l'envoi de ses données. */
   label: string;
@@ -68,6 +65,27 @@ export interface TextGenerationProvider {
   dataProcessor: string;
   /** Le fournisseur est-il configuré (clé, service local joignable…) ? */
   isConfigured(): boolean;
+}
+
+/** Image produite par un fournisseur (PNG ou JPEG brut). */
+export interface ImageGenerationInput {
+  prompt: string;
+  orientation: "square" | "portrait" | "landscape";
+}
+
+/**
+ * Fournisseur de création d'images. L'image ne contient jamais de texte ni de logo :
+ * ils sont ajoutés ensuite par les modèles de visuels, avec les vraies informations de la marque.
+ */
+export interface ImageGenerationProvider extends AiProviderInfo {
+  generateImage(input: ImageGenerationInput): Promise<ProviderResult<Buffer>>;
+}
+
+/**
+ * Interface commune à tous les fournisseurs de génération de texte (cloud ou local).
+ * Ajouter un fournisseur = implémenter cette interface et l'enregistrer dans ./index.ts.
+ */
+export interface TextGenerationProvider extends AiProviderInfo {
   generatePosts(input: TextGenerationInput): Promise<TextGenerationResult>;
   generateCampaignStrategy(input: StrategyInput): Promise<ProviderResult<StrategyOutput>>;
   generateCampaignPosts(input: CampaignPostsInput): Promise<ProviderResult<CampaignPostsOutput>>;

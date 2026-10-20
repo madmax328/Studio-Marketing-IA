@@ -38,3 +38,8 @@ export async function toEmbeddableDataUrl(bytes: Buffer, maxSize: number, keepTr
 export async function toJpeg(png: Buffer): Promise<Buffer> {
   return sharp(png).flatten({ background: "#ffffff" }).jpeg({ quality: 90, mozjpeg: true }).toBuffer();
 }
+
+/** Recadre une image au format exact demandé (centré) et la convertit en JPEG. */
+export async function fitToFormat(bytes: Buffer, width: number, height: number): Promise<Buffer> {
+  return sharp(bytes).rotate().resize({ width, height, fit: "cover", position: "centre" }).flatten({ background: "#ffffff" }).jpeg({ quality: 88, mozjpeg: true }).toBuffer();
+}

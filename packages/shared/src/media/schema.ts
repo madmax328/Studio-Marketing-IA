@@ -50,3 +50,26 @@ export function readableTextColor(background: string): "#111111" | "#ffffff" {
   const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
   return luminance > 0.4 ? "#111111" : "#ffffff";
 }
+
+/** Styles proposés pour les images créées par IA. */
+export const IMAGE_STYLES = ["photo", "illustration", "minimaliste"] as const;
+export type ImageStyle = (typeof IMAGE_STYLES)[number];
+export const IMAGE_STYLE_LABELS: Record<ImageStyle, string> = {
+  photo: "Photo réaliste",
+  illustration: "Illustration",
+  minimaliste: "Minimaliste",
+};
+
+/** Demande de création d'image par IA (validée côté serveur). */
+export const imageGenerationRequestSchema = z.object({
+  requestId: z.uuid("Demande invalide."),
+  brandId: z.string().regex(/^[a-f0-9]{24}$/, "Marque invalide."),
+  description: z
+    .string()
+    .trim()
+    .min(8, "Décrivez l'image en quelques mots (8 caractères au moins).")
+    .max(800, "Description trop longue (800 caractères au plus)."),
+  format: z.enum(IMAGE_FORMAT_IDS as [ImageFormatId, ...ImageFormatId[]]),
+  style: z.enum(IMAGE_STYLES).default("photo"),
+});
+export type ImageGenerationRequest = z.infer<typeof imageGenerationRequestSchema>;

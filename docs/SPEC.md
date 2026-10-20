@@ -50,9 +50,8 @@ pages d'accès restylées. Thème « pilote automatique » : signalétique d'aé
   forme, SIRET, RCS, TVA, adresse, directeur de la publication, e-mail de contact) et **désigner un médiateur de la
   consommation** (obligatoire pour vendre aux particuliers). Faire relire les textes par un professionnel du droit.
 
-- **Brancher un fournisseur d'images IA** (OpenAI gpt-image recommandé ; Google ou fal.ai possibles) derrière une
-  interface `ImageGenerationProvider`. L'IA produit uniquement l'image de fond ; texte, logo et couleurs restent
-  incrustés par les gabarits. Décision reportée par le porteur du projet le 14/10/2026.
+- **Images par IA** : branchées (OpenAI, interface `ImageGenerationProvider`), actives dès que `OPENAI_API_KEY` est
+  renseignée. L'IA ne produit que l'image ; texte et logo restent ajoutés par les modèles de visuels.
 - **Avant l'ouverture commerciale : `SOCIAL_SIMULATION_ENABLED=false`** pour retirer les comptes de test.
 - **Créer les applications Meta et LinkedIn** puis tester chaque connecteur sur un vrai compte (voir
   `docs/SOCIAL_NETWORKS.md`) ; les pages légales (confidentialité, conditions) sont exigées par Meta pour l'App Review.

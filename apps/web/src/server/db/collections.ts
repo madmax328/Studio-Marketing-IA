@@ -34,6 +34,8 @@ export interface WorkspaceDoc {
   limitOverrides?: Partial<PlanLimits>;
   /** Accord donné pour envoyer les données de la marque à un fournisseur d'IA externe (RGPD). */
   aiConsent?: { provider: string; acceptedAt: Date; acceptedByUserId: string };
+  /** Accords par fournisseur d'IA (texte, images…), indépendants les uns des autres. */
+  aiConsents?: Record<string, { acceptedAt: Date; acceptedByUserId: string }>;
   schemaVersion: 1;
   createdAt: Date;
   updatedAt: Date;
@@ -225,7 +227,7 @@ export interface MediaAssetDoc {
   createdByUserId: string;
   kind: "image";
   /** Origine : envoyé par l'utilisateur ou créé avec un gabarit. */
-  source: "upload" | "template";
+  source: "upload" | "template" | "ai";
   name: string;
   /** Type réel détecté côté serveur (pas celui annoncé par le navigateur). */
   mimeType: "image/jpeg" | "image/png" | "image/webp";
@@ -308,7 +310,7 @@ export interface GenerationJobDoc {
   userId: string;
   /** Identifiant fourni par le navigateur : une même demande n'est générée (et comptée) qu'une fois. */
   requestId: string;
-  kind: "text" | "campaign_strategy" | "campaign_posts";
+  kind: "text" | "campaign_strategy" | "campaign_posts" | "image";
   campaignId?: ObjectId;
   provider: string;
   model: string | null;

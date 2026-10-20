@@ -1,17 +1,26 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { roleHasPermission } from "@smia/shared";
+import { CREDIT_COSTS, roleHasPermission } from "@smia/shared";
+import { AiImageCreator } from "@/components/media/ai-image-creator";
+import { AiConsent } from "@/components/studio/ai-consent";
 import { DeleteMediaButton } from "@/components/media/delete-media-button";
 import { MediaUploader } from "@/components/media/media-uploader";
 import { buttonStyles } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/card";
+import { getImageProvider } from "@/server/ai";
 import { getDb } from "@/server/db/client";
 import { getServerEnv } from "@/server/env";
 import { getMediaStorage } from "@/server/media/storage";
+import { getCreditAccount, remainingCredits } from "@/server/services/billing";
+import { listBrands } from "@/server/services/brands";
+import { hasAiConsent } from "@/server/services/generation";
 import { listMedia } from "@/server/services/media";
 import { requireWorkspace } from "@/server/session";
 
 export const metadata: Metadata = { title: "Médiathèque" };
+
+/** La création d'une image par IA peut prendre jusqu'à une minute. */
+export const maxDuration = 120;
 
 export default async function MediaPage({ searchParams }: PageProps<"/medias">) {
   const { page, cree } = await searchParams;
@@ -19,6 +28,10 @@ export default async function MediaPage({ searchParams }: PageProps<"/medias">) 
   const configured = getMediaStorage().isConfigured();
   const result = await listMedia(getDb(), access, Number(page) || 1);
   const canWrite = roleHasPermission(access.role, "content:write");
+  const imageProvider = getImageProvider();
+  const showAiImages = configured && canWrite && imageProvider.isConfigured();
+  const brands = showAiImages ? await listBrands(getDb(), access) : [];
+  const credits = showAiImages ? remainingCredits(await getCreditAccount(getDb(), access.workspace)) : 0;
 
   return (
     <div className="space-y-6">
@@ -39,6 +52,23 @@ export default async function MediaPage({ searchParams }: PageProps<"/medias">) 
 
       {!configured ? <Alert>Le stockage des médias n&apos;est pas encore activé sur cette installation.</Alert> : null}
       {cree ? <Alert tone="success">Le visuel a été ajouté à la médiathèque.</Alert> : null}
+
+      {showAiImages ? (
+        brands.length === 0 ? null : hasAiConsent(access, imageProvider) ? (
+          <AiImageCreator
+            brands={brands.map((brand) => ({ id: brand._id.toHexString(), name: brand.name }))}
+            credits={credits}
+            cost={CREDIT_COSTS.image_generation}
+          />
+        ) : (
+          <AiConsent
+            kind="image"
+            providerLabel={imageProvider.label}
+            dataProcessor={imageProvider.dataProcessor}
+            canAccept={roleHasPermission(access.role, "workspace:manage")}
+          />
+        )
+      ) : null}
 
       {result.items.length === 0 ? (
         <Card>
@@ -63,7 +93,7 @@ export default async function MediaPage({ searchParams }: PageProps<"/medias">) 
                 </p>
                 <div className="flex items-center justify-between text-xs text-muted">
                   <span>
-                    {media.width}×{media.height} · {media.source === "template" ? "Visuel" : "Envoyée"}
+                    {media.width}×{media.height} · {media.source === "template" ? "Visuel" : media.source === "ai" ? "Image IA" : "Envoyée"}
                   </span>
                   {canWrite ? <DeleteMediaButton mediaId={media._id.toHexString()} /> : null}
                 </div>

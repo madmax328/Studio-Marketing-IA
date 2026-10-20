@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTextProvider } from "@/server/ai";
+import { getImageProvider, getTextProvider } from "@/server/ai";
 import { getDb } from "@/server/db/client";
 import { UserFacingError } from "@/server/services/errors";
 import { acceptAiConsent, generateTextPosts, type GenerationView } from "@/server/services/generation";
@@ -10,14 +10,15 @@ import { requireWorkspace } from "@/server/session";
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string; code?: UserFacingError["code"] };
 
-export async function acceptAiConsentAction(): Promise<ActionResult<null>> {
+export async function acceptAiConsentAction(kind: "text" | "image" = "text"): Promise<ActionResult<null>> {
   const access = await requireWorkspace();
   try {
-    await acceptAiConsent(getDb(), access, access.userId, getTextProvider());
+    await acceptAiConsent(getDb(), access, access.userId, kind === "image" ? getImageProvider() : getTextProvider());
   } catch (error) {
     return failure(error);
   }
   revalidatePath("/studio");
+  revalidatePath("/medias");
   return { ok: true, data: null };
 }
 

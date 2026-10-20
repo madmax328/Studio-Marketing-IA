@@ -21,6 +21,8 @@ export const CREDIT_COSTS = {
   campaign_strategy: 1,
   campaign_posts: 2,
   campaign_post_regeneration: 1,
+  /** Une image créée par IA (plus coûteuse qu'un texte). */
+  image_generation: 3,
 } as const;
 
 export type CreditOperation = keyof typeof CREDIT_COSTS;
