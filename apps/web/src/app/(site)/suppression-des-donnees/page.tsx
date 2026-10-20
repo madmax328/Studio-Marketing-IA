@@ -8,13 +8,22 @@ export const metadata: Metadata = {
 };
 
 /** Instructions de suppression des données (également exigées par Meta pour les applications connectées). */
-export default function DataDeletionPage() {
+export default async function DataDeletionPage({ searchParams }: PageProps<"/suppression-des-donnees">) {
+  const { demande } = await searchParams;
+  const code = typeof demande === "string" && /^[A-Za-z0-9_-]{6,40}$/.test(demande) ? demande : null;
   return (
     <LegalPage
       title="Suppression des données"
       current="/suppression-des-donnees"
       intro="Vous pouvez supprimer à tout moment votre compte et toutes les données associées, ou seulement retirer l'accès à un réseau social."
     >
+      {code ? (
+        <p className="rounded-xl border border-line bg-white/[0.03] p-4">
+          Demande <strong>{code}</strong> reçue : les autorisations et les comptes liés à votre profil sur ce réseau ont été
+          supprimés de notre service.
+        </p>
+      ) : null}
+
       <h2>Supprimer votre compte et toutes vos données</h2>
       <ol className="list-decimal pl-5">
         <li>Connectez-vous, puis ouvrez « Paramètres ».</li>

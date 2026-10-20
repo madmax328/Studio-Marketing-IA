@@ -74,6 +74,8 @@ L'envoi des publications programmées est déclenché par un appel à `/api/cron
 
 ## Connecter les vrais réseaux
 
+Pas à pas complet (applications Meta, Threads, LinkedIn, premier essai, validation) : `docs/GUIDE_RESEAUX.md`.
+
 Chaque réseau s'active dès que ses identifiants sont dans Vercel (avec `SOCIAL_TOKEN_ENCRYPTION_KEY`) ; sinon son
 bouton reste « bientôt disponible ». Détails et premier test : `docs/SOCIAL_NETWORKS.md`.
 

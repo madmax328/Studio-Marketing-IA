@@ -17,6 +17,7 @@ import {
   receiveOAuthCallback,
   startOAuthConnection,
 } from "@/server/services/social-connections";
+import { handlePlatformDeletion, handlePlatformUninstall } from "@/server/services/platform-callbacks";
 import { setPostAccount } from "@/server/services/posts";
 import { ensurePersonalWorkspace, getWorkspaceAccess, type WorkspaceAccess } from "@/server/services/workspaces";
 
@@ -209,5 +210,23 @@ describe.skipIf(!uri)("connexion des comptes sociaux (MongoDB réel)", () => {
     expect(third.warned).toBe(0);
     expect(notifier.accountExpiring).toHaveBeenCalledTimes(2);
     expect(notifier.accountExpired).toHaveBeenCalledTimes(1);
+  });
+
+  it("rappels Threads : la désinstallation efface les jetons, la suppression efface les comptes", async () => {
+    const threads = (id: string): OAuthCandidate => ({ ...page(id, "threads"), scopes: [] });
+    const stateId = await startOAuthConnection(db, alice, "alice", "threads");
+    await receiveOAuthCallback(db, { stateId, userId: "alice", provider: "threads", encryptionKey: key, exchange: async () => [threads("TH1")] });
+    await confirmOAuthConnection(db, alice, "alice", stateId, ["threads:TH1"]);
+
+    expect(await handlePlatformUninstall(db, "threads", "TH1")).toBe(1);
+    const revoked = await collections(db).socialAccounts.findOne({ externalAccountId: "TH1" });
+    expect(revoked).toMatchObject({ status: "revoked", accessToken: null });
+    // Un compte d'un autre fournisseur avec le même identifiant n'est pas touché.
+    expect(await handlePlatformUninstall(db, "meta", "TH1")).toBe(0);
+
+    const result = await handlePlatformDeletion(db, "threads", "TH1");
+    expect(result.deleted).toBe(1);
+    expect(result.confirmationCode.length).toBeGreaterThan(8);
+    expect(await collections(db).socialAccounts.countDocuments({ externalAccountId: "TH1" })).toBe(0);
   });
 });
