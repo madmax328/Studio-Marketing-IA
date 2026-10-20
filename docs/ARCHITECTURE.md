@@ -57,7 +57,6 @@ leur étape commencera, pour ne pas maintenir de code vide.
 
 | Sujet | Recommandation | Étape |
 |---|---|---|
-| Vidéo LinkedIn | API Videos (envoi en plusieurs parties, puis publication) | V2 |
 | TikTok, YouTube | Content Posting API (audit TikTok obligatoire) et YouTube Data API (quota, vérification Google) | V2 |
 
 ## Règles de sécurité appliquées

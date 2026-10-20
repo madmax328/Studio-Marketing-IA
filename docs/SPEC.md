@@ -74,7 +74,7 @@ voix off, sous-titres, gestion d'équipe et multi-marques pour les agences, Goog
 État de la V2 :
 - **Vidéos courtes — fait.** Montage dans le navigateur à partir des images de la médiathèque (jusqu'à 8 diapositives,
   60 s, 3 transitions, carte de fin), MP4 H.264 ; publication sur Facebook (vidéo de Page), Instagram (Reels) et
-  Threads. LinkedIn, TikTok et YouTube : à venir.
+  Threads et LinkedIn (Videos API, envoi en plusieurs parties).
 - **Voix off, sous-titres, musique — fait.** Voix de synthèse (OpenAI, après accord, 1 crédit par vidéo) lue sur chaque
   diapositive, sous-titres incrustés synchronisés, musique fournie par l'utilisateur (jamais envoyée au serveur), baissée
   sous la voix ; son AAC.

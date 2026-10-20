@@ -12,7 +12,7 @@ describe("conditions de programmation", () => {
   });
 
   it("signale les réseaux dont la publication vidéo n'est pas encore branchée", () => {
-    expect(schedulingProblems({ network: "linkedin", text: "x", mediaIds: one, mediaKind: "video" })[0]).toContain("arrive bientôt");
-    expect(schedulingProblems({ network: "threads", text: "x", mediaIds: one, mediaKind: "video" })).toEqual([]);
+    expect(schedulingProblems({ network: "youtube", text: "x", mediaIds: one, mediaKind: "video" })[0]).toContain("arrive bientôt");
+    expect(schedulingProblems({ network: "linkedin", text: "x", mediaIds: one, mediaKind: "video" })).toEqual([]);
   });
 });

@@ -54,6 +54,52 @@ describe("connecteur LinkedIn", () => {
     expect(body.content).toEqual({ multiImage: { images: [{ id: "urn:li:image:1" }, { id: "urn:li:image:2" }] } });
   });
 
+  it("envoie une vidéo en plusieurs parties, attend son traitement puis la publie", async () => {
+    const bytes = Buffer.from([1, 2, 3, 4, 5, 6]);
+    const ctx = { ...context(0), media: [{ mediaId: "v", mimeType: "video/mp4", width: 1080, height: 1920, publicUrl: "https://app.test/v", read: async () => bytes }] };
+    const fetch = fakeFetch([
+      {
+        match: "videos?action=initializeUpload",
+        replies: [
+          {
+            body: {
+              value: {
+                video: "urn:li:video:9",
+                uploadToken: "tok",
+                uploadInstructions: [
+                  { uploadUrl: "https://upload.test/p1", firstByte: 0, lastByte: 3 },
+                  { uploadUrl: "https://upload.test/p2", firstByte: 4, lastByte: 5 },
+                ],
+              },
+            },
+          },
+        ],
+      },
+      { match: "https://upload.test/p1", method: "PUT", replies: [{ status: 200, headers: { etag: "e1" } }] },
+      { match: "https://upload.test/p2", method: "PUT", replies: [{ status: 200, headers: { etag: "e2" } }] },
+      { match: "videos?action=finalizeUpload", replies: [{ status: 200 }] },
+      { match: "/rest/videos/urn", replies: [{ body: { status: "PROCESSING" } }, { body: { status: "AVAILABLE" } }] },
+      { match: "/rest/posts", replies: [{ status: 201, headers: { "x-restli-id": "urn:li:share:7" } }] },
+    ]);
+    const publisher = createLinkedInPublisher({ apiVersion: "202609", fetch: fetch.impl, sleep: async () => {} });
+    expect((await publisher.publish(ctx)).externalId).toBe("urn:li:share:7");
+    const init = JSON.parse(fetch.calls[0]?.body ?? "{}") as { initializeUploadRequest: { fileSizeBytes: number } };
+    expect(init.initializeUploadRequest.fileSizeBytes).toBe(6);
+    const finalize = JSON.parse(fetch.calls[3]?.body ?? "{}") as { finalizeUploadRequest: unknown };
+    expect(finalize.finalizeUploadRequest).toEqual({ video: "urn:li:video:9", uploadToken: "tok", uploadedPartIds: ["e1", "e2"] });
+    const post = JSON.parse(fetch.calls.at(-1)?.body ?? "{}") as { content: unknown };
+    expect(post.content).toEqual({ media: { id: "urn:li:video:9" } });
+  });
+
+  it("vidéo encore en traitement : reprise au passage suivant sans renvoyer le fichier", async () => {
+    const ctx = { ...context(0), media: [{ mediaId: "v", mimeType: "video/mp4", width: 1080, height: 1920, publicUrl: "https://app.test/v", read: async () => Buffer.from([1]) }] };
+    const slow = fakeFetch([{ match: "/rest/videos/urn", replies: Array.from({ length: 6 }, () => ({ body: { status: "PROCESSING" } })) }]);
+    await expect(
+      createLinkedInPublisher({ apiVersion: "202609", fetch: slow.impl, sleep: async () => {} }).publish({ ...ctx, resume: { linkedinVideo: "urn:li:video:9" } }),
+    ).rejects.toMatchObject({ kind: "retryable", resume: { linkedinVideo: "urn:li:video:9" } });
+    expect(slow.calls.some((call) => call.url.includes("initializeUpload"))).toBe(false);
+  });
+
   it("permission refusée (403) → compte à reconnecter ; contenu refusé (422) → échec définitif", async () => {
     const denied = fakeFetch([{ match: "/rest/posts", replies: [{ status: 403, body: { message: "ACCESS_DENIED" } }] }]);
     await expect(createLinkedInPublisher({ apiVersion: "202609", fetch: denied.impl }).publish(context(0))).rejects.toMatchObject({ kind: "auth" });

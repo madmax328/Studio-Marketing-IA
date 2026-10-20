@@ -96,7 +96,7 @@ const FAQ: { q: string; a: string }[] = [
     q: "Qu'est-ce qu'un crédit IA ?",
     a: `C'est ce que consomme l'intelligence artificielle. Écrire des publications coûte ${CREDIT_COSTS.text_generation} crédit, préparer le plan d'une campagne ${CREDIT_COSTS.campaign_strategy}, écrire un lot de publications de campagne ${CREDIT_COSTS.campaign_posts}. Les visuels et l'envoi ne coûtent rien, et un essai qui échoue est remboursé.`,
   },
-  { q: "Et les vidéos ?", a: "Oui, des vidéos courtes : le studio assemble vos photos et vos messages en une vidéo de 60 secondes au plus, à vos couleurs, publiable sur Facebook, Instagram (Reels) et Threads dès que leur connexion est ouverte. Ajoutez votre musique, et une voix off sous-titrée si la fonction est proposée. Le montage se fait dans votre navigateur (Chrome, Edge ou Safari récents)." },
+  { q: "Et les vidéos ?", a: "Oui, des vidéos courtes : le studio assemble vos photos et vos messages en une vidéo de 60 secondes au plus, à vos couleurs, publiable sur Facebook, Instagram (Reels), Threads et LinkedIn dès que leur connexion est ouverte. Ajoutez votre musique, et une voix off sous-titrée si la fonction est proposée. Le montage se fait dans votre navigateur (Chrome, Edge ou Safari récents)." },
   {
     q: "Que deviennent mes données ?",
     a: "Elles restent dans votre espace, séparées de celles des autres utilisateurs. Vous pouvez tout exporter ou supprimer votre compte depuis les paramètres ; un abonnement éventuel est alors résilié automatiquement.",

@@ -47,7 +47,7 @@ const FEATURES: Feature[] = [
       imageAiAvailable()
         ? "Création d'images par IA à partir d'une simple description, sans texte incrusté : votre titre et votre logo sont ajoutés ensuite par les modèles."
         : "Création d'images par IA : prévue, en complément des modèles.",
-      "Courtes vidéos (jusqu'à 60 secondes) montées à partir de vos photos et de vos messages, avec transitions, carte de fin à votre logo et musique de fond, prêtes pour Facebook, Instagram (Reels) et Threads. Le montage se fait dans votre navigateur.",
+      "Courtes vidéos (jusqu'à 60 secondes) montées à partir de vos photos et de vos messages, avec transitions, carte de fin à votre logo et musique de fond, prêtes pour Facebook, Instagram (Reels), Threads et LinkedIn. Le montage se fait dans votre navigateur.",
       ...(voiceAiAvailable() ? ["Voix off par IA avec sous-titres automatiques : vous écrivez le texte, une voix naturelle le lit, la musique baisse pendant qu'elle parle."] : []),
     ],
   },
