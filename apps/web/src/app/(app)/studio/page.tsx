@@ -26,7 +26,7 @@ export default async function StudioPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold">Studio de contenu</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Studio de contenu</h1>
         <p className="text-sm text-muted">
           Décrivez ce que vous voulez dire : l&apos;IA rédige une publication adaptée à chaque réseau.
         </p>

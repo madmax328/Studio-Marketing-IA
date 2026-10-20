@@ -56,7 +56,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-xl font-semibold">Nouveau mot de passe</h1>
+      <h1 className="text-2xl font-semibold tracking-[-0.03em]">Nouveau mot de passe</h1>
       {error ? <Alert tone="error">{error}</Alert> : null}
       <TextField label="Nouveau mot de passe" name="password" type="password" autoComplete="new-password" minLength={10} required />
       <TextField label="Confirmation" name="confirmation" type="password" autoComplete="new-password" minLength={10} required />

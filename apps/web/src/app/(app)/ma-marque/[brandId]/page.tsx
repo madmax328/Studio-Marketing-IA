@@ -29,7 +29,7 @@ export default async function BrandPage({ params, searchParams }: PageProps<"/ma
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{brand.name}</h1>
+      <h1 className="text-3xl font-semibold tracking-[-0.03em]">{brand.name}</h1>
       {cree ? <Alert tone="success">Votre marque a été créée.</Alert> : null}
       {missing.length > 0 ? (
         <Alert>

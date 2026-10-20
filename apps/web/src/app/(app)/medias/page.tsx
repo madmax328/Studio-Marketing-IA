@@ -24,7 +24,7 @@ export default async function MediaPage({ searchParams }: PageProps<"/medias">) 
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Médiathèque</h1>
+          <h1 className="text-3xl font-semibold tracking-[-0.03em]">Médiathèque</h1>
           <p className="text-sm text-muted">Vos photos, votre logo et les visuels créés avec vos couleurs.</p>
         </div>
         {configured && canWrite ? (

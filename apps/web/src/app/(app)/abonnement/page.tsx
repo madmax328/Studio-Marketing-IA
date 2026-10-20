@@ -53,7 +53,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/abonneme
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Abonnement</h1>
+      <h1 className="text-3xl font-semibold tracking-[-0.03em]">Abonnement</h1>
 
       {paiement === "ok" ? (
         <Alert tone="success">

@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Tableau de bord</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Tableau de bord</h1>
         <div className="flex flex-wrap gap-2">
           <Link href="/studio" className={buttonStyles("secondary")}>
             Générer une publication

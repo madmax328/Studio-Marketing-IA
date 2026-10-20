@@ -13,7 +13,7 @@ export default async function NewBrandPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Décrire ma marque</h1>
+      <h1 className="text-3xl font-semibold tracking-[-0.03em]">Décrire ma marque</h1>
       <BrandForm action={createBrandAction} submitLabel="Créer la marque" />
     </div>
   );

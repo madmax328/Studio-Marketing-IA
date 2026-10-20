@@ -26,7 +26,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           ))}
         </ul>
       </aside>
-      <main className="flex flex-col bg-background px-4 py-8 sm:px-8">
+      <main className="flex flex-col border-border bg-background px-4 py-8 sm:px-8 lg:border-l">
         <div className="flex items-center justify-between gap-4">
           <Link href="/" className="text-sm text-muted hover:text-foreground">
             ← Retour au site
@@ -36,7 +36,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center py-10">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">{children}</div>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6 shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_30px_80px_-40px_rgb(255_122_69/0.35)] sm:p-8">{children}</div>
         </div>
       </main>
     </div>

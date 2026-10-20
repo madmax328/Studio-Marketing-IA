@@ -47,7 +47,7 @@ export default async function CampaignPage({ params }: PageProps<"/campagnes/[ca
         ← Campagnes
       </Link>
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">{campaign.name}</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">{campaign.name}</h1>
         <p className="text-sm text-muted">
           {CAMPAIGN_OBJECTIVE_LABELS[campaign.objective]} · {campaign.networks.map((n) => SOCIAL_NETWORKS[n].label).join(", ")} ·
           du {campaign.startDate} au {campaign.endDate} · {campaign.postsPerWeek} par semaine · {CAMPAIGN_STATUS_LABELS[campaign.status]}

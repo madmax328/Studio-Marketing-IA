@@ -35,7 +35,7 @@ export function SignInForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-xl font-semibold">Connexion</h1>
+      <h1 className="text-2xl font-semibold tracking-[-0.03em]">Connexion</h1>
       {error ? <Alert tone="error">{error}</Alert> : null}
       <TextField label="Adresse e-mail" name="email" type="email" autoComplete="email" required />
       <TextField label="Mot de passe" name="password" type="password" autoComplete="current-password" required />

@@ -31,7 +31,7 @@ export default async function PostsPage({ searchParams }: PageProps<"/publicatio
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Publications</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Publications</h1>
         <Link href="/studio" className={buttonStyles("primary")}>
           Générer une publication
         </Link>

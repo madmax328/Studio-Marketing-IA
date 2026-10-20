@@ -32,7 +32,7 @@ export function ForgotPasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-xl font-semibold">Mot de passe oublié</h1>
+      <h1 className="text-2xl font-semibold tracking-[-0.03em]">Mot de passe oublié</h1>
       {done ? (
         <Alert tone="success">
           Si un compte existe avec cette adresse, un lien de réinitialisation vient d&apos;être envoyé.

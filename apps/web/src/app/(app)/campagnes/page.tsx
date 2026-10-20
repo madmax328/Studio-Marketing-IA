@@ -19,7 +19,7 @@ export default async function CampaignsPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Campagnes</h1>
+          <h1 className="text-3xl font-semibold tracking-[-0.03em]">Campagnes</h1>
           <p className="text-sm text-muted">Un objectif, une période : l&apos;IA prépare le plan et toutes les publications.</p>
         </div>
         <Link href="/campagnes/nouvelle" className={buttonStyles("primary")}>

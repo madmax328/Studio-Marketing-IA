@@ -1,29 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f8;
-  --surface: #ffffff;
-  --foreground: #18181b;
-  --muted: #5f5f6b;
-  --border: #e4e4e7;
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-  --danger: #b91c1c;
-  --success: #15803d;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f0f12;
-    --surface: #18181c;
-    --foreground: #f4f4f5;
-    --muted: #a1a1aa;
-    --border: #2e2e35;
-    --primary: #818cf8;
-    --primary-foreground: #0f0f12;
-    --danger: #f87171;
-    --success: #4ade80;
-  }
+  /* Application : même univers que le site public (sombre, précis, accent solaire). */
+  color-scheme: dark;
+  --background: #07080b;
+  --surface: #0f1116;
+  --surface-2: #151820;
+  --foreground: #eef0f3;
+  --muted: #9198a4;
+  --border: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(255 255 255 / 0.14);
+  --primary: #ff7a45;
+  --primary-foreground: #07080b;
+  --danger: #ff6b7a;
+  --success: #3ddc97;
+  --warning: #ffc56b;
 }
 
 @theme inline {
@@ -36,12 +27,19 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-danger: var(--danger);
   --color-success: var(--success);
+  --color-surface-2: var(--surface-2);
+  --color-border-strong: var(--border-strong);
+  --color-warning: var(--warning);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--nf-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+::selection {
+  background: rgb(255 122 69 / 0.35);
 }
 
 /* ---------- Site public : sombre, précis, lumineux ---------- */

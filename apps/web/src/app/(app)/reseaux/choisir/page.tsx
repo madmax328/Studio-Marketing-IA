@@ -27,7 +27,7 @@ export default async function ChooseAccountsPage({ searchParams }: PageProps<"/r
         ← Réseaux sociaux
       </Link>
       <header>
-        <h1 className="text-2xl font-semibold">Choisir les comptes à connecter</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Choisir les comptes à connecter</h1>
         <p className="text-sm text-muted">
           Voici les comptes que vous avez autorisés. Cochez ceux sur lesquels Studio Marketing IA pourra publier.
         </p>

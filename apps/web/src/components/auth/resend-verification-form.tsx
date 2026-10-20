@@ -32,7 +32,7 @@ export function ResendVerificationForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-xl font-semibold">Confirmez votre adresse e-mail</h1>
+      <h1 className="text-2xl font-semibold tracking-[-0.03em]">Confirmez votre adresse e-mail</h1>
       <p className="text-sm text-muted">
         Votre compte doit être confirmé avant de pouvoir l&apos;utiliser. Indiquez votre adresse pour recevoir un nouveau
         lien.

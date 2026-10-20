@@ -20,7 +20,7 @@ export default async function NewCampaignPage() {
       <Link href="/campagnes" className="text-sm text-primary hover:underline">
         ← Campagnes
       </Link>
-      <h1 className="text-2xl font-semibold">Créer une campagne</h1>
+      <h1 className="text-3xl font-semibold tracking-[-0.03em]">Créer une campagne</h1>
       {!roleHasPermission(access.role, "content:write") ? (
         <Alert>Votre rôle ne permet pas de créer des campagnes.</Alert>
       ) : brands.length === 0 ? (

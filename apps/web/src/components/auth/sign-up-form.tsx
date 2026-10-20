@@ -36,7 +36,7 @@ export function SignUpForm() {
   if (sentTo) {
     return (
       <div className="space-y-3">
-        <h1 className="text-xl font-semibold">Vérifiez votre boîte e-mail</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.03em]">Vérifiez votre boîte e-mail</h1>
         <p className="text-sm text-muted">
           Un lien de confirmation a été envoyé à <strong>{sentTo}</strong>. Ouvrez-le pour activer votre compte.
         </p>
@@ -49,7 +49,7 @@ export function SignUpForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-xl font-semibold">Créer un compte</h1>
+      <h1 className="text-2xl font-semibold tracking-[-0.03em]">Créer un compte</h1>
       {error ? <Alert tone="error">{error}</Alert> : null}
       <TextField label="Votre nom" name="name" autoComplete="name" required maxLength={100} />
       <TextField label="Adresse e-mail" name="email" type="email" autoComplete="email" required />

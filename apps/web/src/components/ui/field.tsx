@@ -2,7 +2,7 @@ import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "rea
 import { cn } from "@/lib/cn";
 
 const control =
-  "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm placeholder:text-muted focus-visible:outline-2 focus-visible:outline-primary";
+  "w-full rounded-xl border border-border bg-black/30 px-3.5 py-2.5 text-sm text-foreground transition placeholder:text-muted/70 hover:border-border-strong focus-visible:border-primary/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:opacity-60";
 
 interface FieldProps {
   label: string;
@@ -12,8 +12,8 @@ interface FieldProps {
 
 export function TextField({ label, name, hint, className, ...props }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
+    <div className="space-y-1.5">
+      <label htmlFor={name} className="block text-sm font-medium text-foreground/90">
         {label}
       </label>
       <input id={name} name={name} className={cn(control, className)} {...props} />
@@ -30,8 +30,8 @@ export function TextAreaField({
   ...props
 }: FieldProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
+    <div className="space-y-1.5">
+      <label htmlFor={name} className="block text-sm font-medium text-foreground/90">
         {label}
       </label>
       <textarea id={name} name={name} rows={3} className={cn(control, className)} {...props} />
@@ -47,8 +47,8 @@ export function SelectField({
   defaultValue,
 }: FieldProps & { options: { value: string; label: string }[]; defaultValue?: string }) {
   return (
-    <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
+    <div className="space-y-1.5">
+      <label htmlFor={name} className="block text-sm font-medium text-foreground/90">
         {label}
       </label>
       <select id={name} name={name} defaultValue={defaultValue} className={control}>

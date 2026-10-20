@@ -15,7 +15,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Paramètres</h1>
+      <h1 className="text-3xl font-semibold tracking-[-0.03em]">Paramètres</h1>
 
       <Card className="space-y-2">
         <h2 className="font-semibold">Mon compte</h2>

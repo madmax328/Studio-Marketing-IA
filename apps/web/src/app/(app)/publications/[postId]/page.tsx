@@ -46,7 +46,7 @@ export default async function PostPage({ params }: PageProps<"/publications/[pos
         ← Toutes les publications
       </Link>
       <header>
-        <h1 className="text-2xl font-semibold">{network.label}</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">{network.label}</h1>
         <p className="text-sm text-muted">{postStatusLabel(post, POST_STATUS_LABELS)}</p>
       </header>
       {post.publishing?.simulated && post.status === "published" ? (

@@ -57,7 +57,7 @@ export default async function NetworksPage({ searchParams }: PageProps<"/reseaux
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold">Réseaux sociaux</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Réseaux sociaux</h1>
         <p className="text-sm text-muted">
           Les connexions passent toujours par la page officielle de chaque réseau : nous ne vous demanderons jamais votre
           mot de passe.

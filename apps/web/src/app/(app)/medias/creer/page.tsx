@@ -25,7 +25,7 @@ export default async function CreateVisualPage() {
         ← Médiathèque
       </Link>
       <header>
-        <h1 className="text-2xl font-semibold">Créer un visuel</h1>
+        <h1 className="text-3xl font-semibold tracking-[-0.03em]">Créer un visuel</h1>
         <p className="text-sm text-muted">
           Le texte, le logo et les couleurs sont placés exactement comme vous les saisissez : rien n&apos;est inventé.
         </p>

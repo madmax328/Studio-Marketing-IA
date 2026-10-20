@@ -149,7 +149,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calendr
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Calendrier</h1>
+          <h1 className="text-3xl font-semibold tracking-[-0.03em]">Calendrier</h1>
           <p className="text-xs text-muted">Heures affichées dans le fuseau {timeZone}.</p>
         </div>
         <Link href="/campagnes/nouvelle" className={buttonStyles("primary")}>
