@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mongodb:
-        image: mongo:8.0
+        # MongoDB 8.x ne démarre pas sur les noyaux Linux 6.19 à 7.0.13 des machines GitHub
+        # (incompatibilité TCMalloc, SERVER-121912). Le code n'utilise rien de propre à la version 8.
+        image: mongo:7.0
         ports:
           - 27017:27017
     steps:
